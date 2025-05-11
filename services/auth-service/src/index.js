@@ -1,14 +1,25 @@
 require('dotenv').config();
 const express = require('express');
+const passport = require('passport');
+const session = require('express-session');
+const authRoutes = require('./routes/auth.routes');
+
+require('./passport');
+
 const app = express();
 
-app.use(express.json());
+app.use(session({
+  secret: 'supersecret',
+  resave: false,
+  saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'Auth Service running 🚀' });
-});
+// Routes
+app.use('/auth', authRoutes);
 
 const PORT = process.env.PORT || 4001;
 app.listen(PORT, () => {
-  console.log(`Auth service listening on port ${PORT}`);
+  console.log(`Auth Service running on http://localhost:${PORT}`);
 });
