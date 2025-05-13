@@ -20,4 +20,15 @@ router.get('/google/callback',
   }
 );
 
+// Route logout
+router.get('/logout', (req, res) => {
+  req.logout(function(err) {
+    if (err) { return res.status(500).json({ message: 'Logout failed', error: err }); }
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      res.json({ message: 'Logged out successfully' });
+    });
+  });
+});
+
 module.exports = router;
