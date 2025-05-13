@@ -20,4 +20,14 @@ router.get('/google/callback',
   }
 );
 
+router.get('/logout', (req, res) => {
+  req.logout(function(err) {
+    if (err) { return res.sendStatus(500); }
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      res.sendStatus(200);
+    });
+  });
+});
+
 module.exports = router;
