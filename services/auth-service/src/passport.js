@@ -19,7 +19,8 @@ passport.use(new GoogleStrategy({
           googleId: profile.id,
           email: profile.emails[0].value,
           name: profile.displayName,
-          avatar: profile.photos[0]?.value || null
+          avatar: profile.photos[0].value,
+          role: { connect: { id: 1 } } 
         }
       });
     }
