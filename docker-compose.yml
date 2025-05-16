@@ -4,6 +4,7 @@ services:
   gateway:
     build:
       context: ./gateway
+    image: gateway
     ports:
       - "4000:4000"
     depends_on:
@@ -14,6 +15,7 @@ services:
   auth-service:
     build:
       context: ./services/auth-service
+    image: auth-service
     ports:
       - "4001:4001"
     depends_on:
