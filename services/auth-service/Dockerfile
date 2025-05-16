@@ -10,4 +10,4 @@ FROM node:18-alpine
 WORKDIR /app
 COPY --from=build /app /app
 EXPOSE 4001
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
+CMD ["node", "src/index.js"]
