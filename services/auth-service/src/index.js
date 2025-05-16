@@ -3,6 +3,8 @@ const express = require('express');
 const passport = require('passport');
 const session = require('express-session');
 const cors = require('cors'); 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 const authRoutes = require('./routes/auth.routes');
 
 require('./passport');
@@ -23,6 +25,7 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 app.use('/auth', authRoutes);
