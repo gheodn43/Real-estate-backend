@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   gateway:
-    image: your-registry.com/your-project/gateway:latest
+    image: gheo43dn/gateway:latest
     ports:
       - "4000:4000"
     environment:
@@ -12,7 +12,7 @@ services:
     restart: always
 
   auth-service:
-    image: your-registry.com/your-project/auth-service:latest
+    image: gheo43dn/auth-service:latest
     ports:
       - "4001:4001"
     depends_on:
