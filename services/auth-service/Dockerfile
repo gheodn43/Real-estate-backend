@@ -1,7 +1,13 @@
-FROM node:18
+# ==== Build Stage ====
+FROM node:18-alpine as build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
+RUN npx prisma generate
+RUN npm prune --production
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=build /app /app
 EXPOSE 4001
-CMD ["npm", "run", "dev"]
+CMD ["node", "src/index.js"]

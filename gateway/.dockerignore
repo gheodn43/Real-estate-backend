@@ -1,8 +1,9 @@
 node_modules
 npm-debug.log
-Dockerfile
-.dockerignore
-.env
 .git
-logs
-coverage
+.env
+Dockerfile
+docker-compose*
+README.md
+*.md
+test/

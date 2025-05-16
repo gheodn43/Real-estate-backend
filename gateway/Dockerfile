@@ -1,8 +1,11 @@
-FROM node:18
+FROM node:18-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
+RUN npm prune --production
+FROM node:18-alpine AS production
+WORKDIR /app
+COPY --from=build /app /app
 EXPOSE 4000
-CMD ["npm", "run", "dev"]
-
+CMD ["node", "src/index.js"]
