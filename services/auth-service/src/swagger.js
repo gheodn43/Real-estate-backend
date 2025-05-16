@@ -1,4 +1,9 @@
+const express = require('express');
+const passport = require('passport');
+const session = require('express-session');
+const cors = require('cors');
 const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -14,7 +19,7 @@ const options = {
       },
     ],
   },
-  apis: ['./src/routes/*.js'], 
+  apis: [__dirname + '/routes/*.js'], 
 };
 
 const swaggerSpec = swaggerJsdoc(options);
