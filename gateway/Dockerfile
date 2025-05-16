@@ -4,4 +4,4 @@ COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
 EXPOSE 4000
-CMD ["node", "src/index.js"]  # <-- thay bằng file entrypoint thực tế của bạn
+CMD ["node", "src/index.js"]
