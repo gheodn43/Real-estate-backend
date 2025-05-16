@@ -8,4 +8,4 @@ FROM node:18-alpine AS production
 WORKDIR /app
 COPY --from=build /app /app
 EXPOSE 4000
-CMD ["node", "src/index.js"]
+CMD ["node", "index.js"]
