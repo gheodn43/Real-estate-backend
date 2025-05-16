@@ -17,7 +17,7 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: 🛠 Build all Docker images
-        run: docker-compose build
+        run: docker compose build
 
       - name: 📦 Tag & Push Docker images
         run: |
@@ -39,6 +39,6 @@ jobs:
 
             cd ~/your-deployment-dir
 
-            docker-compose down
-            docker-compose up -d
+            docker compose down
+            docker compose up -d
           EOF
