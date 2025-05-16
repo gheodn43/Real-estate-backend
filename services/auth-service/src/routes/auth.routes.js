@@ -35,10 +35,30 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     summary: Google OAuth login
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to Google login
+ */
 
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend with token
+ */
 
 router.get('/google/callback',
   passport.authenticate('google', {
@@ -58,6 +78,16 @@ router.get('/google/callback',
     }
   }
 );
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ */
 
 router.post('/logout', (req, res) => {
   req.logout(function(err) {
@@ -68,6 +98,31 @@ router.post('/logout', (req, res) => {
     });
   });
 });
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Registration successful
+ *       400:
+ *         description: Missing or invalid registration information
+ */
 
 router.post('/register', async (req, res) => {
   if (!req.session.otpVerified) {
@@ -136,6 +191,29 @@ router.post('/register', async (req, res) => {
     });
   }
 });
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       400:
+ *         description: Missing email or password
+ */
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -189,6 +267,29 @@ router.post('/login', async (req, res) => {
     });
   }
 });
+/**
+ * @swagger
+ * /auth/verify-otp:
+ *   post:
+ *     summary: Verify OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP verification successful
+ *       400:
+ *         description: OTP is incorrect or expired
+ */
 
 router.post('/verify-otp', async (req, res) => {
   const { email, otp } = req.body;
@@ -209,6 +310,28 @@ router.post('/verify-otp', async (req, res) => {
     });
   }
 });
+
+/**
+ * @swagger
+ * /auth/send-otp:
+ *   post:
+ *     summary: Send OTP to email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP sent
+ *       400:
+ *         description: Missing email
+ */
 
 router.post('/send-otp', async (req, res) => {
   const { email } = req.body;
@@ -237,6 +360,18 @@ router.post('/send-otp', async (req, res) => {
     });
   }
 });
+/**
+ * @swagger
+ * /auth/profile:
+ *   get:
+ *     summary: Get user profile (session)
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       401:
+ *         description: Not logged in
+ */
 
 router.get('/profile', async (req, res) => {
   if (!req.session.userId) {
@@ -270,6 +405,20 @@ router.get('/profile', async (req, res) => {
     });
   }
 });
+/**
+ * @swagger
+ * /auth/profile-token:
+ *   get:
+ *     summary: Get user profile (JWT)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       401:
+ *         description: Unauthorized
+ */
 
 router.get('/profile-token', authenticateToken, async (req, res) => {
   try {
@@ -290,6 +439,31 @@ router.get('/profile-token', authenticateToken, async (req, res) => {
     });
   }
 });
+/**
+ * @swagger
+ * /auth/update-location:
+ *   post:
+ *     summary: Update user location
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               latitude:
+ *                 type: number
+ *               longitude:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Location updated
+ *       400:
+ *         description: Missing latitude or longitude
+ */
 
 router.post('/update-location', authenticateToken, async (req, res) => {
   try {
@@ -342,6 +516,31 @@ async function sendOTP(email, otp) {
     text: `Your OTP code is: ${otp}`
   });
 }
+/**
+ * @swagger
+ * /auth/change-password:
+ *   post:
+ *     summary: Change user password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password changed
+ *       400:
+ *         description: Missing or invalid information
+ *       401:
+ *         description: Not logged in
+ */
 
 router.post('/change-password', async (req, res) => {
   if (!req.session.userId) {
@@ -390,6 +589,27 @@ router.post('/change-password', async (req, res) => {
     errors: []
    });
 });
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Forgot password (send OTP)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP sent for password reset
+ *       400:
+ *         description: Missing email or email does not exist
+ */
 
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
@@ -422,6 +642,31 @@ router.post('/forgot-password', async (req, res) => {
      });
   }
 });
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Missing or invalid information
+ */
 
 router.post('/reset-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
