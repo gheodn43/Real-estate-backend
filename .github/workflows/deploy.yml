@@ -10,11 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test SSH port connectivity
-        run: |
-          apt-get update && apt-get install -y netcat
-          nc -zv ${{ secrets.SERVER_IP }} 22
-          
+
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
         with:
