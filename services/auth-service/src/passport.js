@@ -9,18 +9,18 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    let user = await prisma.users.findUnique({
+    let user = await prisma.user.findUnique({
       where: { googleId: profile.id }
     });
 
     if (!user) {
-      user = await prisma.users.create({
+      user = await prisma.user.create({
         data: {
           googleId: profile.id,
           email: profile.emails[0].value,
           name: profile.displayName,
           avatar: profile.photos[0].value,
-          role: { connect: { id: 1 } } 
+          role_id: 1 
         }
       });
     }
