@@ -10,35 +10,79 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Test SSH port connectivity
+        run: |
+          apt-get update && apt-get install -y netcat
+          nc -zv ${{ secrets.SERVER_IP }} 22
+          
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2 
+
+      - name: 🔍 Detect changed services
+        id: changed-services
+        run: |
+          # Get changed files in the current commit compared to the previous one
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          SERVICES=""
+          if echo "$CHANGED_FILES" | grep -q "^services/gateway/"; then
+            SERVICES="$SERVICES gateway"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "^services/auth-service/"; then
+            SERVICES="$SERVICES auth-service"
+          fi
+          # Remove leading/trailing whitespace
+          SERVICES=$(echo "$SERVICES" | xargs)
+          if [ -z "$SERVICES" ]; then
+            echo "No services changed. Skipping deployment."
+            echo "services=" >> $GITHUB_OUTPUT
+          else
+            echo "Changed services: $SERVICES"
+            echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          fi
 
       - name: 🐳 Login to Docker Hub
+        if: steps.changed-services.outputs.services != ''
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: 🛠 Build all Docker images
-        run: docker compose build
-
-      - name: 📦 Tag & Push Docker images
+      - name: 🛠 Build changed Docker images
+        if: steps.changed-services.outputs.services != ''
         run: |
-          docker tag gateway ${{ secrets.DOCKER_USERNAME }}/gateway:latest
-          docker tag auth-service ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/gateway:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
+          for SERVICE in ${{ steps.changed-services.outputs.services }}; do
+            docker compose build $SERVICE
+          done
+
+      - name: 📦 Tag & Push changed Docker images
+        if: steps.changed-services.outputs.services != ''
+        run: |
+          for SERVICE in ${{ steps.changed-services.outputs.services }}; do
+            docker tag $SERVICE ${{ secrets.DOCKER_USERNAME }}/$SERVICE:latest
+            docker push ${{ secrets.DOCKER_USERNAME }}/$SERVICE:latest
+          done
+
       - name: 🔐 Setup SSH Key
+        if: steps.changed-services.outputs.services != ''
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: 📤 Copy docker-compose.prod.yml to Remote Server
+        if: steps.changed-services.outputs.services != ''
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "mkdir -p ~/real-estate-backend"
           scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/real-estate-backend/
 
-      - name: 🚀 Deploy on Remote Server
+      - name: 🚀 Deploy changed services on Remote Server
+        if: steps.changed-services.outputs.services != ''
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             cd ~/real-estate-backend
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-            docker compose -f docker-compose.prod.yml up -d --pull=always
+            docker compose -f docker-compose.prod.yml pull ${{ steps.changed-services.outputs.services }}
+            docker compose -f docker-compose.prod.yml up -d ${{ steps.changed-services.outputs.services }}
+
+            docker image prune -f
+            docker container prune -f
+            docker system prune -f --volumes
           EOF
