@@ -20,7 +20,7 @@ passport.use(new GoogleStrategy({
           email: profile.emails[0].value,
           name: profile.displayName,
           avatar: profile.photos[0].value,
-          role: { connect: { id: 1 } } 
+          role_id: 1 
         }
       });
     }
