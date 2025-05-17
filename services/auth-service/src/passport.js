@@ -9,6 +9,7 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
+    console.log(await prisma.$queryRaw`SHOW TABLES`);
     let user = await prisma.user.findUnique({
       where: { googleId: profile.id }
     });
