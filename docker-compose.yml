@@ -21,11 +21,11 @@ services:
     depends_on:
       - mysql
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: sum2530623306
-      DB_NAME: mysql_db
+      PORT: 4001
+      DATABASE_URL: "mysql://root:sum2530623306@real-estate-backend-mysql-1:3306/mysql_db"
+      GOOGLE_CLIENT_ID: 893629871972-p0g15vvj9pu5a83fghp5jurk2m0cs8fb.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: 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
+      GOOGLE_CALLBACK_URL: http://localhost:4001/auth/google/callback
 
   mysql:
     image: mysql:8
