@@ -15,6 +15,12 @@ services:
       - "4001:4001"
     depends_on:
       - mysql
+    environment:
+      PORT: 4001
+      DATABASE_URL: "mysql://root:sum2530623306@real-estate-backend-mysql-1:3306/mysql_db"
+      GOOGLE_CLIENT_ID: 893629871972-xxx.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: GOCSPX-xxx
+      GOOGLE_CALLBACK_URL: "http://103.9.78.1:4001/auth/google/callback"
     restart: always
 
   mysql:
