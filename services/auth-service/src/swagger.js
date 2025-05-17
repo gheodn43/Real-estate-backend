@@ -14,8 +14,8 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:4001',
-        description: 'Local server',
+        url: 'http://103.9.78.1:4001',
+        description: 'prod server',
       },
     ],
   },
