@@ -35,5 +35,5 @@ app.use(rateLimit({ windowMs: 1 * 60 * 1000, max: 100 }));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`API Gateway running on port ${PORT}`);
+  console.log(`API Gateway running on ports ${PORT}`);
 });
