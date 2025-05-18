@@ -22,7 +22,7 @@ jobs:
           # Get changed files in the current commit compared to the previous one
           CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
           SERVICES=""
-          if echo "$CHANGED_FILES" | grep -q "^services/gateway/"; then
+          if echo "$CHANGED_FILES" | grep -q "^gateway/"; then
             SERVICES="$SERVICES gateway"
           fi
           if echo "$CHANGED_FILES" | grep -q "^services/auth-service/"; then
