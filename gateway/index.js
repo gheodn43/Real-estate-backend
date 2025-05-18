@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const fetchSwaggerDocs = require('./swaggerMerger');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -17,9 +19,19 @@ app.use(rateLimit({ windowMs: 1 * 60 * 1000, max: 100 }));
     createProxyMiddleware({
       target: process.env.AUTH_SERVICE,
       changeOrigin: true,
-      pathRewrite: { '^/auth': '/' },
     })
   );
+
+  app.use('/docs', async (req, res, next) => {
+    try {
+      const docs = await fetchSwaggerDocs([
+        { name: 'auth', url: `${process.env.AUTH_SERVICE}/api-docs` },
+      ]);
+      swaggerUi.setup(docs)(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  }, swaggerUi.serve);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
