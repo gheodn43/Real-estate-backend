@@ -18,7 +18,10 @@ model User {
   avatar     String?
   latitude   Float?
   longitude  Float?
+  dateOfBirth DateTime?
+  gender     String? 
   created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   role UserRole @relation(fields: [role_id], references: [id])
 
