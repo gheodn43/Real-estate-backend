@@ -83,10 +83,13 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             cd ~/real-estate-backend
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-            docker compose -f docker-compose.prod.yml pull ${{ steps.changed-services.outputs.services }}
-            docker compose -f docker-compose.prod.yml up -d ${{ steps.changed-services.outputs.services }}
-
-            docker exec $(docker ps -q -f name=nginx) nginx -s reload
+            if [ ! -z "${{ steps.changed-services.outputs.services }}" ]; then
+              docker compose -f docker-compose.prod.yml pull ${{ steps.changed-services.outputs.services }}
+              docker compose -f docker-compose.prod.yml up -d ${{ steps.changed-services.outputs.services }}
+            fi
+            docker compose -f docker-compose.prod.yml up -d certbot
+            docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+            
             docker image prune -f
             docker container prune -f
             docker system prune -f --volumes
