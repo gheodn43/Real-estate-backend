@@ -33,6 +33,15 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     restart: always
+  
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - gateway
 
 volumes:
   mysql-data:
