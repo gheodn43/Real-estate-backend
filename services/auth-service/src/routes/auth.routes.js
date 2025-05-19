@@ -128,29 +128,6 @@ router.post('/verify-otp', authController.verifyOtp);
 
 /**
  * @swagger
- * /auth/send-otp:
- *   post:
- *     summary: Send OTP to email
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *     responses:
- *       200:
- *         description: OTP sent
- *       400:
- *         description: Missing email
- */
-
-router.post('/send-otp', authController.sendOtp);
-/**
- * @swagger
  * /auth/profile:
  *   get:
  *     summary: Get user profile (session)
