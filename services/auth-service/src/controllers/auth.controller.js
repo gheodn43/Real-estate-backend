@@ -319,7 +319,7 @@ exports.getProfile = async (req, res) => {
     });
   }
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
+    const user = await prisma.user.findUnique({ where: { id: req.session.userId }, include: { role: true } });
     if (!user)
       return res.status(404).json({
         data: null,
@@ -327,17 +327,27 @@ exports.getProfile = async (req, res) => {
         errors: []
       });
     res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name
-      }
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          dayOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          avatar: user.avatar,
+          role: user.role,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at
+        }
+      },
+      message: 'Profile fetched successfully.',
+      errors: []
     });
   } catch (err) {
     res.status(500).json({
       data: null,
       message: 'Server error',
-      error: [err.message]
+      errors: [err.message]
     });
   }
 };
@@ -556,4 +566,47 @@ exports.resetPassword = async (req, res) => {
   delete req.session.resetOtp;
   delete req.session.resetEmail;
   res.json({ message: 'Password reset successful.' });
+};
+
+exports.updateProfile = async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({
+      data: null,
+      message: 'Not logged in',
+      errors: []
+    });
+  }
+  const { dateOfBirth, gender, avatar } = req.body;
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.session.userId },
+      data: {
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        gender,
+        avatar
+      }
+    });
+    res.json({
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          avatar: user.avatar,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at
+        }
+      },
+      message: 'Profile updated successfully.',
+      errors: []
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message]
+    });
+  }
 };
