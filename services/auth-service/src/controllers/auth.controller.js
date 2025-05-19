@@ -132,13 +132,6 @@ exports.logout = (req, res) => {
 };
 
 exports.register = async (req, res) => {
-  if (!req.session.otpVerified) {
-    return res.status(400).json({
-      data: null,
-      message: 'You need to verify OTP before registering.',
-      errors: []
-    });
-  }
   const { email, password, name } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({
@@ -151,47 +144,59 @@ exports.register = async (req, res) => {
   if (passwordStrength.score < 3) {
     return res.status(400).json({
       data: null,
-      message: 'Password is too weak. Please choose a stronger password (including uppercase, lowercase, numbers, special characters, at least 8 characters).',
+      message: 'Password is too weak. Please choose a stronger password.',
       errors: []
     });
   }
-  try {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      if (existingUser.googleId) {
-        return res.status(400).json({
-          data: null,
-          message: 'This email has been used to login with Google, cannot register with this email.',
-          errors: []
-        });
-      } else {
-        return res.status(400).json({
-          data: null,
-          message: 'This email has already been registered.',
-          errors: []
-        });
-      }
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await prisma.user.create({
-      data: { email, password: hashedPassword, name, role_id: 1 }
-    });
-    res.status(201).json({
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    return res.status(400).json({
       data: null,
-      message: 'Registration successful',
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name
-      },
+      message: 'Email is already registered.',
       errors: []
     });
-    delete req.session.otpVerified;
+  }
+  const otp = generateOTP();
+  try {
+    await sendOTP(email, otp);
+    req.session.otp = otp;
+    req.session.pendingUser = { email, password, name };
+    res.status(200).json({
+      data: null,
+      message: 'OTP has been sent to your email. Please verify.',
+      errors: []
+    });
   } catch (err) {
     res.status(500).json({
       data: null,
-      message: 'Server error',
-      error: [err.message]
+      message: 'Failed to send OTP.',
+      errors: [err.message]
+    });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  if (
+    req.session.otp === otp &&
+    req.session.pendingUser &&
+    req.session.pendingUser.email === email
+  ) {
+    const { email, password, name } = req.session.pendingUser;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({ data: { email, password: hashedPassword, name, role_id: 1 } });
+    delete req.session.otp;
+    delete req.session.pendingUser;
+    res.json({
+      data: null,
+      message: 'Đăng ký thành công!',
+      errors: []
+    });
+  } else {
+    res.status(400).json({
+      data: null,
+      message: 'OTP không đúng hoặc đã hết hạn.',
+      errors: []
     });
   }
 };
@@ -264,30 +269,44 @@ exports.verifyOtp = async (req, res) => {
 };
 
 exports.sendOtp = async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({
-      data: null,
-      message: 'Missing email',
-      errors: []
-    });
+  const { email, password, name } = req.body;
+  if (!email || !password || !name) {
+    return res.status(400).json({ message: 'Missing registration information.' });
+  }
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    return res.status(400).json({ message: 'Email is already registered.' });
+  }
+  const passwordStrength = zxcvbn(password);
+  if (passwordStrength.score < 3) {
+    return res.status(400).json({ message: 'Password is too weak.' });
   }
   const otp = generateOTP();
   try {
     await sendOTP(email, otp);
     req.session.otp = otp;
-    req.session.otpEmail = email;
-    res.status(200).json({
-      data: null,
-      message: 'OTP has been sent to your email. Please verify.',
-      errors: []
-    });
+    req.session.pendingUser = { email, password, name };
+    res.status(200).json({ message: 'OTP has been sent to your email. Please verify.' });
   } catch (err) {
-    res.status(500).json({
-      data: null,
-      message: 'Send email error',
-      error: [err.message]
-    });
+    res.status(500).json({ message: 'Failed to send OTP email.' });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  if (
+    req.session.otp === otp &&
+    req.session.pendingUser &&
+    req.session.pendingUser.email === email
+  ) {
+    const { email, password, name } = req.session.pendingUser;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({ data: { email, password: hashedPassword, name, role_id: 1 } });
+    delete req.session.otp;
+    delete req.session.pendingUser;
+    res.json({ message: 'Registration successful!' });
+  } else {
+    res.status(400).json({ message: 'OTP is incorrect or has expired.' });
   }
 };
 
