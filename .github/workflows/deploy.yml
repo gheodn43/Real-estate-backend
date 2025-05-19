@@ -88,8 +88,8 @@ jobs:
               docker compose -f docker-compose.prod.yml up -d ${{ steps.changed-services.outputs.services }}
             fi
             docker compose -f docker-compose.prod.yml up -d certbot
-            docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
-            
+            docker compose -f docker-compose.prod.yml up -d nginx
+
             docker image prune -f
             docker container prune -f
             docker system prune -f --volumes
