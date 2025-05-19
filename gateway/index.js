@@ -10,26 +10,10 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(
-  helmet({
-    crossOriginOpenerPolicy: false, 
-    originAgentCluster: false, 
-    strictTransportSecurity: false,
-  })
-);
+app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(rateLimit({ windowMs: 1 * 60 * 1000, max: 100 }));
-  app.use(
-    '/auth',
-    createProxyMiddleware({
-      target: process.env.AUTH_SERVICE,
-      changeOrigin: true,
-      pathRewrite: {
-        '^/auth': '/auth',
-      },
-    })
-  );
 
   app.use('/docs', swaggerUi.serve, async (req, res, next) => {
     try {
@@ -46,5 +30,5 @@ app.use(rateLimit({ windowMs: 1 * 60 * 1000, max: 100 }));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`API Gateway running on ports ${PORT}`);
+  console.log(`API Gateway running on port ${PORT}`);
 });
