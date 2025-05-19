@@ -261,4 +261,35 @@ router.post('/forgot-password', authController.forgotPassword);
 
 router.post('/reset-password', authController.resetPassword);
 
+/**
+ * @swagger
+ * /auth/update-profile:
+ *   put:
+ *     summary: Update user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               gender:
+ *                 type: string
+ *               avatar:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *       401:
+ *         description: Not logged in
+ */
+router.put('/update-profile', authenticateToken, authController.updateProfile);
+
+
 module.exports = router;
