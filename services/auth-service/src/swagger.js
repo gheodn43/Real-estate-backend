@@ -14,7 +14,7 @@ const options = {
     },
     servers: [
       {
-        url: 'http://103.9.78.1:4001',
+        url: 'http://api.propintel.id.vn/auth',
         description: 'prod server',
       },
     ],
