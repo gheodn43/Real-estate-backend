@@ -24,6 +24,7 @@ jobs:
           SERVICES=""
           if echo "$CHANGED_FILES" | grep -q "^nginx/"; then
             SERVICES="$SERVICES nginx"
+          fi
           if echo "$CHANGED_FILES" | grep -q "^gateway/"; then
             SERVICES="$SERVICES gateway"
           fi
