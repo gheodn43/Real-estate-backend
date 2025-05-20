@@ -22,7 +22,10 @@ jobs:
           # Get changed files in the current commit compared to the previous one
           CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
           SERVICES=""
-          if echo "$CHANGED_FILES" | grep -q "^services/gateway/"; then
+          if echo "$CHANGED_FILES" | grep -q "^nginx/"; then
+            SERVICES="$SERVICES nginx"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "^gateway/"; then
             SERVICES="$SERVICES gateway"
           fi
           if echo "$CHANGED_FILES" | grep -q "^services/auth-service/"; then
@@ -46,15 +49,19 @@ jobs:
         if: steps.changed-services.outputs.services != ''
         run: |
           for SERVICE in ${{ steps.changed-services.outputs.services }}; do
-            docker compose build $SERVICE
+            if [ "$SERVICE" != "nginx" ]; then
+              docker compose build $SERVICE
+            fi
           done
 
       - name: 📦 Tag & Push changed Docker images
         if: steps.changed-services.outputs.services != ''
         run: |
           for SERVICE in ${{ steps.changed-services.outputs.services }}; do
-            docker tag $SERVICE ${{ secrets.DOCKER_USERNAME }}/$SERVICE:latest
-            docker push ${{ secrets.DOCKER_USERNAME }}/$SERVICE:latest
+            if [ "$SERVICE" != "nginx" ]; then
+              docker tag $SERVICE ${{ secrets.DOCKER_USERNAME }}/$SERVICE:latest
+              docker push ${{ secrets.DOCKER_USERNAME }}/$SERVICE:latest
+            fi
           done
 
       - name: 🔐 Setup SSH Key
@@ -63,11 +70,12 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: 📤 Copy docker-compose.prod.yml to Remote Server
+      - name: 📤 Copy deployment files to Remote Server
         if: steps.changed-services.outputs.services != ''
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "mkdir -p ~/real-estate-backend"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "mkdir -p ~/real-estate-backend/nginx"
           scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/real-estate-backend/
+          scp -o StrictHostKeyChecking=no nginx/default.conf ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/real-estate-backend/nginx/default.conf
 
       - name: 🚀 Deploy changed services on Remote Server
         if: steps.changed-services.outputs.services != ''
@@ -75,8 +83,12 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             cd ~/real-estate-backend
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-            docker compose -f docker-compose.prod.yml pull ${{ steps.changed-services.outputs.services }}
-            docker compose -f docker-compose.prod.yml up -d ${{ steps.changed-services.outputs.services }}
+            if [ ! -z "${{ steps.changed-services.outputs.services }}" ]; then
+              docker compose -f docker-compose.prod.yml pull ${{ steps.changed-services.outputs.services }}
+              docker compose -f docker-compose.prod.yml up -d ${{ steps.changed-services.outputs.services }}
+            fi
+            docker compose -f docker-compose.prod.yml up -d certbot
+            docker compose -f docker-compose.prod.yml up -d nginx
 
             docker image prune -f
             docker container prune -f
