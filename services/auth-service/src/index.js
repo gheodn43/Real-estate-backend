@@ -12,14 +12,10 @@ require('./passport');
 
 const app = express();
 
-// Cấu hình CORS để hỗ trợ cả localhost:8080 và localhost:4001
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:4001'],
+  origin: ['https://app.propintel.id.vn'],
   credentials: true
 })); 
-
-// Phục vụ file tĩnh từ thư mục frontend
-app.use(express.static(path.join(__dirname, '../../../frontend')));
 
 // Middleware xử lý JSON
 app.use(express.json());
@@ -35,12 +31,15 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+app.get('/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 // Routes
 app.use('/auth', authRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 4001;
 app.listen(PORT, () => {
-  console.log(`Auth Service running on http://localhost:${PORT}`);
+  console.log(`Auth Service running on http://auth-service:${PORT}`);
 });
