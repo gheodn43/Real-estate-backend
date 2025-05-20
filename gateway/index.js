@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import swaggerUi from 'swagger-ui-express';
-import { mergeSpecs } from './merge-swagger-utils';
+import { mergeSpecs } from './merge-swagger-utils.js';
 
 const app = express();
 
