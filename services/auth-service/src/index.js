@@ -7,6 +7,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const path = require('path');
 const authRoutes = require('./routes/auth.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 require('./passport');
 
@@ -30,13 +31,14 @@ app.use(session({
 // Khởi tạo passport
 app.use(passport.initialize());
 app.use(passport.session());
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/auth/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
 // Routes
 app.use('/auth', authRoutes);
+app.use('/auth/admin', adminRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 4001;
