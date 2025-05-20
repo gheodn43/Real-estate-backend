@@ -14,7 +14,7 @@ require('./passport');
 const app = express();
 
 app.use(cors({
-  origin: ['https://app.propintel.id.vn'],
+  origin: ['https://app.propintel.id.vn', 'http://gateway:4000'],
   credentials: true
 })); 
 

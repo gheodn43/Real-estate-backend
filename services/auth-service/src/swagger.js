@@ -18,6 +18,15 @@ const options = {
         description: 'prod server',
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   },
   apis: [__dirname + '/routes/*.js'], 
 };
