@@ -1,34 +1,24 @@
-require('dotenv').config();
-const express = require('express');
-const swaggerUi = require('swagger-ui-express');
-const fetchSwaggerDocs = require('./swaggerMerger');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const cors = require('cors');
+import express from 'express';
+import axios from 'axios';
+import swaggerUi from 'swagger-ui-express';
+import { mergeSpecs } from './merge-swagger-utils';
 
 const app = express();
 
-app.use(helmet());
-app.use(cors());
-app.use(morgan('dev'));
-app.use(rateLimit({ windowMs: 1 * 60 * 1000, max: 100 }));
+app.get('/swagger.json', async (req, res) => {
+  try {
+    const [auth] = await Promise.all([
+      axios.get('http://auth-service:4001/swagger.json'),
+      //các service khác 
+    ]);
 
-  app.use('/docs', swaggerUi.serve, async (req, res, next) => {
-    try {
-      const docs = await fetchSwaggerDocs([
-        { name: 'auth', url: `${process.env.AUTH_SERVICE}/api-docs` },
-      ]);
-      const html = swaggerUi.generateHTML(docs, { explorer: true });
-      res.send(html);
-    } catch (err) {
-      next(err);
-    }
-  });
-  
-
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`API Gateway running on port ${PORT}`);
+    const mergedSpec = mergeSpecs([auth.data]);
+    res.json(mergedSpec);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch specs' });
+  }
 });
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(undefined, {
+  swaggerUrl: '/swagger.json',
+}));
