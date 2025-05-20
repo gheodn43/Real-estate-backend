@@ -8,7 +8,7 @@ const app = express();
 app.get('/swagger.json', async (req, res) => {
   try {
     const [auth] = await Promise.all([
-      axios.get('http://auth-service:4001/swagger.json'),
+      axios.get('http://auth-service:4001/swagger.json')
       //các service khác 
     ]);
 

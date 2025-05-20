@@ -45,16 +45,6 @@ services:
       - ./certbot/www:/var/www/certbot
     depends_on:
       - gateway
-  
-  certbot:
-    image: certbot/certbot:latest
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    command: certonly --webroot -w var/www/certbot --force-renewal --email ngvatuan01052002@gmail.com -d api.propintel.id.vn --agree-tos
-    depends_on:
-      - nginx
 
 volumes:
   mysql-data:
-  certbot-certs:

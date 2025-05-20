@@ -87,7 +87,6 @@ jobs:
               docker compose -f docker-compose.prod.yml pull ${{ steps.changed-services.outputs.services }}
               docker compose -f docker-compose.prod.yml up -d ${{ steps.changed-services.outputs.services }}
             fi
-            docker compose -f docker-compose.prod.yml up -d certbot
             docker compose -f docker-compose.prod.yml up -d nginx
 
             docker image prune -f
