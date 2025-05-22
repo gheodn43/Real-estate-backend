@@ -20,6 +20,10 @@ model User {
   longitude  Float?
   dateOfBirth DateTime?
   gender     String? 
+  addr_city    String?
+  addr_district String?
+  addr_street  String?
+  addr_detail  String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 

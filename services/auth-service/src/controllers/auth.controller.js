@@ -336,6 +336,10 @@ exports.getProfile = async (req, res) => {
           gender: user.gender,
           avatar: user.avatar,
           role: user.role,
+          addr_city: user.addr_city,
+          addr_district: user.addr_district,
+          addr_street: user.addr_street,
+          addr_detail: user.addr_detail,
           createdAt: user.created_at,
           updatedAt: user.updated_at
         }
@@ -576,14 +580,25 @@ exports.updateProfile = async (req, res) => {
       errors: []
     });
   }
-  const { dateOfBirth, gender, avatar } = req.body;
+  const { 
+    dateOfBirth, 
+    gender, 
+    avatar, 
+    addr_city, 
+    addr_district, 
+    addr_street, 
+    addr_detail } = req.body;
   try {
     const user = await prisma.user.update({
       where: { id: req.session.userId },
       data: {
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
         gender,
-        avatar
+        avatar,
+        addr_city,
+        addr_district,
+        addr_street,
+        addr_detail
       }
     });
     res.json({
@@ -595,6 +610,10 @@ exports.updateProfile = async (req, res) => {
           dateOfBirth: user.dateOfBirth,
           gender: user.gender,
           avatar: user.avatar,
+          addr_city: user.addr_city,
+          addr_district: user.addr_district,
+          addr_street: user.addr_street,
+          addr_detail: user.addr_detail,
           createdAt: user.created_at,
           updatedAt: user.updated_at
         }

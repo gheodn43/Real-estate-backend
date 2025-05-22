@@ -283,6 +283,14 @@ router.post('/reset-password', authController.resetPassword);
  *                 type: string
  *               avatar:
  *                 type: string
+ *               addr_city:
+ *                 type: string
+ *               addr_district:
+ *                 type: string
+ *               addr_street:
+ *                 type: string
+ *               addr_detail:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Profile updated
