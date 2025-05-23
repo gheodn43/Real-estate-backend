@@ -2,10 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const passport = require('passport');
 const session = require('express-session');
-const cors = require('cors'); 
+const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
-const path = require('path');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 
@@ -13,20 +12,28 @@ require('./passport');
 
 const app = express();
 
-app.use(cors({
-  origin: ['https://app.propintel.id.vn', 'http://gateway:4000'],
-  credentials: true
-})); 
+app.use(
+  cors({
+    origin: [
+      'https://app.propintel.id.vn',
+      'http://gateway:4000',
+      'http://localhost:3000',
+    ],
+    credentials: true,
+  })
+);
 
 // Middleware xử lý JSON
 app.use(express.json());
 
 // Cấu hình session
-app.use(session({
-  secret: 'supersecret',
-  resave: false,
-  saveUninitialized: true
-}));
+app.use(
+  session({
+    secret: 'supersecret',
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
 // Khởi tạo passport
 app.use(passport.initialize());
