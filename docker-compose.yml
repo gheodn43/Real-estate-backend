@@ -1,3 +1,4 @@
+version: '3.8'
 
 services:
   gateway:
@@ -24,7 +25,19 @@ services:
       DATABASE_URL: "mysql://root:sum2530623306@real-estate-backend-mysql-1:3306/mysql_db"
       GOOGLE_CLIENT_ID: 893629871972-p0g15vvj9pu5a83fghp5jurk2m0cs8fb.apps.googleusercontent.com
       GOOGLE_CLIENT_SECRET: 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
-      GOOGLE_CALLBACK_URL: http://103.9.78.1:4001/auth/google/callback
+      GOOGLE_CALLBACK_URL: http://api.propintel.id.vn/auth/google/callback
+
+  property-service:
+    build:
+      context: ./services/property-service
+    image: property-service
+    ports:
+      - "4002:4002"
+    depends_on:
+      - mysql
+    environment:
+      PORT: 4002
+      DATABASE_URL: "mysql://root:sum2530623306@real-estate-backend-mysql-1:3306/properties_db"
 
   mysql:
     image: mysql:8

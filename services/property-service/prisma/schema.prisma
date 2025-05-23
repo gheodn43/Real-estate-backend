@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -7,13 +8,110 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Property {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  location    String
-  price       Float
-  type        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Properties {
+  id            Int                 @id @default(autoincrement())
+  title         String
+  description   String?             @db.Text
+  price         Decimal
+  addr_city     String
+  addr_district String
+  addr_street   String
+  addr_details  String?
+  latitude      Float?
+  longitude     Float?
+  user_id       Int
+  type_id       Int
+  status_id     Int
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @default(now()) @updatedAt
+  property_type Property_Types      @relation(fields: [type_id], references: [id])
+  property_status Property_Status   @relation(fields: [status_id], references: [id])
+  property_category_mappings Property_Category_Mappings[]
+  property_reviews Property_Reviews[]
+  property_documents Property_Documents[]
+
+  @@index([addr_city])
+  @@index([addr_district])
+  @@index([price])
+  @@index([latitude, longitude])
+}
+
+model Property_Types {
+  id            Int                 @id @default(autoincrement())
+  name          String              @unique
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @default(now()) @updatedAt
+  properties    Properties[]
+  property_categories Property_Categories[]
+}
+
+model Property_Categories {
+  id                Int                 @id @default(autoincrement())
+  type_id           Int
+  name              String              @unique
+  parent_category_id Int?               
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @default(now()) @updatedAt
+  property_type     Property_Types      @relation(fields: [type_id], references: [id])
+  parent_category   Property_Categories? @relation("ParentChild", fields: [parent_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  child_categories  Property_Categories[] @relation("ParentChild")
+  property_category_mappings Property_Category_Mappings[]
+  document_categories Document_Categories[]
+}
+
+model Property_Category_Mappings {
+  id            Int                 @id @default(autoincrement())
+  property_id   Int
+  category_id   Int
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @default(now()) @updatedAt
+  property      Properties          @relation(fields: [property_id], references: [id])
+  category      Property_Categories @relation(fields: [category_id], references: [id])
+
+  @@unique([property_id, category_id])
+}
+
+model Property_Reviews {
+  id            Int                 @id @default(autoincrement())
+  user_id       Int
+  property_id   Int
+  total_start   Int                 @default(0)
+  rating_count  Int                 @default(0)
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @default(now()) @updatedAt
+  property      Properties          @relation(fields: [property_id], references: [id])
+}
+
+model Property_Status {
+  id            Int                 @id @default(autoincrement())
+  name          String              @unique
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @default(now()) @updatedAt
+  properties    Properties[]
+}
+
+model Document_Categories {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  parent_category_id Int?               
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @default(now()) @updatedAt
+  parent_category   Property_Categories? @relation(fields: [parent_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  property_documents Property_Documents[]
+}
+
+model Property_Documents {
+  id                  Int                 @id @default(autoincrement())
+  property_id         Int
+  document_category_id Int
+  file_name           String
+  file_path           String
+  file_size           BigInt?
+  description         String?             @db.Text
+  uploaded_at         DateTime            @default(now())
+  updated_at          DateTime            @default(now()) @updatedAt
+  property            Properties          @relation(fields: [property_id], references: [id])
+  document_category   Document_Categories @relation(fields: [document_category_id], references: [id])
+
+  @@unique([property_id, file_name])
 }
