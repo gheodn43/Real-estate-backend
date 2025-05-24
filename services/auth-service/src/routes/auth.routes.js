@@ -2,15 +2,6 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const authenticateToken = require('../middleware/authenticateToken');
-const passport = require('passport');
-
-function generateToken(user) {
-  return jwt.sign({ 
-    id: user.id, 
-    email: user.email, 
-    name: user.name }, 
-    JWT_SECRET, { expiresIn: '1h' });
-}
 
 /**
  * @swagger
@@ -182,7 +173,11 @@ router.get('/profile-token', authenticateToken, authController.getProfileToken);
  *         description: Missing latitude or longitude
  */
 
-router.post('/update-location', authenticateToken, authController.updateLocation);
+router.post(
+  '/update-location',
+  authenticateToken,
+  authController.updateLocation
+);
 /**
  * @swagger
  * /auth/change-password:
@@ -299,5 +294,20 @@ router.post('/reset-password', authController.resetPassword);
  */
 router.put('/update-profile', authenticateToken, authController.updateProfile);
 
+/**
+ * @swagger
+ * /auth/check-user:
+ *   get:
+ *     summary: Check if user exists (auto detect userId)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Returns authorized, userId, and userRole
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/check-user', authenticateToken, authController.checkUserExists);
 
 module.exports = router;
