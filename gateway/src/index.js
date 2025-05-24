@@ -7,11 +7,16 @@ const app = express();
 
 app.get('/swagger.json', async (req, res) => {
   try {
-    const [auth] = await Promise.all([
+    const [auth, property] = await Promise.all([
       axios.get('http://auth-service:4001/swagger.json'),
       axios.get('http://property-service:4002/swagger.json'),
     ]);
-    const mergedSpec = mergeSpecs([auth.data]);
+    const mergedSpec = mergeSpecs([auth.data, property.data]);
+    mergedSpec.info = {
+      title: 'Merged API Documentation',
+      version: '1.0.0',
+      description: 'This is the merged Swagger documentation.',
+    };
     res.json(mergedSpec);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch specs' });
