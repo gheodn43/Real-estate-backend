@@ -4,7 +4,8 @@ services:
     ports:
       - "4000:4000"
     environment:
-      AUTH_SERVICE: http://auth-service:4001
+      PORT: 4000
+      SERVER_URL: http://api.proptintel.id.vn
     depends_on:
       - auth-service
     restart: always

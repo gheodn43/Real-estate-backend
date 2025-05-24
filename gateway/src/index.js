@@ -1,8 +1,10 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import axios from 'axios';
 import swaggerUi from 'swagger-ui-express';
 import { mergeSpecs } from './merge-swagger-utils.js';
 
+dotenv.config();
 const app = express();
 
 app.get('/swagger.json', async (req, res) => {
@@ -17,6 +19,12 @@ app.get('/swagger.json', async (req, res) => {
       version: '1.0.0',
       description: 'This is the merged Swagger documentation.',
     };
+    mergedSpec.servers = [
+      {
+        url: process.env.SERVER_URL,
+        description: 'prod server',
+      },
+    ];
     res.json(mergedSpec);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch specs' });

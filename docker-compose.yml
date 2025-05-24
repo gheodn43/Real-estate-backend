@@ -10,7 +10,8 @@ services:
     depends_on:
       - auth-service
     environment:
-      AUTH_SERVICE: http://auth-service:4001
+      PORT: 4000
+      SERVER_URL: http://api.proptintel.id.vn
 
   auth-service:
     build:
