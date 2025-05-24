@@ -1,8 +1,10 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import axios from 'axios';
 import swaggerUi from 'swagger-ui-express';
 import { mergeSpecs } from './merge-swagger-utils.js';
 
+dotenv.config();
 const app = express();
 
 app.get('/swagger.json', async (req, res) => {
@@ -19,7 +21,7 @@ app.get('/swagger.json', async (req, res) => {
     };
     mergedSpec.servers = [
       {
-        url: 'http://api.propintel.id.vn',
+        url: process.env.SERVER_URL,
         description: 'prod server',
       },
     ];
