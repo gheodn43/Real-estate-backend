@@ -1,209 +1,158 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+import authMiddleware from '../middleware/authMiddleware.js';
+import { createProperty } from '../services/property.service.js';
 
 /**
  * @swagger
- * /properties:
- *   get:
- *     summary: Retrieve a list of properties
+ * /prop:
+ *   post:
+ *     summary: Create a new property
+ *     description: Creates a new property in the system. Requires authentication via Bearer token.
  *     tags: [Properties]
- *     parameters:
- *       - in: query
- *         name: city
- *         schema:
- *           type: string
- *         description: Filter properties by city
- *       - in: query
- *         name: district
- *         schema:
- *           type: string
- *         description: Filter properties by district
- *       - in: query
- *         name: minPrice
- *         schema:
- *           type: number
- *         description: Minimum price filter
- *       - in: query
- *         name: maxPrice
- *         schema:
- *           type: number
- *         description: Maximum price filter
- *       - in: query
- *         name: typeId
- *         schema:
- *           type: integer
- *         description: Filter by property type ID
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number for pagination
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of properties per page
- *       - in: query
- *         name: sortBy
- *         schema:
- *           type: string
- *           enum: [price, created_at]
- *         description: Sort by price or creation date
- *       - in: query
- *         name: order
- *         schema:
- *           type: string
- *           enum: [asc, desc]
- *           default: desc
- *         description: Sort order (ascending or descending)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - price
+ *               - addr_city
+ *               - addr_district
+ *               - addr_street
+ *               - user_id
+ *               - type_id
+ *               - status_id
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Title of the property
+ *                 example: "Luxury Apartment"
+ *               description:
+ *                 type: string
+ *                 description: Description of the property
+ *                 example: "A beautiful apartment in the city center"
+ *               price:
+ *                 type: number
+ *                 description: Price of the property
+ *                 example: 1500000
+ *               addr_city:
+ *                 type: string
+ *                 description: City of the property
+ *                 example: "Ho Chi Minh"
+ *               addr_district:
+ *                 type: string
+ *                 description: District of the property
+ *                 example: "District 1"
+ *               addr_street:
+ *                 type: string
+ *                 description: Street of the property
+ *                 example: "Nguyen Hue"
+ *               addr_details:
+ *                 type: string
+ *                 description: Additional address details
+ *                 example: "Apartment 5B"
+ *               latitude:
+ *                 type: number
+ *                 description: Latitude of the property location
+ *                 example: 10.7769
+ *               longitude:
+ *                 type: number
+ *                 description: Longitude of the property location
+ *                 example: 106.7009
+ *               user_id:
+ *                 type: integer
+ *                 description: ID of the user who owns the property
+ *                 example: 1
+ *               type_id:
+ *                 type: integer
+ *                 description: ID of the property type
+ *                 example: 1
+ *               status_id:
+ *                 type: integer
+ *                 description: ID of the property status
+ *                 example: 1
  *     responses:
- *       200:
- *         description: A list of properties with related data
+ *       201:
+ *         description: Property created successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 data:
+ *                   type: object
+ *                   properties:
+ *                     property:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 1
+ *                         title:
+ *                           type: string
+ *                           example: "Luxury Apartment"
+ *                         price:
+ *                           type: number
+ *                           example: 1500000
+ *                 message:
+ *                   type: string
+ *                   example: "Property created"
+ *                 error:
  *                   type: array
  *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       title:
- *                         type: string
- *                       description:
- *                         type: string
- *                       price:
- *                         type: number
- *                       addr_city:
- *                         type: string
- *                       addr_district:
- *                         type: string
- *                       addr_street:
- *                         type: string
- *                       addr_details:
- *                         type: string
- *                       latitude:
- *                         type: number
- *                       longitude:
- *                         type: number
- *                       user_id:
- *                         type: integer
- *                       type_id:
- *                         type: integer
- *                       status_id:
- *                         type: integer
- *                       created_at:
- *                         type: string
- *                         format: date-time
- *                       updated_at:
- *                         type: string
- *                         format: date-time
- *                       property_type:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                           name:
- *                             type: string
- *                       property_status:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                           name:
- *                             type: string
- *                       property_category_mappings:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             category:
- *                               type: object
- *                               properties:
- *                                 id:
- *                                   type: integer
- *                                 name:
- *                                   type: string
- *                 total:
- *                   type: integer
- *                 page:
- *                   type: integer
- *                 limit:
- *                   type: integer
+ *                     type: string
+ *                   example: []
+ *       401:
+ *         description: Unauthorized - No token provided or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "No token provided"
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: null
+ *                 message:
+ *                   type: string
+ *                   example: ""
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Failed to create property"]
  */
-router.get('/properties', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
-    const {
-      city,
-      district,
-      minPrice,
-      maxPrice,
-      typeId,
-      page = 1,
-      limit = 10,
-      sortBy = 'created_at',
-      order = 'desc',
-    } = req.query;
-
-    const where = {};
-    if (city) where.addr_city = { contains: city, mode: 'insensitive' };
-    if (district)
-      where.addr_district = { contains: district, mode: 'insensitive' };
-    if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = parseFloat(minPrice);
-      if (maxPrice) where.price.lte = parseFloat(maxPrice);
-    }
-    if (typeId) where.type_id = parseInt(typeId);
-
-    const orderBy = {};
-    if (sortBy === 'price' || sortBy === 'created_at') {
-      orderBy[sortBy] = order === 'asc' ? 'asc' : 'desc';
-    } else {
-      orderBy.created_at = 'desc';
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
-
-    const [properties, total] = await Promise.all([
-      prisma.properties.findMany({
-        where,
-        include: {
-          property_type: { select: { id: true, name: true } },
-          property_status: { select: { id: true, name: true } },
-          property_category_mappings: {
-            include: {
-              category: { select: { id: true, name: true } },
-            },
-          },
-        },
-        orderBy,
-        skip,
-        take,
-      }),
-      prisma.properties.count({ where }),
-    ]);
-
-    res.json({
-      data: properties,
-      total,
-      page: parseInt(page),
-      limit: parseInt(limit),
+    const newProperty = req.body;
+    const property = await createProperty(newProperty);
+    res.status(201).json({
+      data: {
+        property: property,
+      },
+      message: 'Property created',
+      error: [],
     });
   } catch (error) {
-    console.error('Error fetching properties:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      data: null,
+      message: '',
+      error: ['Failed to create property'],
+    });
   }
 });
 
-module.exports = router;
+export default router;
