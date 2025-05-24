@@ -17,6 +17,7 @@ app.use(
     origin: [
       'https://app.propintel.id.vn',
       'http://gateway:4000',
+      'http://property-service:4002',
       'http://localhost:3000',
     ],
     credentials: true,

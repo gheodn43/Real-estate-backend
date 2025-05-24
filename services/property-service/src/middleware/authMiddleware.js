@@ -15,19 +15,19 @@ const authMiddleware = async (req, res, next) => {
     const response = await axios.get('http://auth-service:4001/auth/verify', {
       headers: { authorization: `Bearer ${token}` },
     });
-    if (response.data.authorized) {
-      req.user = {
-        userId: response.data.userId,
-        userRole: response.data.role,
-      };
-      next();
-    } else {
+    const { data, errors } = response.data;
+    if (!data?.authorized || errors?.length > 0) {
       return res.status(403).json({
         data: null,
         message: '',
-        error: ['Unauthorized'],
+        error: errors?.length > 0 ? errors.join(', ') : 'Unauthorized',
       });
     }
+    req.user = {
+      userId: data.userId,
+      userRole: data.userRole,
+    };
+    next();
   } catch (error) {
     return res.status(500).json({
       data: null,

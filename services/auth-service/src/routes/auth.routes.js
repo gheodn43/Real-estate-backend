@@ -296,7 +296,7 @@ router.put('/update-profile', authenticateToken, authController.updateProfile);
 
 /**
  * @swagger
- * /auth/check-user:
+ * /auth/verify:
  *   get:
  *     summary: Check if user exists (auto detect userId)
  *     tags: [Auth]
@@ -308,6 +308,6 @@ router.put('/update-profile', authenticateToken, authController.updateProfile);
  *       401:
  *         description: Unauthorized
  */
-router.get('/check-user', authenticateToken, authController.checkUserExists);
+router.get('/verify', authenticateToken, authController.checkUserExists);
 
 module.exports = router;
