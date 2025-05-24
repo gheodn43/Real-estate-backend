@@ -634,3 +634,39 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
+
+exports.checkUserExists = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: Number(userId) },
+    });
+    if (user) {
+      res.json({
+        data: {
+          authorized: true,
+          userId: user.id,
+          userRole: user.role_id,
+        },
+        message: 'User exists',
+        errors: [],
+      });
+    } else {
+      res.json({
+        data: {
+          authorized: false,
+          userId: null,
+          userRole: null,
+        },
+        message: 'User does not exist',
+        errors: [],
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
