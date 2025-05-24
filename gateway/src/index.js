@@ -17,6 +17,12 @@ app.get('/swagger.json', async (req, res) => {
       version: '1.0.0',
       description: 'This is the merged Swagger documentation.',
     };
+    mergedSpec.servers = [
+      {
+        url: 'http://api.propintel.id.vn',
+        description: 'prod server',
+      },
+    ];
     res.json(mergedSpec);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch specs' });
