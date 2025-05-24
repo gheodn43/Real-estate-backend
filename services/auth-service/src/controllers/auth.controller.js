@@ -636,7 +636,18 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.checkUserExists = async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user?.id || req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({
+      data: {
+        authorized: false,
+        userId: null,
+        userRole: null,
+      },
+      message: 'Unauthorized',
+      errors: ['No userId found in token or session'],
+    });
+  }
   try {
     const user = await prisma.user.findUnique({
       where: { id: Number(userId) },

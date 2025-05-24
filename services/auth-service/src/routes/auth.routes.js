@@ -296,20 +296,18 @@ router.put('/update-profile', authenticateToken, authController.updateProfile);
 
 /**
  * @swagger
- * /auth/check-user/{userId}:
+ * /auth/check-user:
  *   get:
- *     summary: Check if user exists by userId
+ *     summary: Check if user exists (auto detect userId)
  *     tags: [Auth]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: integer
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Returns true if user exists, false otherwise
+ *         description: Returns authorized, userId, and userRole
+ *       401:
+ *         description: Unauthorized
  */
-router.get('/check-user/:userId', authController.checkUserExists);
+router.get('/check-user', authenticateToken, authController.checkUserExists);
 
 module.exports = router;
