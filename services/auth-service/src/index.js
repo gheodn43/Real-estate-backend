@@ -23,20 +23,21 @@ app.use(
     credentials: true,
   })
 );
-
-// Middleware xử lý JSON
 app.use(express.json());
 
-// Cấu hình session
 app.use(
   session({
     secret: 'supersecret',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
+    cookie: {
+      secure: true,
+      sameSite: 'none',
+      domain: '.propintel.id.vn',
+    },
   })
 );
 
-// Khởi tạo passport
 app.use(passport.initialize());
 app.use(passport.session());
 app.use('/auth/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -44,12 +45,9 @@ app.get('/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
-// Routes
+
 app.use('/auth', authRoutes);
 app.use('/auth/admin', adminRoutes);
 
-// Khởi động server
 const PORT = process.env.PORT || 4001;
-app.listen(PORT, () => {
-  console.log(`Auth Service running on http://auth-service:${PORT}`);
-});
+app.listen(PORT);
