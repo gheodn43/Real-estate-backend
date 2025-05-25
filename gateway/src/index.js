@@ -27,7 +27,7 @@ app.get('/swagger.json', async (req, res) => {
     ];
     res.json(mergedSpec);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch specs' });
+    res.status(500).json({ error: 'Failed to fetch specs ' });
   }
 });
 
