@@ -30,11 +30,6 @@ app.use(
     secret: 'supersecret',
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      secure: true,
-      sameSite: 'none',
-      domain: '.propintel.id.vn',
-    },
   })
 );
 
