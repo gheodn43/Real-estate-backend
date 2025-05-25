@@ -22,7 +22,7 @@ app.get('/swagger.json', async (req, res) => {
     mergedSpec.servers = [
       {
         url: process.env.SERVER_URL,
-        description: 'Propintel server',
+        description: 'Propintel  server',
       },
     ];
     res.json(mergedSpec);
