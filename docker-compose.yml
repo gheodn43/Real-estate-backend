@@ -11,7 +11,7 @@ services:
       - auth-service
     environment:
       PORT: 4000
-      SERVER_URL: http://api.proptintel.id.vn
+      SERVER_URL: http://api.propintel.id.vn
 
   auth-service:
     build:

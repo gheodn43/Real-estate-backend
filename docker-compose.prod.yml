@@ -5,7 +5,7 @@ services:
       - "4000:4000"
     environment:
       PORT: 4000
-      SERVER_URL: http://api.proptintel.id.vn
+      SERVER_URL: http://api.propintel.id.vn
     depends_on:
       - auth-service
     restart: always
@@ -57,6 +57,13 @@ services:
       - ./certbot/www:/var/www/certbot
     depends_on:
       - gateway
+
+    certbot:
+      image: certbot/certbot
+      volumes:
+        - ./certbot/conf:/etc/letsencrypt
+        - ./certbot/www:/var/www/certbot
+      entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 1; done"
 
 volumes:
   mysql-data:
