@@ -10,7 +10,7 @@ const options = {
     },
     servers: [
       {
-        url: 'http://api.propintel.id.vn',
+        url: 'https://api.propintel.id.vn',
         description: 'Property server',
       },
     ],
