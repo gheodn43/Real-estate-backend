@@ -174,34 +174,6 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
-  if (
-    req.session.otp === otp &&
-    req.session.pendingUser &&
-    req.session.pendingUser.email === email
-  ) {
-    const { email, password, name } = req.session.pendingUser;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await prisma.user.create({
-      data: { email, password: hashedPassword, name, role_id: 1 },
-    });
-    delete req.session.otp;
-    delete req.session.pendingUser;
-    res.json({
-      data: null,
-      message: 'Đăng ký thành công!',
-      errors: [],
-    });
-  } else {
-    res.status(400).json({
-      data: null,
-      message: 'OTP không đúng hoặc đã hết hạn.',
-      errors: [],
-    });
-  }
-};
-
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -245,26 +217,6 @@ exports.login = async (req, res) => {
       data: null,
       message: 'Server error',
       errors: [err.message],
-    });
-  }
-};
-
-exports.verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
-  if (req.session.otp === otp && req.session.otpEmail === email) {
-    req.session.otpVerified = true;
-    delete req.session.otp;
-    delete req.session.otpEmail;
-    res.json({
-      data: null,
-      message: 'OTP verification successful!',
-      errors: [],
-    });
-  } else {
-    res.status(400).json({
-      data: null,
-      message: 'OTP is incorrect or has expired.',
-      errors: [],
     });
   }
 };
