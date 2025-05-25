@@ -58,12 +58,12 @@ services:
     depends_on:
       - gateway
 
-    certbot:
-      image: certbot/certbot
-      volumes:
-        - ./certbot/conf:/etc/letsencrypt
-        - ./certbot/www:/var/www/certbot
-      entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 1; done"
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 1; done"
 
 volumes:
   mysql-data:
