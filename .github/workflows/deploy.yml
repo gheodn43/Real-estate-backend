@@ -79,6 +79,23 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "mkdir -p ~/real-estate-backend/nginx"
           scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/real-estate-backend/
           scp -o StrictHostKeyChecking=no nginx/default.conf ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/real-estate-backend/nginx/default.conf
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "mkdir -p ~/real-estate-backend/nginx ~/real-estate-backend/certbot/conf ~/real-estate-backend/certbot/www"
+
+
+      - name: 🔐 Request SSL Certificate using Certbot (First Time Only)
+        if: steps.changed-services.outputs.services != ''
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ~/real-estate-backend
+            docker compose -f docker-compose.prod.yml up -d nginx certbot
+            sleep 5
+            docker compose -f docker-compose.prod.yml exec certbot certbot certonly --webroot \
+              --webroot-path=/var/www/certbot \
+              --email ngvatuan01052002@gmail.com \
+              --agree-tos \
+              --no-eff-email \
+              -d api.propintel.id.vn
+          EOF
 
       - name: 🚀 Deploy changed services on Remote Server
         if: steps.changed-services.outputs.services != ''
