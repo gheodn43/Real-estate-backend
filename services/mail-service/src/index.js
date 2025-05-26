@@ -12,7 +12,6 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      'https://app.propintel.id.vn',
       'http://gateway:4000',
       'http://auth-service:4001',
       'http://auth-service:4002',
