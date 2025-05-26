@@ -1,4 +1,9 @@
 import nodeMailer from 'nodemailer';
+import { fileURLToPath } from 'url';
+import path, { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const imagePath = path.resolve(__dirname, '../../resource/images/homihub.png');
 const transporter = nodeMailer.createTransport({
   service: 'gmail',
   auth: {
@@ -31,7 +36,7 @@ const sendRegisterOTP = async ({ email, otp }) => {
     attachments: [
       {
         filename: 'homihub.png',
-        path: './Real-estate-backend/image/homihub.png',
+        path: imagePath,
         cid: 'companylogo',
       },
     ],

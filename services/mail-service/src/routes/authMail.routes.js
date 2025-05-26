@@ -19,6 +19,7 @@ router.post('/verifyOTP', async (req, res) => {
       error: [],
     });
   } catch (error) {
+    console.error('Send mail error:', error);
     res.status(500).json({
       data: null,
       message: 'Failed to send OTP',
