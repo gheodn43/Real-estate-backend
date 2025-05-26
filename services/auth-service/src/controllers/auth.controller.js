@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
 const zxcvbn = require('zxcvbn');
-const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -11,19 +10,10 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function sendOTP(email, otp) {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'realestate14052025@gmail.com',
-      pass: 'lbjv ijzq wfzy jhxk',
-    },
-  });
-  await transporter.sendMail({
-    from: 'realestate14052025@gmail.com',
-    to: email,
-    subject: 'OTP Verification Code',
-    text: `Your OTP code is: ${otp}`,
+async function sendOTPViaMailService(email, otp) {
+  await axios.post('http://mail-service:4003/mail/auth/verifyOTP', {
+    email,
+    otp,
   });
 }
 
@@ -157,7 +147,7 @@ exports.register = async (req, res) => {
   }
   const otp = generateOTP();
   try {
-    await sendOTP(email, otp);
+    await sendOTPViaMailService(email, otp);
     req.session.otp = otp;
     req.session.pendingUser = { email, password, name };
     res.status(200).json({
@@ -238,8 +228,9 @@ exports.sendOtp = async (req, res) => {
   }
   const otp = generateOTP();
   try {
-    await sendOTP(email, otp);
+    await sendOTPViaMailService(email, otp);
     req.session.otp = otp;
+    req.session.otpCreatedAt = Date.now();
     req.session.pendingUser = { email, password, name };
     res
       .status(200)
@@ -248,7 +239,6 @@ exports.sendOtp = async (req, res) => {
     res.status(500).json({ message: 'Failed to send OTP email.' });
   }
 };
-
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
   if (
@@ -256,16 +246,28 @@ exports.verifyOtp = async (req, res) => {
     req.session.pendingUser &&
     req.session.pendingUser.email === email
   ) {
+    const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
+    const now = Date.now();
+    const otpAge = now - req.session.otpCreatedAt;
+    if (otpAge > OTP_EXPIRATION_TIME) {
+      delete req.session.otp;
+      delete req.session.otpCreatedAt;
+      delete req.session.pendingUser;
+      return res
+        .status(400)
+        .json({ message: 'OTP has expired. Please request a new one.' });
+    }
     const { email, password, name } = req.session.pendingUser;
     const hashedPassword = await bcrypt.hash(password, 10);
     await prisma.user.create({
       data: { email, password: hashedPassword, name, role_id: 1 },
     });
     delete req.session.otp;
+    delete req.session.otpCreatedAt;
     delete req.session.pendingUser;
     res.json({ message: 'Registration successful!' });
   } else {
-    res.status(400).json({ message: 'OTP is incorrect or has expired.' });
+    res.status(400).json({ message: 'OTP is incorrect.' });
   }
 };
 
@@ -479,7 +481,7 @@ exports.forgotPassword = async (req, res) => {
     });
   const otp = generateOTP();
   try {
-    await sendOTP(email, otp);
+    await sendOTPViaMailService(email, otp);
     req.session.resetOtp = otp;
     req.session.resetEmail = email;
     res.json({

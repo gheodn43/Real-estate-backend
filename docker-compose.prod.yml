@@ -35,6 +35,18 @@ services:
       DATABASE_URL: "mysql://root:sum2530623306@real-estate-backend-mysql-1:3306/properties_db"
     restart: always
 
+  mail-service:
+    image: gheo43dn/mail-service:latest
+    ports:
+      - "4003:4003"
+    environment:
+      PORT: 4003
+      MAIL_USER: realestate14052025@gmail.com
+      MAIL_PASS: lbjv ijzq wfzy jhxk
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 587
+    restart: always
+
   mysql:
     image: mysql:8
     ports:
