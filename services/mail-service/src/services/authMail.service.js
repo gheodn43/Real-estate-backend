@@ -67,7 +67,7 @@ const sendPasswordEmail = async ({ email, password }) => {
     attachments: [
       {
         filename: 'homihub.png',
-        path: './Real-estate-backend/image/homihub.png',
+        path: imagePath,
         cid: 'companylogo',
       },
     ],
