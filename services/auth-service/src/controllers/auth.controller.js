@@ -19,11 +19,34 @@ async function sendOTP(email, otp) {
       pass: 'lbjv ijzq wfzy jhxk',
     },
   });
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+      <div style="background: #27ae60; padding: 20px; text-align: center;">
+        <img src="cid:companylogo" alt="Company Logo" style="height: 90px; margin-bottom: 10px;" />
+        <h2 style="color: #fff; margin: 0;">Real Estate OTP Verification</h2>
+      </div>
+      <div style="padding: 30px 20px;">
+        <p style="font-size: 16px; color: #333;">Dear Customer,</p>
+        <p style="font-size: 16px; color: #333;">Your OTP code is:</p>
+        <div style="font-size: 32px; font-weight: bold; color: #27ae60; letter-spacing: 8px; margin: 20px 0;">${otp}</div>
+        <p style="font-size: 14px; color: #555;">This OTP is valid for 5 minutes. Please do not share it with anyone.</p>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 13px; color: #888; text-align: center;">Thank you for choosing Real Estate!<br/>Hotline: 0123 456 789</p>
+      </div>
+    </div>
+  `;
   await transporter.sendMail({
     from: 'realestate14052025@gmail.com',
     to: email,
     subject: 'OTP Verification Code',
-    text: `Your OTP code is: ${otp}`,
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: 'd:/Real-estate-backend/image/homihub.png',
+        cid: 'companylogo',
+      },
+    ],
   });
 }
 
@@ -240,6 +263,7 @@ exports.sendOtp = async (req, res) => {
   try {
     await sendOTP(email, otp);
     req.session.otp = otp;
+    req.session.otpCreatedAt = Date.now();
     req.session.pendingUser = { email, password, name };
     res
       .status(200)
@@ -251,6 +275,22 @@ exports.sendOtp = async (req, res) => {
 
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
+  const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
+  if (!req.session.otp || !req.session.otpCreatedAt) {
+    return res
+      .status(400)
+      .json({ message: 'OTP is incorrect or has expired.' });
+  }
+  const now = Date.now();
+  const otpAge = now - req.session.otpCreatedAt;
+  if (otpAge > OTP_EXPIRATION_TIME) {
+    delete req.session.otp;
+    delete req.session.otpCreatedAt;
+    delete req.session.pendingUser;
+    return res
+      .status(400)
+      .json({ message: 'OTP has expired. Please request a new one.' });
+  }
   if (
     req.session.otp === otp &&
     req.session.pendingUser &&
@@ -262,6 +302,7 @@ exports.verifyOtp = async (req, res) => {
       data: { email, password: hashedPassword, name, role_id: 1 },
     });
     delete req.session.otp;
+    delete req.session.otpCreatedAt;
     delete req.session.pendingUser;
     res.json({ message: 'Registration successful!' });
   } else {
