@@ -6,6 +6,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const axios = require('axios');
+const path = require('path');
+const imagePath = path.resolve(__dirname, '../../resource/images/homihub.png');
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -43,7 +45,7 @@ async function sendOTP(email, otp) {
     attachments: [
       {
         filename: 'homihub.png',
-        path: 'd:/Real-estate-backend/image/homihub.png',
+        path: imagePath,
         cid: 'companylogo',
       },
     ],
@@ -272,30 +274,24 @@ exports.sendOtp = async (req, res) => {
     res.status(500).json({ message: 'Failed to send OTP email.' });
   }
 };
-
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
-  const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
-  if (!req.session.otp || !req.session.otpCreatedAt) {
-    return res
-      .status(400)
-      .json({ message: 'OTP is incorrect or has expired.' });
-  }
-  const now = Date.now();
-  const otpAge = now - req.session.otpCreatedAt;
-  if (otpAge > OTP_EXPIRATION_TIME) {
-    delete req.session.otp;
-    delete req.session.otpCreatedAt;
-    delete req.session.pendingUser;
-    return res
-      .status(400)
-      .json({ message: 'OTP has expired. Please request a new one.' });
-  }
   if (
     req.session.otp === otp &&
     req.session.pendingUser &&
     req.session.pendingUser.email === email
   ) {
+    const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
+    const now = Date.now();
+    const otpAge = now - req.session.otpCreatedAt;
+    if (otpAge > OTP_EXPIRATION_TIME) {
+      delete req.session.otp;
+      delete req.session.otpCreatedAt;
+      delete req.session.pendingUser;
+      return res
+        .status(400)
+        .json({ message: 'OTP has expired. Please request a new one.' });
+    }
     const { email, password, name } = req.session.pendingUser;
     const hashedPassword = await bcrypt.hash(password, 10);
     await prisma.user.create({
@@ -306,7 +302,7 @@ exports.verifyOtp = async (req, res) => {
     delete req.session.pendingUser;
     res.json({ message: 'Registration successful!' });
   } else {
-    res.status(400).json({ message: 'OTP is incorrect or has expired.' });
+    res.status(400).json({ message: 'OTP is incorrect.' });
   }
 };
 
