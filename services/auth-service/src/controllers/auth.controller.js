@@ -10,10 +10,11 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function sendOTPViaMailService(email, otp) {
+async function sendOTPViaMailService(email, otp, name) {
   await axios.post('http://mail-service:4003/mail/auth/verifyOTP', {
     email,
     otp,
+    name,
   });
 }
 
@@ -147,7 +148,7 @@ exports.register = async (req, res) => {
   }
   const otp = generateOTP();
   try {
-    await sendOTPViaMailService(email, otp);
+    await sendOTPViaMailService(email, otp, name);
     req.session.otp = otp;
     req.session.pendingUser = { email, password, name };
     res.status(200).json({
@@ -228,7 +229,7 @@ exports.sendOtp = async (req, res) => {
   }
   const otp = generateOTP();
   try {
-    await sendOTPViaMailService(email, otp);
+    await sendOTPViaMailService(email, otp, name);
     req.session.otp = otp;
     req.session.otpCreatedAt = Date.now();
     req.session.pendingUser = { email, password, name };
@@ -481,7 +482,7 @@ exports.forgotPassword = async (req, res) => {
     });
   const otp = generateOTP();
   try {
-    await sendOTPViaMailService(email, otp);
+    await sendOTPViaMailService(email, otp, user.name);
     req.session.resetOtp = otp;
     req.session.resetEmail = email;
     res.json({

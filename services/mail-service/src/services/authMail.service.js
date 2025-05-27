@@ -19,8 +19,14 @@ const transporter = nodeMailer.createTransport({
   },
 });
 
-const sendRegisterOTP = async ({ email, otp }) => {
-  if (!email || !otp) throw new Error('Email and OTP are required');
+const sendRegisterOTP = async ({ email, otp, name }) => {
+  if (!email || !otp) {
+    return {
+      data: null,
+      message: 'Email and OTP are required',
+      errors: ['Email and OTP are required'],
+    };
+  }
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
       <div style="background: #27ae60; padding: 20px; text-align: center;">
@@ -28,7 +34,8 @@ const sendRegisterOTP = async ({ email, otp }) => {
         <h2 style="color: #fff; margin: 0;">Real Estate OTP Verification</h2>
       </div>
       <div style="padding: 30px 20px;">
-        <p style="font-size: 16px; color: #333;">Dear Customer,</p>
+      ${name ? `<p style='font-size: 16px; color: #333;'>Dear ${name},</p>` : ''}
+        <p style="font-size: 16px; color: #333;">Welcome to Real-Estate, please verify OTP code to become a member of Real-estate!</p>
         <p style="font-size: 16px; color: #333;">Your OTP code is:</p>
         <div style="font-size: 32px; font-weight: bold; color: #27ae60; letter-spacing: 8px; margin: 20px 0;">${otp}</div>
         <p style="font-size: 14px; color: #555;">This OTP is valid for 5 minutes. Please do not share it with anyone.</p>
@@ -52,8 +59,14 @@ const sendRegisterOTP = async ({ email, otp }) => {
   });
 };
 
-const sendPasswordEmail = async ({ email, password }) => {
-  if (!email || !password) throw new Error('Email and password are required');
+const sendPasswordEmail = async ({ email, password, name, roleName }) => {
+  if (!email || !password) {
+    return {
+      data: null,
+      message: 'Email and password are required',
+      errors: ['Email and password are required'],
+    };
+  }
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
       <div style="background: #27ae60; padding: 20px; text-align: center;">
@@ -61,7 +74,8 @@ const sendPasswordEmail = async ({ email, password }) => {
         <h2 style="color: #fff; margin: 0;">Real Estate Account Password</h2>
       </div>
       <div style="padding: 30px 20px;">
-        <p style="font-size: 16px; color: #333;">Dear Customer,</p>
+      ${name ? `<p style='font-size: 16px; color: #333;'>Dear ${name},</p>` : ''}
+        <p style="font-size: 16px; color: #333;">Welcome to Real-Estate, from today you officially become a member of Real-estate as role <b>${roleName}</b>.</p>
         <p style="font-size: 16px; color: #333;">Your account password is:</p>
         <div style="font-size: 32px; font-weight: bold; color: #27ae60; letter-spacing: 4px; margin: 20px 0;">${password}</div>
         <p style="font-size: 14px; color: #555;">Please change your password after logging in for security.</p>
