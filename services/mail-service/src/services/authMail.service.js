@@ -4,6 +4,13 @@ import path, { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const imagePath = path.resolve(__dirname, '../../resource/images/homihub.png');
+
+if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+  throw new Error(
+    'MAIL_USER and MAIL_PASS must be set in environment variables'
+  );
+}
+
 const transporter = nodeMailer.createTransport({
   service: 'gmail',
   auth: {
@@ -11,7 +18,9 @@ const transporter = nodeMailer.createTransport({
     pass: process.env.MAIL_PASS,
   },
 });
+
 const sendRegisterOTP = async ({ email, otp }) => {
+  if (!email || !otp) throw new Error('Email and OTP are required');
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
       <div style="background: #27ae60; padding: 20px; text-align: center;">
@@ -42,7 +51,9 @@ const sendRegisterOTP = async ({ email, otp }) => {
     ],
   });
 };
+
 const sendPasswordEmail = async ({ email, password }) => {
+  if (!email || !password) throw new Error('Email and password are required');
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
       <div style="background: #27ae60; padding: 20px; text-align: center;">
@@ -73,6 +84,7 @@ const sendPasswordEmail = async ({ email, password }) => {
     ],
   });
 };
+
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
