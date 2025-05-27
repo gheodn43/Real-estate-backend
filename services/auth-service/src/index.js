@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const passport = require('passport');
 const session = require('express-session');
-const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const authRoutes = require('./routes/auth.routes');
@@ -12,17 +11,6 @@ require('./passport');
 
 const app = express();
 
-app.use(
-  cors({
-    origin: [
-      'https://app.propintel.id.vn',
-      'http://gateway:4000',
-      'http://property-service:4002',
-      'http://localhost:3000',
-    ],
-    credentials: true,
-  })
-);
 app.use(express.json());
 
 app.use(
