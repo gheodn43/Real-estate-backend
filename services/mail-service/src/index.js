@@ -28,5 +28,8 @@ app.get('/swagger.json', (req, res) => {
 });
 
 app.use('/mail/auth', authMailRoutes);
+
 const PORT = process.env.PORT || 4003;
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Mail service listening on port ${PORT}`);
+});
