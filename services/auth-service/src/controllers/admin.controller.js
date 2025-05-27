@@ -24,7 +24,7 @@ exports.createUserByAdmin = async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: 'Not logged in.' });
   }
-  const admin = await prisma.User.findUnique({
+  const admin = await prisma.user.findUnique({
     where: { id: req.session.userId },
     include: { role: true },
   });
@@ -40,11 +40,11 @@ exports.createUserByAdmin = async (req, res) => {
   if (!email || !name || !roleName) {
     return res.status(400).json({ message: 'Missing information.' });
   }
-  const existingUser = await prisma.User.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     return res.status(400).json({ message: 'Email already exists.' });
   }
-  const role = await prisma.UserRole.findUnique({
+  const role = await prisma.userRole.findUnique({
     where: { rolename: roleName },
   });
   if (!role) {
@@ -55,7 +55,7 @@ exports.createUserByAdmin = async (req, res) => {
     finalPassword = generateRandomPassword();
   }
   const hashedPassword = await bcrypt.hash(finalPassword, 10);
-  const user = await prisma.User.create({
+  const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
@@ -64,7 +64,14 @@ exports.createUserByAdmin = async (req, res) => {
     },
   });
   if (!password) {
-    await sendPasswordViaMailService(email, finalPassword);
+    try {
+      await sendPasswordViaMailService(email, finalPassword);
+    } catch (err) {
+      return res.status(500).json({
+        message: 'User created, but failed to send password email.',
+        error: err.message,
+      });
+    }
   }
   res.json({ message: 'User created successfully.', user });
 };
