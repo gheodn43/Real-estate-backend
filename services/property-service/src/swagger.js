@@ -6,7 +6,7 @@ const options = {
     info: {
       title: 'Property Service API',
       version: '1.0.0',
-      description: 'API documentation for the Property Service',
+      description: 'APIs documentation for the Property Service',
     },
     servers: [
       {
