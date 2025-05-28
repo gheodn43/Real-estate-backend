@@ -33,12 +33,14 @@ router.get('/google/callback', ...authController.googleCallback);
  *   post:
  *     summary: Logout user
  *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Logout successful
  */
 
-router.post('/logout', authController.logout);
+router.post('/logout', authenticateToken, authController.logout);
 /**
  * @swagger
  * /auth/register:
@@ -123,6 +125,8 @@ router.post('/verify-otp', authController.verifyOtp);
  *   get:
  *     summary: Get user profile (session)
  *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User profile
@@ -130,7 +134,7 @@ router.post('/verify-otp', authController.verifyOtp);
  *         description: Not logged in
  */
 
-router.get('/profile', authController.getProfile);
+router.get('/profile', authenticateToken, authController.getProfile);
 /**
  * @swagger
  * /auth/profile-token:
@@ -184,6 +188,8 @@ router.post(
  *   put:
  *     summary: Change user password
  *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -204,7 +210,11 @@ router.post(
  *         description: Not logged in
  */
 
-router.put('/change-password', authController.changePassword);
+router.put(
+  '/change-password',
+  authenticateToken,
+  authController.changePassword
+);
 /**
  * @swagger
  * /auth/forgot-password:
@@ -285,6 +295,8 @@ router.post('/reset-password', authController.resetPassword);
  *               addr_street:
  *                 type: string
  *               addr_detail:
+ *                 type: string
+ *               number_phone:
  *                 type: string
  *     responses:
  *       200:

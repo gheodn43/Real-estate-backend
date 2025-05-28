@@ -35,7 +35,12 @@ exports.googleCallback = [
     try {
       const expiresIn = 3600;
       const token = jwt.sign(
-        { id: req.user.id, email: req.user.email, name: req.user.name },
+        {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name,
+          roleId: req.user.roleId,
+        },
         JWT_SECRET,
         { expiresIn }
       );
@@ -194,7 +199,7 @@ exports.login = async (req, res) => {
     req.session.userId = user.id;
     const expiresIn = 604800;
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user.id, email: user.email, name: user.name, roleId: user.role_id },
       JWT_SECRET,
       { expiresIn }
     );
@@ -242,6 +247,11 @@ exports.sendOtp = async (req, res) => {
 };
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
+  const handleDeleteSession = async () => {
+    delete req.session.otp;
+    delete req.session.otpCreatedAt;
+    delete req.session.pendingUser;
+  };
   if (
     req.session.otp === otp &&
     req.session.pendingUser &&
@@ -251,9 +261,7 @@ exports.verifyOtp = async (req, res) => {
     const now = Date.now();
     const otpAge = now - req.session.otpCreatedAt;
     if (otpAge > OTP_EXPIRATION_TIME) {
-      delete req.session.otp;
-      delete req.session.otpCreatedAt;
-      delete req.session.pendingUser;
+      await handleDeleteSession();
       return res
         .status(400)
         .json({ message: 'OTP has expired. Please request a new one.' });
@@ -263,9 +271,7 @@ exports.verifyOtp = async (req, res) => {
     await prisma.user.create({
       data: { email, password: hashedPassword, name, role_id: 1 },
     });
-    delete req.session.otp;
-    delete req.session.otpCreatedAt;
-    delete req.session.pendingUser;
+    await handleDeleteSession();
     res.json({ message: 'Registration successful!' });
   } else {
     res.status(400).json({ message: 'OTP is incorrect.' });
@@ -282,7 +288,7 @@ exports.getProfile = async (req, res) => {
   }
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.session.userId },
+      where: { id: req.user.id },
       include: { role: true },
     });
     if (!user)
@@ -305,6 +311,7 @@ exports.getProfile = async (req, res) => {
           addr_district: user.addr_district,
           addr_street: user.addr_street,
           addr_detail: user.addr_detail,
+          number_phone: user.number_phone,
           createdAt: user.created_at,
           updatedAt: user.updated_at,
         },
@@ -430,7 +437,7 @@ exports.changePassword = async (req, res) => {
     });
   }
   const user = await prisma.user.findUnique({
-    where: { id: req.session.userId },
+    where: { id: req.user.id },
   });
   if (!user)
     return res.status(404).json({
@@ -502,7 +509,12 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
+  const handleDeleteSession = async () => {
+    delete req.session.resetOtp;
+    delete req.session.resetEmail;
+  };
   if (!email || !otp || !newPassword) {
+    await handleDeleteSession();
     return res.status(400).json({
       data: null,
       message: 'Missing information.',
@@ -510,12 +522,14 @@ exports.resetPassword = async (req, res) => {
     });
   }
   if (req.session.resetOtp !== otp || req.session.resetEmail !== email) {
+    await handleDeleteSession();
     return res.status(400).json({
       data: null,
       message: 'OTP is incorrect or has expired.',
       errors: [],
     });
   }
+  await handleDeleteSession();
   const passwordStrength = zxcvbn(newPassword);
   if (passwordStrength.score < 3) {
     return res.status(400).json({
@@ -526,8 +540,6 @@ exports.resetPassword = async (req, res) => {
   }
   const hashed = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({ where: { email }, data: { password: hashed } });
-  delete req.session.resetOtp;
-  delete req.session.resetEmail;
   res.json({ message: 'Password reset successful.' });
 };
 
@@ -547,10 +559,11 @@ exports.updateProfile = async (req, res) => {
     addr_district,
     addr_street,
     addr_detail,
+    number_phone,
   } = req.body;
   try {
     const user = await prisma.user.update({
-      where: { id: req.session.userId },
+      where: { id: req.user.id },
       data: {
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
         gender,
@@ -559,6 +572,7 @@ exports.updateProfile = async (req, res) => {
         addr_district,
         addr_street,
         addr_detail,
+        number_phone,
       },
     });
     res.json({
@@ -574,6 +588,7 @@ exports.updateProfile = async (req, res) => {
           addr_district: user.addr_district,
           addr_street: user.addr_street,
           addr_detail: user.addr_detail,
+          number_phone: user.number_phone,
           createdAt: user.created_at,
           updatedAt: user.updated_at,
         },

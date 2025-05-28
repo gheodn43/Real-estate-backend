@@ -23,34 +23,31 @@ async function sendPasswordViaMailService(email, password, name, roleName) {
 }
 
 exports.createUserByAdmin = async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ message: 'Not logged in.' });
-  }
-  const admin = await prisma.user.findUnique({
-    where: { id: req.session.userId },
-    include: { role: true },
-  });
-  if (
-    !admin ||
-    (admin.role && admin.role.rolename !== 'Admin' && admin.role_id !== 4)
-  ) {
-    return res
-      .status(403)
-      .json({ message: 'Permission denied. Only Admin can create users.' });
-  }
   const { email, password, name, roleName } = req.body;
   if (!email || !name || !roleName) {
-    return res.status(400).json({ message: 'Missing information.' });
+    return res.status(400).json({
+      data: null,
+      message: 'Missing information.',
+      errors: [],
+    });
   }
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    return res.status(400).json({ message: 'Email already exists.' });
+    return res.status(400).json({
+      data: null,
+      message: 'Email already exists.',
+      errors: [],
+    });
   }
   const role = await prisma.userRole.findUnique({
     where: { rolename: roleName },
   });
   if (!role) {
-    return res.status(400).json({ message: 'Role does not exist.' });
+    return res.status(400).json({
+      data: null,
+      message: 'Role does not exist.',
+      errors: [],
+    });
   }
   let finalPassword = password;
   if (!finalPassword) {
@@ -70,6 +67,7 @@ exports.createUserByAdmin = async (req, res) => {
       await sendPasswordViaMailService(email, finalPassword, name, roleName);
     } catch (err) {
       return res.status(500).json({
+        data: null,
         message: 'User created, but failed to send password email.',
         error: err.message,
       });

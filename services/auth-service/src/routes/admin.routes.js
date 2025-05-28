@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const authenticateToken = require('../middleware/authenticateToken');
 const adminController = require('../controllers/admin.controller');
-
+const roleGuard = require('../middleware/roleGuard');
 
 /**
  * @swagger
@@ -10,6 +11,8 @@ const adminController = require('../controllers/admin.controller');
  *     summary: Admin tạo tài khoản Broker hoặc Journalist
  *     tags:
  *       - Admin
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -19,13 +22,11 @@ const adminController = require('../controllers/admin.controller');
  *             properties:
  *               email:
  *                 type: string
- *               password:
- *                 type: string
  *               name:
  *                 type: string
  *               roleName:
  *                 type: string
- *                 enum: [Broker, Journalist]
+ *                 enum: [Agent, Journalist]
  *     responses:
  *       200:
  *         description: User created successfully
@@ -36,6 +37,11 @@ const adminController = require('../controllers/admin.controller');
  *       403:
  *         description: Permission denied
  */
-router.post('/create-user', adminController.createUserByAdmin);
+router.post(
+  '/create-user',
+  authenticateToken,
+  roleGuard([roleGuard.RoleName.Admin]),
+  adminController.createUserByAdmin
+);
 
 module.exports = router;
