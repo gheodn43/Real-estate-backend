@@ -33,12 +33,14 @@ router.get('/google/callback', ...authController.googleCallback);
  *   post:
  *     summary: Logout user
  *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Logout successful
  */
 
-router.post('/logout', authController.logout);
+router.post('/logout', authenticateToken, authController.logout);
 /**
  * @swagger
  * /auth/register:
@@ -123,6 +125,8 @@ router.post('/verify-otp', authController.verifyOtp);
  *   get:
  *     summary: Get user profile (session)
  *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User profile
@@ -184,6 +188,8 @@ router.post(
  *   put:
  *     summary: Change user password
  *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
