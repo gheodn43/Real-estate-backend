@@ -24,6 +24,7 @@ model User {
   addr_district String?
   addr_street  String?
   addr_detail  String?
+  number_phone String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 

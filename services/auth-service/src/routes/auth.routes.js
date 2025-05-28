@@ -130,7 +130,7 @@ router.post('/verify-otp', authController.verifyOtp);
  *         description: Not logged in
  */
 
-router.get('/profile', authController.getProfile);
+router.get('/profile', authenticateToken, authController.getProfile);
 /**
  * @swagger
  * /auth/profile-token:
@@ -204,7 +204,11 @@ router.post(
  *         description: Not logged in
  */
 
-router.put('/change-password', authController.changePassword);
+router.put(
+  '/change-password',
+  authenticateToken,
+  authController.changePassword
+);
 /**
  * @swagger
  * /auth/forgot-password:
@@ -285,6 +289,8 @@ router.post('/reset-password', authController.resetPassword);
  *               addr_street:
  *                 type: string
  *               addr_detail:
+ *                 type: string
+ *               number_phone:
  *                 type: string
  *     responses:
  *       200:

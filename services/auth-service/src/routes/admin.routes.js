@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const authenticateToken = require('../middleware/authenticateToken');
 const adminController = require('../controllers/admin.controller');
-
 
 /**
  * @swagger
@@ -36,6 +36,10 @@ const adminController = require('../controllers/admin.controller');
  *       403:
  *         description: Permission denied
  */
-router.post('/create-user', adminController.createUserByAdmin);
+router.post(
+  '/create-user',
+  authenticateToken,
+  adminController.createUserByAdmin
+);
 
 module.exports = router;
