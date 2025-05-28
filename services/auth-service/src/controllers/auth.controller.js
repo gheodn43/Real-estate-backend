@@ -279,13 +279,6 @@ exports.verifyOtp = async (req, res) => {
 };
 
 exports.getProfile = async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({
-      data: null,
-      message: 'Not logged in',
-      errors: [],
-    });
-  }
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
@@ -421,13 +414,6 @@ exports.updateLocation = async (req, res) => {
 };
 
 exports.changePassword = async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({
-      data: null,
-      message: 'You need to login.',
-      errors: [],
-    });
-  }
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword || !newPassword) {
     return res.status(400).json({
