@@ -8,110 +8,163 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Properties {
-  id            Int                 @id @default(autoincrement())
-  title         String
-  description   String?             @db.Text
-  price         Decimal
+model properties {
+  id                  Int                  @id @default(autoincrement())
+  sender_id           Int
+  title               String
+  description         String?
+  before_price_tag    String
+  price               Decimal              @db.Decimal(10, 2)
+  after_price_tag     String
+  assets_id           Int
+  needs_id            Int
+  stage               Stage
+  request_status      RequestStatus?
+  requestpost_status  RequestPostStatus?
+  created_at          DateTime             @default(now())
+  updated_at          DateTime             @default(now())
+
+  assets              property_categories  @relation("AssetCategory", fields: [assets_id], references: [id])
+  needs               property_categories  @relation("NeedCategory", fields: [needs_id], references: [id])
+
+  locations           property_request_location?
+  media               property_media[]
+  details             property_detail[]
+  amenities           property_amenities[]
+}
+
+model property_request_location {
+  id            Int       @id @default(autoincrement())
+  property_id   Int       @unique
   addr_city     String
   addr_district String
   addr_street   String
   addr_details  String?
   latitude      Float?
   longitude     Float?
-  user_id       Int
-  type_id       Int
-  status_id     Int
-  created_at    DateTime            @default(now())
-  updated_at    DateTime            @default(now()) @updatedAt
-  property_type Property_Types      @relation(fields: [type_id], references: [id])
-  property_status Property_Status   @relation(fields: [status_id], references: [id])
-  property_category_mappings Property_Category_Mappings[]
-  property_reviews Property_Reviews[]
-  property_documents Property_Documents[]
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now())
 
-  @@index([addr_city])
-  @@index([addr_district])
-  @@index([price])
-  @@index([latitude, longitude])
+  property      properties @relation(fields: [property_id], references: [id])
 }
 
-model Property_Types {
-  id            Int                 @id @default(autoincrement())
-  name          String              @unique
-  created_at    DateTime            @default(now())
-  updated_at    DateTime            @default(now()) @updatedAt
-  properties    Properties[]
-  property_categories Property_Categories[]
+model property_media {
+  id          Int       @id @default(autoincrement())
+  name        String?
+  property_id Int
+  type        MediaType
+  url         String
+  order       Int?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now())
+
+  property    properties @relation(fields: [property_id], references: [id])
 }
 
-model Property_Categories {
-  id                Int                 @id @default(autoincrement())
-  type_id           Int
-  name              String              @unique
-  parent_category_id Int?               
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @default(now()) @updatedAt
-  property_type     Property_Types      @relation(fields: [type_id], references: [id])
-  parent_category   Property_Categories? @relation("ParentChild", fields: [parent_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  child_categories  Property_Categories[] @relation("ParentChild")
-  property_category_mappings Property_Category_Mappings[]
-  document_categories Document_Categories[]
+model property_categories {
+  id                  Int                        @id @default(autoincrement())
+  type                CategoryType
+  parent_category_id  Int?
+  name                String?
+  is_active           Boolean?
+  created_at          DateTime                   @default(now())
+  updated_at          DateTime                   @default(now())
+
+  parent              property_categories?       @relation("CategoryParent", fields: [parent_category_id], references: [id])
+  children            property_categories[]      @relation("CategoryParent")
+
+  asAsset             properties[]               @relation("AssetCategory")
+  asNeed              properties[]               @relation("NeedCategory")
+  details             property_category_detail[]
+  propertyDetails     property_detail[]
 }
 
-model Property_Category_Mappings {
-  id            Int                 @id @default(autoincrement())
-  property_id   Int
-  category_id   Int
-  created_at    DateTime            @default(now())
-  updated_at    DateTime            @default(now()) @updatedAt
-  property      Properties          @relation(fields: [property_id], references: [id])
-  category      Property_Categories @relation(fields: [category_id], references: [id])
+model property_category_detail {
+  id                Int               @id @default(autoincrement())
+  category_id       Int
+  field_name        String
+  field_type        FieldType
+  field_placeholder String?
+  option            Json?
+  is_active         Boolean?
+  is_require        Boolean?
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @default(now())
 
-  @@unique([property_id, category_id])
+  category          property_categories @relation(fields: [category_id], references: [id])
 }
 
-model Property_Reviews {
-  id            Int                 @id @default(autoincrement())
-  user_id       Int
-  property_id   Int
-  total_start   Int                 @default(0)
-  rating_count  Int                 @default(0)
-  created_at    DateTime            @default(now())
-  updated_at    DateTime            @default(now()) @updatedAt
-  property      Properties          @relation(fields: [property_id], references: [id])
+model property_detail {
+  id           Int       @id @default(autoincrement())
+  property_id  Int
+  category_id  Int?
+  value        String
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @default(now())
+
+  property     properties           @relation(fields: [property_id], references: [id])
+  category     property_categories? @relation(fields: [category_id], references: [id])
 }
 
-model Property_Status {
-  id            Int                 @id @default(autoincrement())
-  name          String              @unique
-  created_at    DateTime            @default(now())
-  updated_at    DateTime            @default(now()) @updatedAt
-  properties    Properties[]
+model amenities {
+  id                 Int          @id @default(autoincrement())
+  parent_amentity_id Int?
+  name               String
+  is_active          Boolean?
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @default(now())
+
+  parent             amenities?   @relation("AmenityParent", fields: [parent_amentity_id], references: [id])
+  children           amenities[]  @relation("AmenityParent")
+  propertyAmenities  property_amenities[]
 }
 
-model Document_Categories {
-  id                Int                 @id @default(autoincrement())
-  name              String
-  parent_category_id Int?               
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @default(now()) @updatedAt
-  parent_category   Property_Categories? @relation(fields: [parent_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  property_documents Property_Documents[]
+model property_amenities {
+  id           Int       @id @default(autoincrement())
+  property_id  Int
+  amenity_id   Int
+
+  property     properties @relation(fields: [property_id], references: [id])
+  amenity      amenities  @relation(fields: [amenity_id], references: [id])
 }
 
-model Property_Documents {
-  id                  Int                 @id @default(autoincrement())
-  property_id         Int
-  document_category_id Int
-  file_name           String
-  file_path           String
-  file_size           BigInt?
-  description         String?             @db.Text
-  uploaded_at         DateTime            @default(now())
-  updated_at          DateTime            @default(now()) @updatedAt
-  property            Properties          @relation(fields: [property_id], references: [id])
-  document_category   Document_Categories @relation(fields: [document_category_id], references: [id])
+enum Stage {
+  request
+  post
+}
 
-  @@unique([property_id, file_name])
+enum RequestStatus {
+  pending
+  negotiating
+  published
+  rejected
+}
+
+enum RequestPostStatus {
+  draft
+  pending_approval
+  rejected
+  published
+  expired
+  hidden
+}
+
+enum MediaType {
+  image
+  vr
+  youtube
+  legal_document
+}
+
+enum CategoryType {
+  assets
+  needs
+}
+
+enum FieldType {
+  number
+  text
+  select
+  date
+  boolean
 }
