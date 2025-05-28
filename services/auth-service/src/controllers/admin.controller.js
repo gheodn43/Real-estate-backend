@@ -13,10 +13,12 @@ function generateRandomPassword(length = 10) {
   return password;
 }
 
-async function sendPasswordViaMailService(email, password) {
+async function sendPasswordViaMailService(email, password, name, roleName) {
   await axios.post('http://mail-service:4003/mail/auth/sendPassword', {
     email,
     password,
+    name,
+    roleName,
   });
 }
 
@@ -65,7 +67,7 @@ exports.createUserByAdmin = async (req, res) => {
   });
   if (!password) {
     try {
-      await sendPasswordViaMailService(email, finalPassword);
+      await sendPasswordViaMailService(email, finalPassword, name, roleName);
     } catch (err) {
       return res.status(500).json({
         message: 'User created, but failed to send password email.',
