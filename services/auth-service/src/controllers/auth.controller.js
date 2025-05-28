@@ -530,13 +530,6 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.updateProfile = async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({
-      data: null,
-      message: 'Not logged in',
-      errors: [],
-    });
-  }
   const {
     dateOfBirth,
     gender,
