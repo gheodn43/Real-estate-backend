@@ -27,7 +27,7 @@ exports.createUserByAdmin = async (req, res) => {
     return res.status(401).json({ message: 'Not logged in.' });
   }
   const admin = await prisma.user.findUnique({
-    where: { id: req.session.userId },
+    where: { id: req.user.id },
     include: { role: true },
   });
   if (
