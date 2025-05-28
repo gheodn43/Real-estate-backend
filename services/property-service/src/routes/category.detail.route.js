@@ -25,6 +25,7 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                 type: string
  *               fieldType:
  *                 type: string
+ *                 enum: [number, text, select, date, boolean]
  *               fieldPlaceholder:
  *                 type: string
  *               option:
