@@ -2,7 +2,9 @@ import dotenv from 'dotenv';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
+
 import categoryRoutes from './routes/category.routes.js';
+import categoryDetailRoutes from './routes/category.detail.route.js';
 
 dotenv.config();
 
@@ -16,5 +18,6 @@ app.get('/swagger.json', (req, res) => {
 });
 
 app.use('/prop/category', categoryRoutes);
+app.use('/prop/category/detail', categoryDetailRoutes);
 const PORT = process.env.PORT || 4002;
 app.listen(PORT);

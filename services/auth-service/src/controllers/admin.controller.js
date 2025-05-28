@@ -23,21 +23,6 @@ async function sendPasswordViaMailService(email, password, name, roleName) {
 }
 
 exports.createUserByAdmin = async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ message: 'Not logged in.' });
-  }
-  const admin = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    include: { role: true },
-  });
-  if (
-    !admin ||
-    (admin.role && admin.role.rolename !== 'Admin' && admin.role_id !== 4)
-  ) {
-    return res
-      .status(403)
-      .json({ message: 'Permission denied. Only Admin can create users.' });
-  }
   const { email, password, name, roleName } = req.body;
   if (!email || !name || !roleName) {
     return res.status(400).json({ message: 'Missing information.' });

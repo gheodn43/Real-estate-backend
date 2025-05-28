@@ -35,7 +35,12 @@ exports.googleCallback = [
     try {
       const expiresIn = 3600;
       const token = jwt.sign(
-        { id: req.user.id, email: req.user.email, name: req.user.name },
+        {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name,
+          roleId: req.user.roleId,
+        },
         JWT_SECRET,
         { expiresIn }
       );
@@ -194,7 +199,7 @@ exports.login = async (req, res) => {
     req.session.userId = user.id;
     const expiresIn = 604800;
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user.id, email: user.email, name: user.name, roleId: user.role_id },
       JWT_SECRET,
       { expiresIn }
     );
