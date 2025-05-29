@@ -126,11 +126,9 @@ router.post(
 /**
  * @swagger
  * /prop/category/detail/{id}:
- *   put:
+ *   get:
  *     summary: Cập nhật
  *     tags: [CategoryDetail]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -204,11 +202,92 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/dee/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const categoryDetail =
       await categoryDetailService.getCategoryDetailById(id);
+    if (!categoryDetail) {
+      return res.status(404).json({
+        data: null,
+        message: '',
+        error: ['Category detail not found'],
+      });
+    }
+    return res.status(200).json({
+      data: { categoryDetail: categoryDetail },
+      message: 'Category detail found successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /prop/category/detail/by-category-id/{id}:
+ *   get:
+ *     summary: Lấy danh sách
+ *     tags: [CategoryDetail]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Category detail found successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetail:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         categoryId:
+ *                           type: integer
+ *                         fieldName:
+ *                           type: string
+ *                         fieldType:
+ *                           type: string
+ *                         fieldPlaceholder:
+ *                           type: string
+ *                         option:
+ *                           type: string
+ *                         isActive:
+ *                           type: boolean
+ *                         isRequire:
+ *                           type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Category detail not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/by-category-id/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const categoryDetail =
+      await categoryDetailService.getCategoryDetailByCategoryId(id);
     if (!categoryDetail) {
       return res.status(404).json({
         data: null,

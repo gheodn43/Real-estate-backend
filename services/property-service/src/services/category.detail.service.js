@@ -32,6 +32,15 @@ const getCategoryDetailById = async (id) => {
   return categoryDetail;
 };
 
+const getCategoryDetailByCategoryId = async (categoryId) => {
+  const categoryDetail = await prisma.property_category_detail.findMany({
+    where: {
+      category_id: categoryId,
+    },
+  });
+  return categoryDetail;
+};
+
 const updateCategoryDetail = async (
   id,
   {
@@ -74,4 +83,5 @@ export default {
   getCategoryDetailById,
   updateCategoryDetail,
   deleteCategoryDetail,
+  getCategoryDetailByCategoryId,
 };
