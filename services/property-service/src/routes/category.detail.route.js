@@ -202,7 +202,7 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get('/dee/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const categoryDetail =
