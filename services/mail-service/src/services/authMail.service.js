@@ -99,7 +99,48 @@ const sendPasswordEmail = async ({ email, password, name, roleName }) => {
   });
 };
 
+const sendResetPasswordOTP = async ({ email, otp, name }) => {
+  if (!email || !otp) {
+    return {
+      data: null,
+      message: 'Email and OTP are required',
+      errors: ['Email and OTP are required'],
+    };
+  }
+  const htmlContent = `
+  <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+    <div style="background: #27ae60; padding: 20px; text-align: center;">
+      <img src="cid:companylogo" alt="Company Logo" style="height: 90px; margin-bottom: 10px;" />
+      <h2 style="color: #fff; margin: 0;">Reset Password OTP</h2>
+    </div>
+    <div style="padding: 30px 20px;">
+    ${name ? `<p style='font-size: 16px; color: #333;'>Dear ${name},</p>` : ''}
+      <p style="font-size: 16px; color: #333;">You have requested to reset your password for your Real Estate account.</p>
+      <p style="font-size: 16px; color: #333;">Your OTP code for reset password is:</p>
+      <div style="font-size: 32px; font-weight: bold; color: #27ae60; letter-spacing: 8px; margin: 20px 0;">${otp}</div>
+      <p style="font-size: 14px; color: #555;">This OTP is valid for 5 minutes. Please do not share it with anyone.</p>
+      <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+      <p style="font-size: 13px; color: #888; text-align: center;">If you did not request a password reset, please ignore this email.<br/>Thank you for choosing Real Estate!<br/>Hotline: 0123 456 789</p>
+    </div>
+  </div>
+`;
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: email,
+    subject: 'Reset Password OTP',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
+  sendResetPasswordOTP,
 };

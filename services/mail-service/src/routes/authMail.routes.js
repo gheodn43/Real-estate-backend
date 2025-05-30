@@ -56,4 +56,30 @@ router.post('/sendPassword', async (req, res) => {
     });
   }
 });
+
+router.post('/resetPasswordOTP', async (req, res) => {
+  const { email, otp, name } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({
+      data: null,
+      message: '',
+      error: ['Email and OTP are required'],
+    });
+  }
+  try {
+    await authMailService.sendResetPasswordOTP({ email, otp, name });
+    res.status(200).json({
+      data: null,
+      message: 'OTP sent successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Failed to send OTP',
+      error: [error.message],
+    });
+  }
+});
+
 export default router;

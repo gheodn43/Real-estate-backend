@@ -8,7 +8,7 @@ import categoryDetailService from '../services/category.detail.service.js';
  * @swagger
  * /prop/category/detail:
  *   post:
- *     summary: Tạo mới
+ *     summary: Tạo mới một trường chi tiết cho caterogy [ADMIN]
  *     tags: [CategoryDetail]
  *     security:
  *       - bearerAuth: []
@@ -111,6 +111,404 @@ router.post(
       return res.status(201).json({
         data: { categoryDetail: categoryDetail },
         message: 'Category detail created successfully',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /prop/category/detail/{id}:
+ *   get:
+ *     summary: Lấy thông tin của một trường chi tiết theo id [ALL ROLES]
+ *     tags: [CategoryDetail]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               categoryId:
+ *                 type: integer
+ *               fieldName:
+ *                 type: string
+ *               fieldType:
+ *                 type: string
+ *                 enum: [number, text, select, date, boolean]
+ *               fieldPlaceholder:
+ *                 type: string
+ *               option:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               isRequire:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Category detail updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetail:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         categoryId:
+ *                           type: integer
+ *                         fieldName:
+ *                           type: string
+ *                         fieldType:
+ *                           type: string
+ *                         fieldPlaceholder:
+ *                           type: string
+ *                         option:
+ *                           type: string
+ *                         isActive:
+ *                           type: boolean
+ *                         isRequire:
+ *                           type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Category detail not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const categoryDetail =
+      await categoryDetailService.getCategoryDetailById(id);
+    if (!categoryDetail) {
+      return res.status(404).json({
+        data: null,
+        message: '',
+        error: ['Category detail not found'],
+      });
+    }
+    return res.status(200).json({
+      data: { categoryDetail: categoryDetail },
+      message: 'Category detail found successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /prop/category/detail/by-category-id/{id}:
+ *   get:
+ *     summary: Lấy danh sách các trường chi tiết trong 1 category [ALL ROLES]
+ *     tags: [CategoryDetail]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Category detail found successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetail:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         categoryId:
+ *                           type: integer
+ *                         fieldName:
+ *                           type: string
+ *                         fieldType:
+ *                           type: string
+ *                         fieldPlaceholder:
+ *                           type: string
+ *                         option:
+ *                           type: string
+ *                         isActive:
+ *                           type: boolean
+ *                         isRequire:
+ *                           type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Category detail not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/by-category-id/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const categoryDetail =
+      await categoryDetailService.getCategoryDetailByCategoryId(id);
+    if (!categoryDetail) {
+      return res.status(404).json({
+        data: null,
+        message: '',
+        error: ['Category detail not found'],
+      });
+    }
+    return res.status(200).json({
+      data: { categoryDetail: categoryDetail },
+      message: 'Category detail found successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /prop/category/detail/{id}:
+ *   put:
+ *     summary: Cập nhật thông tin của một trường chi tiết theo id [ADMIN]
+ *     tags: [CategoryDetail]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               categoryId:
+ *                 type: integer
+ *               fieldName:
+ *                 type: string
+ *               fieldType:
+ *                 type: string
+ *                 enum: [number, text, select, date, boolean]
+ *               fieldPlaceholder:
+ *                 type: string
+ *               option:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               isRequire:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Category detail updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetail:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         categoryId:
+ *                           type: integer
+ *                         fieldName:
+ *                           type: string
+ *                         fieldType:
+ *                           type: string
+ *                         fieldPlaceholder:
+ *                           type: string
+ *                         option:
+ *                           type: string
+ *                         isActive:
+ *                           type: boolean
+ *                         isRequire:
+ *                           type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Category detail not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put(
+  '/:id',
+  authMiddleware,
+  roleGuard([RoleName.Admin]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        categoryId,
+        fieldName,
+        fieldType,
+        fieldPlaceholder,
+        option,
+        isActive,
+        isRequire,
+      } = req.body;
+      if (!categoryId || !fieldName || !fieldType) {
+        return res.status(400).json({
+          data: null,
+          message: '',
+          error: ['Missing required fields'],
+        });
+      }
+      const categoryDetail = await categoryDetailService.updateCategoryDetail(
+        id,
+        {
+          categoryId,
+          fieldName,
+          fieldType,
+          fieldPlaceholder,
+          option,
+          isActive,
+          isRequire,
+        }
+      );
+      return res.status(200).json({
+        data: { categoryDetail: categoryDetail },
+        message: 'Category detail updated successfully',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /prop/category/detail/{id}:
+ *   delete:
+ *     summary: Xóa thông tin của một trường chi tiết theo id [ADMIN]
+ *     tags: [CategoryDetail]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Category detail deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetail:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         categoryId:
+ *                           type: integer
+ *                         fieldName:
+ *                           type: string
+ *                         fieldType:
+ *                           type: string
+ *                         fieldPlaceholder:
+ *                           type: string
+ *                         option:
+ *                           type: string
+ *                         isActive:
+ *                           type: boolean
+ *                         isRequire:
+ *                           type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Category detail not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete(
+  '/:id',
+  authMiddleware,
+  roleGuard([RoleName.Admin]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const categoryDetail =
+        await categoryDetailService.deleteCategoryDetail(id);
+      return res.status(200).json({
+        data: { categoryDetail: categoryDetail },
+        message: 'Category detail deleted successfully',
         error: [],
       });
     } catch (error) {
