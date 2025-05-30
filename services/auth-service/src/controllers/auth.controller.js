@@ -18,6 +18,14 @@ async function sendOTPViaMailService(email, otp, name) {
   });
 }
 
+async function sendOTPResetPasswordMailService(email, otp, name) {
+  await axios.post('http://mail-service:4003/mail/auth/resetPasswordOTP', {
+    email,
+    otp,
+    name,
+  });
+}
+
 exports.googleLogin = (req, res, next) => {
   require('passport').authenticate('google', { scope: ['profile', 'email'] })(
     req,
@@ -475,7 +483,7 @@ exports.forgotPassword = async (req, res) => {
     });
   const otp = generateOTP();
   try {
-    await sendOTPViaMailService(email, otp, user.name);
+    await sendOTPResetPasswordMailService(email, otp, user.name);
     req.session.resetOtp = otp;
     req.session.resetEmail = email;
     res.json({
