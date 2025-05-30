@@ -67,11 +67,9 @@ import amentityService from '../services/amentity.service.js';
  *       500:
  *         description: Internal server error
  */
-router.post(
-  '/',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/')
+  .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { name, parentAmenityId, isActive } = req.body;
       if (!name) {
@@ -98,8 +96,64 @@ router.post(
         error: [error.message],
       });
     }
+  });
+
+/**
+ * @swagger
+ * /prop/amenity/active:
+ *   get:
+ *     summary: Lấy danh sách amenity active [ALL ROLES]
+ *     tags: [Amenities]
+ *     responses:
+ *       200:
+ *         description: Amenities retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     amenities:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       500:
+ *         description: Internal server error
+ */
+router.route('/active').get(async (req, res) => {
+  try {
+    const amenities = await amentityService.getActiveAmenities();
+    if (!amenities) {
+      return res.status(404).json({
+        data: null,
+        message: 'Amenity not found',
+        error: [],
+      });
+    }
+    return res.status(200).json({
+      data: {
+        amenities: amenities,
+      },
+      message: 'Amenity retrieved successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
   }
-);
+});
+
 /**
  * @swagger
  * /prop/amenity/{id}:
@@ -158,12 +212,9 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-
-router.get(
-  '/:id',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/:id')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
       const amenity = await amentityService.getAmenityById(id);
@@ -186,8 +237,7 @@ router.get(
         error: [error.message],
       });
     }
-  }
-);
+  });
 
 /**
  * @swagger
@@ -225,11 +275,9 @@ router.get(
  *       500:
  *         description: Internal server error
  */
-router.get(
-  '/of-parent/:id',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/of-parent/:id')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
       const amenities = await amentityService.getAmenitiesByParentId(id);
@@ -261,55 +309,6 @@ router.get(
         error: [error.message],
       });
     }
-  }
-);
+  });
 
-/**
- * @swagger
- * /prop/amenity/active:
- *   get:
- *     summary: Lấy danh sách amenity active [ALL ROLES]
- *     tags: [Amenities]
- *     responses:
- *       200:
- *         description: Amenities retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     amenities:
- *                       type: array
- *                       items:
- *                         type: object
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
- *       500:
- *         description: Internal server error
- */
-router.get('/active', async (res) => {
-  try {
-    const amenities = await amentityService.getActiveAmenities();
-    return res.status(200).json({
-      data: {
-        amenities: amenities,
-      },
-      message: 'Amenity retrieved successfully',
-      error: [],
-    });
-  } catch (error) {
-    return res.status(500).json({
-      data: null,
-      message: '',
-      error: [error.message],
-    });
-  }
-});
 export default router;

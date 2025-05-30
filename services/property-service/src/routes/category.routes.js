@@ -56,11 +56,9 @@ import roleGuard, { RoleName } from '../middleware/roleGuard.js';
  *       500:
  *         description: Lỗi server
  */
-router.post(
-  '/',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/')
+  .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { type, parentCategoryId, name, isActive } = req.body;
       if (!type || !name) {
@@ -88,8 +86,7 @@ router.post(
         error: [error.message],
       });
     }
-  }
-);
+  });
 
 /**
  * @swagger
@@ -148,11 +145,9 @@ router.post(
  *       500:
  *         description: Lỗi server
  */
-router.put(
-  '/:id',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/:id')
+  .put(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
       const { parentCategoryId, name, isActive } = req.body;
@@ -183,8 +178,7 @@ router.put(
         error: [error.message],
       });
     }
-  }
-);
+  });
 /**
  * @swagger
  * /prop/category/{id}:
@@ -245,7 +239,7 @@ router.put(
  *       500:
  *         description: Lỗi server
  */
-router.get('/:id', authMiddleware, async (req, res) => {
+router.route('/:id').get(authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const category = await categoryService.getCategoryById(parseInt(id));
@@ -335,11 +329,9 @@ router.get('/:id', authMiddleware, async (req, res) => {
  *       500:
  *         description: Lỗi server
  */
-router.get(
-  '/by-type/:type',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/by-type/:type')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { type } = req.params;
       if (!['assets', 'needs'].includes(type)) {
@@ -364,8 +356,7 @@ router.get(
         error: [error.message],
       });
     }
-  }
-);
+  });
 
 /**
  * @swagger
@@ -428,7 +419,7 @@ router.get(
  *       500:
  *         description: Lỗi server
  */
-router.get('/active-by-type/:type', authMiddleware, async (req, res) => {
+router.route('/active-by-type/:type').get(async (req, res) => {
   try {
     const { type } = req.params;
     if (!['assets', 'needs'].includes(type)) {
