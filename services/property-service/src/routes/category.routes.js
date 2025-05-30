@@ -371,10 +371,8 @@ router.get(
  * @swagger
  * /prop/category/active-by-type/{type}:
  *   get:
- *     summary: Lấy danh sách category theo type ['ADMIN']
+ *     summary: Lấy danh sách category đang active theo type [ALL ROLES]
  *     tags: [Property]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: type
@@ -430,39 +428,29 @@ router.get(
  *       500:
  *         description: Lỗi server
  */
-router.get(
-  '/active-by-type/:type',
-  authMiddleware,
-  roleGuard([
-    RoleName.Admin,
-    RoleName.Agent,
-    RoleName.Journalist,
-    RoleName.Customer,
-  ]),
-  async (req, res) => {
-    try {
-      const { type } = req.params;
-      if (!['assets', 'needs'].includes(type)) {
-        return res.status(400).json({
-          data: null,
-          message: '',
-          error: ['Invalid category type'],
-        });
-      }
-      const categories = await categoryService.getCategoryActiveByType(type);
-      return res.status(200).json({
-        data: { categories },
-        message: 'Get categories successfully',
-        error: [],
-      });
-    } catch (error) {
-      return res.status(500).json({
+router.get('/active-by-type/:type', authMiddleware, async (req, res) => {
+  try {
+    const { type } = req.params;
+    if (!['assets', 'needs'].includes(type)) {
+      return res.status(400).json({
         data: null,
         message: '',
-        error: [error.message],
+        error: ['Invalid category type'],
       });
     }
+    const categories = await categoryService.getCategoryActiveByType(type);
+    return res.status(200).json({
+      data: { categories },
+      message: 'Get categories successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
   }
-);
+});
 
 export default router;

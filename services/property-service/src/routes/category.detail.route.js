@@ -8,7 +8,7 @@ import categoryDetailService from '../services/category.detail.service.js';
  * @swagger
  * /prop/category/detail:
  *   post:
- *     summary: Tạo mới
+ *     summary: Tạo mới một trường chi tiết cho caterogy [ADMIN]
  *     tags: [CategoryDetail]
  *     security:
  *       - bearerAuth: []
@@ -127,7 +127,7 @@ router.post(
  * @swagger
  * /prop/category/detail/{id}:
  *   get:
- *     summary: Cập nhật
+ *     summary: Lấy thông tin của một trường chi tiết theo id [ALL ROLES]
  *     tags: [CategoryDetail]
  *     parameters:
  *       - in: path
@@ -232,7 +232,7 @@ router.get('/:id', async (req, res) => {
  * @swagger
  * /prop/category/detail/by-category-id/{id}:
  *   get:
- *     summary: Lấy danh sách
+ *     summary: Lấy danh sách các trường chi tiết trong 1 category [ALL ROLES]
  *     tags: [CategoryDetail]
  *     parameters:
  *       - in: path
@@ -313,7 +313,7 @@ router.get('/by-category-id/:id', async (req, res) => {
  * @swagger
  * /prop/category/detail/{id}:
  *   put:
- *     summary: Cập nhật
+ *     summary: Cập nhật thông tin của một trường chi tiết theo id [ADMIN]
  *     tags: [CategoryDetail]
  *     security:
  *       - bearerAuth: []
@@ -444,7 +444,7 @@ router.put(
  * @swagger
  * /prop/category/detail/{id}:
  *   delete:
- *     summary: Xóa
+ *     summary: Xóa thông tin của một trường chi tiết theo id [ADMIN]
  *     tags: [CategoryDetail]
  *     security:
  *       - bearerAuth: []
