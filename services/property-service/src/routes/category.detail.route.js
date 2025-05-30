@@ -77,11 +77,9 @@ import categoryDetailService from '../services/category.detail.service.js';
  *       500:
  *         description: Internal server error
  */
-router.post(
-  '/',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/')
+  .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const {
         categoryId,
@@ -120,8 +118,7 @@ router.post(
         error: [error.message],
       });
     }
-  }
-);
+  });
 
 /**
  * @swagger
@@ -135,28 +132,6 @@ router.post(
  *         required: true
  *         schema:
  *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               categoryId:
- *                 type: integer
- *               fieldName:
- *                 type: string
- *               fieldType:
- *                 type: string
- *                 enum: [number, text, select, date, boolean]
- *               fieldPlaceholder:
- *                 type: string
- *               option:
- *                 type: string
- *               isActive:
- *                 type: boolean
- *               isRequire:
- *                 type: boolean
  *     responses:
  *       200:
  *         description: Category detail updated successfully
@@ -202,7 +177,7 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', async (req, res) => {
+router.route('/:id').get(async (req, res) => {
   try {
     const { id } = req.params;
     const categoryDetail =
@@ -283,7 +258,7 @@ router.get('/:id', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.get('/by-category-id/:id', async (req, res) => {
+router.route('/by-category-id/:id').get(async (req, res) => {
   try {
     const { id } = req.params;
     const categoryDetail =
@@ -390,11 +365,9 @@ router.get('/by-category-id/:id', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.put(
-  '/:id',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/:id')
+  .put(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
       const {
@@ -437,8 +410,7 @@ router.put(
         error: [error.message],
       });
     }
-  }
-);
+  });
 
 /**
  * @swagger
@@ -497,11 +469,9 @@ router.put(
  *       500:
  *         description: Internal server error
  */
-router.delete(
-  '/:id',
-  authMiddleware,
-  roleGuard([RoleName.Admin]),
-  async (req, res) => {
+router
+  .route('/:id')
+  .delete(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
       const categoryDetail =
@@ -518,7 +488,6 @@ router.delete(
         error: [error.message],
       });
     }
-  }
-);
+  });
 
 export default router;
