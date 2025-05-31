@@ -14,7 +14,7 @@ model properties {
   title               String
   description         String?
   before_price_tag    String
-  price               Decimal              @db.Decimal(10, 2)
+  price               Decimal              @db.Decimal(15, 2)
   after_price_tag     String
   assets_id           Int
   needs_id            Int
@@ -76,7 +76,6 @@ model property_categories {
   asAsset             properties[]               @relation("AssetCategory")
   asNeed              properties[]               @relation("NeedCategory")
   details             property_category_detail[]
-  propertyDetails     property_detail[]
 }
 
 model property_category_detail {
@@ -92,18 +91,19 @@ model property_category_detail {
   updated_at        DateTime          @default(now())
 
   category          property_categories @relation(fields: [category_id], references: [id])
+  propertyDetails   property_detail[]        @relation("DetailToCategoryDetail")
 }
 
 model property_detail {
-  id           Int       @id @default(autoincrement())
-  property_id  Int
-  category_id  Int?
-  value        String
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @default(now())
+  id                 Int                      @id @default(autoincrement())
+  property_id        Int
+  category_detail_id Int?                    
+  value              String
+  created_at         DateTime                 @default(now())
+  updated_at         DateTime                 @default(now())
 
-  property     properties           @relation(fields: [property_id], references: [id])
-  category     property_categories? @relation(fields: [category_id], references: [id])
+  property           properties               @relation(fields: [property_id], references: [id])
+  category_detail    property_category_detail? @relation("DetailToCategoryDetail", fields: [category_detail_id], references: [id])
 }
 
 model amenities {

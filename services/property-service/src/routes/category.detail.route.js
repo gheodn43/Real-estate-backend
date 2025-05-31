@@ -116,7 +116,7 @@ router
 
       const createdDetails = await Promise.all(
         categoryIds.map((categoryId) =>
-          categoryDetailService.createCategoryDetail({
+          categoryDetailService.createDetail({
             categoryId,
             fieldName,
             fieldType,
@@ -202,8 +202,7 @@ router
 router.route('/:id').get(async (req, res) => {
   try {
     const { id } = req.params;
-    const categoryDetail =
-      await categoryDetailService.getCategoryDetailById(id);
+    const categoryDetail = await categoryDetailService.getDetailById(id);
     if (!categoryDetail) {
       return res.status(404).json({
         data: null,
@@ -288,7 +287,7 @@ router
     try {
       const { id } = req.params;
       const categoryDetail =
-        await categoryDetailService.getCategoryDetailByCategoryId(id);
+        await categoryDetailService.getDetailByCategoryId(id);
       if (!categoryDetail) {
         return res.status(404).json({
           data: null,
@@ -412,18 +411,15 @@ router
           error: ['Missing required fields'],
         });
       }
-      const categoryDetail = await categoryDetailService.updateCategoryDetail(
-        id,
-        {
-          categoryId,
-          fieldName,
-          fieldType,
-          fieldPlaceholder,
-          option,
-          isActive,
-          isRequire,
-        }
-      );
+      const categoryDetail = await categoryDetailService.updateDetail(id, {
+        categoryId,
+        fieldName,
+        fieldType,
+        fieldPlaceholder,
+        option,
+        isActive,
+        isRequire,
+      });
       return res.status(200).json({
         data: { categoryDetail: categoryDetail },
         message: 'Category detail updated successfully',
@@ -500,8 +496,7 @@ router
   .delete(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
-      const categoryDetail =
-        await categoryDetailService.deleteCategoryDetail(id);
+      const categoryDetail = await categoryDetailService.deleteDetail(id);
       return res.status(200).json({
         data: { categoryDetail: categoryDetail },
         message: 'Category detail deleted successfully',
@@ -575,7 +570,7 @@ router.route('/active-by-category/:id').get(async (req, res) => {
   try {
     const { id } = req.params;
     const categoryDetail =
-      await categoryDetailService.getActiveCategoryDetailByCategoryId(id);
+      await categoryDetailService.getActiveDetailByCategoryId(id);
     if (!categoryDetail) {
       return res.status(404).json({
         data: null,
