@@ -73,9 +73,24 @@ const getActiveAmenities = async () => {
   return amenities;
 };
 
+const updateAmenity = async (id, { name, parentAmenityId, isActive }) => {
+  const amenity = await prisma.amenities.update({
+    where: {
+      id: id,
+    },
+    data: {
+      name: name,
+      parent_amentity_id: parentAmenityId,
+      is_active: isActive,
+    },
+  });
+  return amenity;
+};
+
 export default {
   createAmenity,
   getAmenityById,
   getAmenitiesByParentId,
   getActiveAmenities,
+  updateAmenity,
 };

@@ -311,4 +311,105 @@ router
     }
   });
 
+/**
+ * @swagger
+ * /prop/amenity/{id}:
+ *   put:
+ *     summary: Cập nhật thông tin của 1 amenity theo id [ADMIN]
+ *     tags: [Amenities]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               parentAmenityId:
+ *                 type: integer
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Amenity updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     amenity:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         name:
+ *                           type: string
+ *                         is_active:
+ *                           type: boolean
+ *                         parent_amentity_id:
+ *                           type: integer
+ *                           nullable: true
+ *                         created_at:
+ *                           type: string
+ *                           format: date-time
+ *                         updated_at:
+ *                           type: string
+ *                           format: date-time
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Amenity not found
+ *       500:
+ *         description: Internal server error
+ */
+router
+  .route('/:id')
+  .put(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, parentAmenityId, isActive } = req.body;
+      const amenity = await amentityService.updateAmenity(id, {
+        name,
+        parentAmenityId,
+        isActive,
+      });
+      if (!amenity) {
+        return res.status(404).json({
+          data: null,
+          message: 'Amenity not found',
+          error: [],
+        });
+      }
+      return res.status(200).json({
+        data: { amenity: amenity },
+        message: 'Amenity updated successfully',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  });
+
 export default router;

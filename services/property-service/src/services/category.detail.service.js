@@ -78,10 +78,21 @@ const deleteCategoryDetail = async (id) => {
   });
   return categoryDetail;
 };
+
+const getActiveCategoryDetailByCategoryId = async (categoryId) => {
+  const categoryDetail = await prisma.property_category_detail.findMany({
+    where: {
+      category_id: categoryId,
+      is_active: true,
+    },
+  });
+  return categoryDetail;
+};
 export default {
   createCategoryDetail,
   getCategoryDetailById,
   updateCategoryDetail,
   deleteCategoryDetail,
   getCategoryDetailByCategoryId,
+  getActiveCategoryDetailByCategoryId,
 };
