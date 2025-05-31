@@ -8,7 +8,7 @@ import categoryDetailService from '../services/category.detail.service.js';
  * @swagger
  * /prop/category/detail:
  *   post:
- *     summary: Tạo mới một trường chi tiết cho caterogy [ADMIN]
+ *     summary: Tạo mới các trường chi tiết cho một hoặc nhiều category [ADMIN]
  *     tags: [CategoryDetail]
  *     security:
  *       - bearerAuth: []
@@ -18,9 +18,16 @@ import categoryDetailService from '../services/category.detail.service.js';
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - categoryIds
+ *               - fieldName
+ *               - fieldType
  *             properties:
- *               categoryId:
- *                 type: integer
+ *               categoryIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Mảng các ID của danh mục cần thêm field chi tiết
  *               fieldName:
  *                 type: string
  *               fieldType:
@@ -36,7 +43,7 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                 type: boolean
  *     responses:
  *       201:
- *         description: Category detail created successfully
+ *         description: Category details created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -45,25 +52,27 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                 data:
  *                   type: object
  *                   properties:
- *                     categoryDetail:
- *                       type: object
- *                       properties:
- *                         id:
- *                           type: integer
- *                         categoryId:
- *                           type: integer
- *                         fieldName:
- *                           type: string
- *                         fieldType:
- *                           type: string
- *                         fieldPlaceholder:
- *                           type: string
- *                         option:
- *                           type: string
- *                         isActive:
- *                           type: boolean
- *                         isRequire:
- *                           type: boolean
+ *                     categoryDetails:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           categoryId:
+ *                             type: integer
+ *                           fieldName:
+ *                             type: string
+ *                           fieldType:
+ *                             type: string
+ *                           fieldPlaceholder:
+ *                             type: string
+ *                           option:
+ *                             type: string
+ *                           isActive:
+ *                             type: boolean
+ *                           isRequire:
+ *                             type: boolean
  *                 message:
  *                   type: string
  *                 error:
@@ -71,18 +80,19 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                   items:
  *                     type: string
  *       400:
- *         description: Missing required fields
+ *         description: Missing or invalid required fields
  *       401:
  *         description: Unauthorized
  *       500:
  *         description: Internal server error
  */
+
 router
   .route('/')
   .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const {
-        categoryId,
+        categoryIds,
         fieldName,
         fieldType,
         fieldPlaceholder,
@@ -90,25 +100,37 @@ router
         isActive,
         isRequire,
       } = req.body;
-      if (!categoryId || !fieldName || !fieldType) {
+
+      if (
+        !Array.isArray(categoryIds) ||
+        categoryIds.length === 0 ||
+        !fieldName ||
+        !fieldType
+      ) {
         return res.status(400).json({
           data: null,
           message: '',
-          error: ['Missing required fields'],
+          error: ['Missing or invalid required fields'],
         });
       }
-      const categoryDetail = await categoryDetailService.createCategoryDetail({
-        categoryId,
-        fieldName,
-        fieldType,
-        fieldPlaceholder,
-        option,
-        isActive,
-        isRequire,
-      });
+
+      const createdDetails = await Promise.all(
+        categoryIds.map((categoryId) =>
+          categoryDetailService.createDetail({
+            categoryId,
+            fieldName,
+            fieldType,
+            fieldPlaceholder,
+            option,
+            isActive,
+            isRequire,
+          })
+        )
+      );
+
       return res.status(201).json({
-        data: { categoryDetail: categoryDetail },
-        message: 'Category detail created successfully',
+        data: { categoryDetails: createdDetails },
+        message: 'Category details created successfully',
         error: [],
       });
     } catch (error) {
@@ -180,8 +202,7 @@ router
 router.route('/:id').get(async (req, res) => {
   try {
     const { id } = req.params;
-    const categoryDetail =
-      await categoryDetailService.getCategoryDetailById(id);
+    const categoryDetail = await categoryDetailService.getDetailById(id);
     if (!categoryDetail) {
       return res.status(404).json({
         data: null,
@@ -207,8 +228,10 @@ router.route('/:id').get(async (req, res) => {
  * @swagger
  * /prop/category/detail/by-category/{id}:
  *   get:
- *     summary: Lấy danh sách các trường chi tiết trong 1 category [ALL ROLES]
+ *     summary: Lấy danh sách các trường chi tiết trong 1 category [ADMIN]
  *     tags: [CategoryDetail]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -258,31 +281,33 @@ router.route('/:id').get(async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.route('/by-category/:id').get(async (req, res) => {
-  try {
-    const { id } = req.params;
-    const categoryDetail =
-      await categoryDetailService.getCategoryDetailByCategoryId(id);
-    if (!categoryDetail) {
-      return res.status(404).json({
+router
+  .route('/by-category/:id')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const categoryDetail =
+        await categoryDetailService.getDetailByCategoryId(id);
+      if (!categoryDetail) {
+        return res.status(404).json({
+          data: null,
+          message: '',
+          error: ['Category detail not found'],
+        });
+      }
+      return res.status(200).json({
+        data: { categoryDetail: categoryDetail },
+        message: 'Category detail found successfully',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
         data: null,
         message: '',
-        error: ['Category detail not found'],
+        error: [error.message],
       });
     }
-    return res.status(200).json({
-      data: { categoryDetail: categoryDetail },
-      message: 'Category detail found successfully',
-      error: [],
-    });
-  } catch (error) {
-    return res.status(500).json({
-      data: null,
-      message: '',
-      error: [error.message],
-    });
-  }
-});
+  });
 
 /**
  * @swagger
@@ -386,18 +411,15 @@ router
           error: ['Missing required fields'],
         });
       }
-      const categoryDetail = await categoryDetailService.updateCategoryDetail(
-        id,
-        {
-          categoryId,
-          fieldName,
-          fieldType,
-          fieldPlaceholder,
-          option,
-          isActive,
-          isRequire,
-        }
-      );
+      const categoryDetail = await categoryDetailService.updateDetail(id, {
+        categoryId,
+        fieldName,
+        fieldType,
+        fieldPlaceholder,
+        option,
+        isActive,
+        isRequire,
+      });
       return res.status(200).json({
         data: { categoryDetail: categoryDetail },
         message: 'Category detail updated successfully',
@@ -474,8 +496,7 @@ router
   .delete(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
-      const categoryDetail =
-        await categoryDetailService.deleteCategoryDetail(id);
+      const categoryDetail = await categoryDetailService.deleteDetail(id);
       return res.status(200).json({
         data: { categoryDetail: categoryDetail },
         message: 'Category detail deleted successfully',
@@ -549,7 +570,7 @@ router.route('/active-by-category/:id').get(async (req, res) => {
   try {
     const { id } = req.params;
     const categoryDetail =
-      await categoryDetailService.getActiveCategoryDetailByCategoryId(id);
+      await categoryDetailService.getActiveDetailByCategoryId(id);
     if (!categoryDetail) {
       return res.status(404).json({
         data: null,

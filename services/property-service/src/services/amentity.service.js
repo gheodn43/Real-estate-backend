@@ -87,10 +87,21 @@ const updateAmenity = async (id, { name, parentAmenityId, isActive }) => {
   return amenity;
 };
 
+const createAmenityProperty = async (dataArray) => {
+  const amenityProperties = await prisma.property_amenities.createMany({
+    data: dataArray.map((item) => ({
+      property_id: item.propertyId,
+      amenity_id: item.amenity_id,
+    })),
+    skipDuplicates: true,
+  });
+  return amenityProperties;
+};
 export default {
   createAmenity,
   getAmenityById,
   getAmenitiesByParentId,
   getActiveAmenities,
   updateAmenity,
+  createAmenityProperty,
 };
