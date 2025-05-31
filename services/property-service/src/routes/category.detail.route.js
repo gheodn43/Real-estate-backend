@@ -205,7 +205,7 @@ router.route('/:id').get(async (req, res) => {
 
 /**
  * @swagger
- * /prop/category/detail/by-category-id/{id}:
+ * /prop/category/detail/by-category/{id}:
  *   get:
  *     summary: Lấy danh sách các trường chi tiết trong 1 category [ALL ROLES]
  *     tags: [CategoryDetail]
@@ -258,7 +258,7 @@ router.route('/:id').get(async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.route('/by-category-id/:id').get(async (req, res) => {
+router.route('/by-category/:id').get(async (req, res) => {
   try {
     const { id } = req.params;
     const categoryDetail =
@@ -490,4 +490,84 @@ router
     }
   });
 
+/**
+ * @swagger
+ * /prop/category/detail/active-by-category/{id}:
+ *   get:
+ *     summary: Lấy danh sách các trường chi tiết trong 1 category [ALL ROLES]
+ *     tags: [CategoryDetail]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Category detail found successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetail:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         categoryId:
+ *                           type: integer
+ *                         fieldName:
+ *                           type: string
+ *                         fieldType:
+ *                           type: string
+ *                         fieldPlaceholder:
+ *                           type: string
+ *                         option:
+ *                           type: string
+ *                         isActive:
+ *                           type: boolean
+ *                         isRequire:
+ *                           type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Category detail not found
+ *       500:
+ *         description: Internal server error
+ */
+router.route('/active-by-category/:id').get(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const categoryDetail =
+      await categoryDetailService.getActiveCategoryDetailByCategoryId(id);
+    if (!categoryDetail) {
+      return res.status(404).json({
+        data: null,
+        message: '',
+        error: ['Category detail not found'],
+      });
+    }
+    return res.status(200).json({
+      data: { categoryDetail: categoryDetail },
+      message: 'Category detail found successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
 export default router;
