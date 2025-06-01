@@ -322,4 +322,31 @@ router.put('/update-profile', authenticateToken, authController.updateProfile);
  */
 router.get('/verify', authenticateToken, authController.checkUserExists);
 
+/**
+ * @swagger
+ * /auth/profile/{id}:
+ *   get:
+ *     summary: Get user profile by id (admin only)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       400:
+ *         description: Invalid user id
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.get('/profile/:id', authenticateToken, authController.getProfileById);
+
 module.exports = router;

@@ -139,8 +139,189 @@ const sendResetPasswordOTP = async ({ email, otp, name }) => {
   });
 };
 
+const sendConsignmentRequestToCustomer = async ({
+  email,
+  name,
+  propertyInfo,
+  status,
+}) => {
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+      <div style="background: #27ae60; padding: 20px; text-align: center;">
+        <img src="cid:companylogo" alt="Company Logo" style="height: 90px; margin-bottom: 10px;" />
+        <h2 style="color: #fff; margin: 0;">Xác nhận gửi yêu cầu ký gửi</h2>
+      </div>
+      <div style="padding: 30px 20px;">
+        <p style='font-size: 16px; color: #333;'>Kính chào ${name},</p>
+        <p style="font-size: 16px; color: #333;">Bạn đã gửi yêu cầu ký gửi bất động sản thành công.</p>
+        <p style="font-size: 16px; color: #333;">Trạng thái hiện tại: <b>${status || 'Đang chờ xử lý'}</b></p>
+        <p style="font-size: 16px; color: #333;">Thông tin ký gửi:</p>
+        <ul>
+          <li>Loại: ${propertyInfo.type}</li>
+          <li>Diện tích: ${propertyInfo.area} m²</li>
+          <li>Địa chỉ: ${propertyInfo.address}</li>
+        </ul>
+        <p style="font-size: 14px; color: #555;">Chúng tôi sẽ liên hệ lại với bạn trong thời gian sớm nhất.</p>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 13px; color: #888; text-align: center;">Cảm ơn bạn đã tin tưởng dịch vụ!<br/>Hotline: 0123 456 789</p>
+      </div>
+    </div>
+  `;
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: email,
+    subject: 'Xác nhận gửi yêu cầu ký gửi',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
+const sendConsignmentRequestToAdmin = async ({
+  adminEmail,
+  propertyInfo,
+  customerInfo,
+}) => {
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+      <div style="background: #27ae60; padding: 20px; text-align: center;">
+        <img src="cid:companylogo" alt="Company Logo" style="height: 90px; margin-bottom: 10px;" />
+        <h2 style="color: #fff; margin: 0;">Yêu cầu ký gửi mới</h2>
+      </div>
+      <div style="padding: 30px 20px;">
+        <p style="font-size: 16px; color: #333;">Có một yêu cầu ký gửi mới vừa được gửi lên hệ thống:</p>
+        <h3 style="margin-bottom: 5px;">Thông tin bất động sản</h3>
+        <ul>
+          <li>Loại: ${propertyInfo.type}</li>
+          <li>Diện tích: ${propertyInfo.area} m²</li>
+          <li>Địa chỉ: ${propertyInfo.address}</li>
+        </ul>
+        <h3 style="margin-bottom: 5px;">Thông tin khách hàng</h3>
+        <ul>
+          <li>Tên: ${customerInfo.name}</li>
+          <li>SĐT: ${customerInfo.phone}</li>
+          <li>Email: ${customerInfo.email}</li>
+        </ul>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 13px; color: #888; text-align: center;">Vui lòng kiểm tra và xử lý trên hệ thống.<br/>Hotline: 0123 456 789</p>
+      </div>
+    </div>
+  `;
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: adminEmail,
+    subject: 'Yêu cầu ký gửi mới',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
+const sendConsignmentRequestToAgent = async ({
+  agentEmail,
+  propertyInfo,
+  customerInfo,
+}) => {
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+      <div style="background: #27ae60; padding: 20px; text-align: center;">
+        <img src="cid:companylogo" alt="Company Logo" style="height: 90px; margin-bottom: 10px;" />
+        <h2 style="color: #fff; margin: 0;">Yêu cầu ký gửi mới tại khu vực bạn phụ trách</h2>
+      </div>
+      <div style="padding: 30px 20px;">
+        <p style="font-size: 16px; color: #333;">Có một yêu cầu ký gửi mới tại khu vực bạn phụ trách:</p>
+        <h3 style="margin-bottom: 5px;">Thông tin bất động sản</h3>
+        <ul>
+          <li>Loại: ${propertyInfo.type}</li>
+          <li>Diện tích: ${propertyInfo.area} m²</li>
+          <li>Địa chỉ: ${propertyInfo.address}</li>
+        </ul>
+        <h3 style="margin-bottom: 5px;">Thông tin khách hàng</h3>
+        <ul>
+          <li>Tên: ${customerInfo.name}</li>
+          <li>SĐT: ${customerInfo.phone}</li>
+          <li>Email: ${customerInfo.email}</li>
+        </ul>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 13px; color: #888; text-align: center;">Vui lòng chủ động liên hệ và hỗ trợ khách hàng.<br/>Hotline: 0123 456 789</p>
+      </div>
+    </div>
+  `;
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: agentEmail,
+    subject: 'Yêu cầu ký gửi mới tại khu vực bạn phụ trách',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
+// Gán cứng danh sách agent nếu muốn gửi cho nhiều agent
+const AGENT_EMAILS = ['tuankiet11a2@gmail.com'];
+
+async function sendConsignmentRequestToAgents({
+  propertyInfo,
+  customerInfo,
+  agentEmails,
+}) {
+  // Nếu truyền agentEmails từ request thì dùng, không thì dùng AGENT_EMAILS cứng
+  const emails =
+    agentEmails && agentEmails.length > 0 ? agentEmails : AGENT_EMAILS;
+  const batchSize = 10;
+  for (let i = 0; i < emails.length; i += batchSize) {
+    const batch = emails.slice(i, i + batchSize);
+    await Promise.all(
+      batch.map((agentEmail) =>
+        sendConsignmentRequestToAgent({
+          agentEmail,
+          propertyInfo,
+          customerInfo,
+        })
+      )
+    );
+    await new Promise((res) => setTimeout(res, 2000));
+  }
+}
+
+// Thay thế đoạn dùng Prisma lấy admin bằng danh sách email cứng
+const ADMIN_EMAILS = [
+  'kietnguyen23012002@gmail.com', // Thay bằng email admin thực tế của bạn
+  // "anotheradmin@example.com" // Thêm nếu có nhiều admin
+];
+
+async function sendConsignmentRequestToAdmins({ propertyInfo, customerInfo }) {
+  for (const adminEmail of ADMIN_EMAILS) {
+    await sendConsignmentRequestToAdmin({
+      adminEmail,
+      propertyInfo,
+      customerInfo,
+    });
+  }
+}
+
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
   sendResetPasswordOTP,
+  sendConsignmentRequestToAdmin,
+  sendConsignmentRequestToCustomer,
+  sendConsignmentRequestToAgent,
+  sendConsignmentRequestToAgents,
+  sendConsignmentRequestToAdmins,
 };
