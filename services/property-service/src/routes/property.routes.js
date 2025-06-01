@@ -81,11 +81,11 @@ router
           }))
         );
       }
-      await propertyService.notifyNewPropertySubmission({
-        property: property,
-        location: location,
-        customer: user,
-      });
+      await propertyService.notifyNewPropertySubmission(
+        property,
+        location,
+        user
+      );
       return res.status(201).json({
         data: {
           property: property,
