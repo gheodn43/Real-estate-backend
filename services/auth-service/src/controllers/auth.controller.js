@@ -638,3 +638,27 @@ exports.checkUserExists = async (req, res) => {
     });
   }
 };
+exports.sendConsignmentRequestToAgents = async (req, res) => {
+  const { propertyInfo, customerInfo } = req.body;
+  // Lấy danh sách agent từ DB
+  const agents = await prisma.user.findMany({
+    where: { role: { rolename: 'Agent' } },
+    select: { email: true },
+  });
+  const agentEmails = agents.map((a) => a.email);
+  try {
+    await axios.post(
+      'http://mail-service:4003/mail/auth/sendConsignmentRequestToAgents',
+      {
+        propertyInfo,
+        customerInfo,
+        agentEmails,
+      }
+    );
+    res.status(200).json({ message: 'Đã gửi email cho agent' });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Gửi email cho agent thất bại', error: error.message });
+  }
+};
