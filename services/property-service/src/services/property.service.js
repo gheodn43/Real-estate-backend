@@ -32,7 +32,6 @@ const notifyNewPropertySubmission = async (property, location, customer) => {
       },
     }
   );
-
   await axios.post(
     'http://mail-service:4003/mail/auth/sendConsignmentRequestToAdmin',
     {
@@ -61,18 +60,7 @@ const assignAgentToRequest = async (
   //   }
   // );
   const customer = customerData.data.user;
-  // await axios.post('http://mail-service:4003/mail/auth/sendConsignmentRequestToAgents', {
-  //   property: property,
-  //   location: location,
-  //   agents: agents,
-  //   customer: {
-  //     name: customer.name,
-  //     email: customer.email,
-  //     numberPhone: customer.number_phone,
-  //   },
-  // });
-
-  console.log({
+  await axios.post('http://mail-service:4003/mail/auth/notifyAgentAssigned', {
     property: property,
     location: location,
     agents: agents,
