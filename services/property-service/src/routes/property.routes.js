@@ -29,6 +29,7 @@ router
         details,
         amenities,
       } = req.body;
+      const user = req.user;
       const property = await propertyService.createRequestProperty({
         senderId,
         title,
@@ -80,6 +81,11 @@ router
           }))
         );
       }
+      await propertyService.notifyNewPropertySubmission({
+        property: property,
+        location: location,
+        customer: user,
+      });
       return res.status(201).json({
         data: {
           property: property,

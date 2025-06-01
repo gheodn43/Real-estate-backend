@@ -591,7 +591,6 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
-
 exports.checkUserExists = async (req, res) => {
   const userId = req.user?.id || req.session?.userId;
   if (!userId) {
@@ -600,6 +599,8 @@ exports.checkUserExists = async (req, res) => {
         authorized: false,
         userId: null,
         userRole: null,
+        userEmail: null,
+        userName: null,
       },
       message: 'Unauthorized',
       errors: ['No userId found in token or session'],
@@ -615,6 +616,8 @@ exports.checkUserExists = async (req, res) => {
           authorized: true,
           userId: user.id,
           userRole: user.role_id,
+          userEmail: user.email,
+          userName: user.name,
         },
         message: 'User exists',
         errors: [],
@@ -625,6 +628,8 @@ exports.checkUserExists = async (req, res) => {
           authorized: false,
           userId: null,
           userRole: null,
+          userEmail: null,
+          userName: null,
         },
         message: 'User does not exist',
         errors: [],
@@ -638,9 +643,9 @@ exports.checkUserExists = async (req, res) => {
     });
   }
 };
+
 exports.sendConsignmentRequestToAgents = async (req, res) => {
   const { propertyInfo, customerInfo } = req.body;
-  // Lấy danh sách agent từ DB
   const agents = await prisma.user.findMany({
     where: { role: { rolename: 'Agent' } },
     select: { email: true },
