@@ -662,3 +662,54 @@ exports.sendConsignmentRequestToAgents = async (req, res) => {
       .json({ message: 'Gửi email cho agent thất bại', error: error.message });
   }
 };
+
+exports.getProfileById = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    if (!userId) {
+      return res.status(400).json({
+        data: null,
+        message: 'Invalid user id.',
+        errors: ['Invalid user id.'],
+      });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+    if (!user)
+      return res.status(404).json({
+        data: null,
+        message: 'User not found.',
+        errors: [],
+      });
+    res.json({
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          dayOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          avatar: user.avatar,
+          role: user.role,
+          addr_city: user.addr_city,
+          addr_district: user.addr_district,
+          addr_street: user.addr_street,
+          addr_detail: user.addr_detail,
+          number_phone: user.number_phone,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+        },
+      },
+      message: 'Profile fetched successfully.',
+      errors: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
