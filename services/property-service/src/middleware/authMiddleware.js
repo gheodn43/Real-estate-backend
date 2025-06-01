@@ -27,6 +27,7 @@ const authMiddleware = async (req, res, next) => {
       userId: data.userId,
       userRole: data.userRole,
     };
+    req.token = token;
     next();
   } catch (error) {
     return res.status(500).json({

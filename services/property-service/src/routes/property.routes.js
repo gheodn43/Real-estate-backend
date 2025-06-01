@@ -8,6 +8,8 @@ import mediaService from '../services/media.service.js';
 import detailPropertyService from '../services/category.detail.service.js';
 import amenityService from '../services/amentity.service.js';
 
+import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
+
 router
   .route('/request')
   .post(authMiddleware, roleGuard([RoleName.Customer]), async (req, res) => {
@@ -97,5 +99,45 @@ router
       });
     }
   });
+
+router
+  .route('/assign-agent')
+  .post(
+    authMiddleware,
+    roleGuard([RoleName.Customer, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const { property, location, agents } = req.body;
+        const userRole = req.user.userRole;
+        const token = req.token;
+
+        let customerProfile = null;
+        if (userRole === RoleName.Admin && property.sender_id) {
+          customerProfile = await getCustomerProfile(property.sender_id, token);
+        } else {
+          customerProfile = await getProfile(token);
+        }
+
+        await propertyService.assignAgentToRequest(
+          property,
+          location,
+          agents,
+          customerProfile
+        );
+
+        return res.status(200).json({
+          data: null,
+          message: 'Property assigned',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
 
 export default router;

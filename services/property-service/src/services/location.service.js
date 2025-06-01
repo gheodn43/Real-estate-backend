@@ -1,7 +1,7 @@
 import prisma from '../middleware/prismaClient.js';
 
 const createLocation = async (data) => {
-  return await prisma.property_request_location.create({
+  return await prisma.property_location.create({
     data: {
       property_id: data.propertyId,
       addr_city: data.addrCity,
