@@ -10,7 +10,7 @@ datasource db {
 
 model properties {
   id                  Int                  @id @default(autoincrement())
-  sender_id           Int
+  sender_id           Int?
   title               String
   description         String?
   before_price_tag    String
@@ -27,13 +27,14 @@ model properties {
   assets              property_categories  @relation("AssetCategory", fields: [assets_id], references: [id])
   needs               property_categories  @relation("NeedCategory", fields: [needs_id], references: [id])
 
-  locations           property_request_location?
+  locations           property_location?
   media               property_media[]
   details             property_detail[]
   amenities           property_amenities[]
+  agentHistory        property_agent_history[]
 }
 
-model property_request_location {
+model property_location {
   id            Int       @id @default(autoincrement())
   property_id   Int       @unique
   addr_city     String
@@ -84,9 +85,11 @@ model property_category_detail {
   field_name        String
   field_type        FieldType
   field_placeholder String?
+  icon              String?
   option            Json?
   is_active         Boolean?
   is_require        Boolean?
+  is_showing        Boolean?
   created_at        DateTime          @default(now())
   updated_at        DateTime          @default(now())
 
@@ -128,6 +131,16 @@ model property_amenities {
   amenity      amenities  @relation(fields: [amenity_id], references: [id])
 }
 
+model property_agent_history {
+  id           Int        @id @default(autoincrement())
+  property_id  Int
+  agent_id     Int
+  type         AgentHistoryType
+  created_at   DateTime   @default(now())
+
+  property     properties @relation(fields: [property_id], references: [id])
+} 
+
 enum Stage {
   request
   post
@@ -145,6 +158,7 @@ enum RequestPostStatus {
   pending_approval
   rejected
   published
+  sold
   expired
   hidden
 }
@@ -167,4 +181,10 @@ enum FieldType {
   select
   date
   boolean
+}
+
+enum AgentHistoryType {
+  request
+  assigned
+  leaved
 }

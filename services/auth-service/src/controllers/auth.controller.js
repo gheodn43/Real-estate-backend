@@ -591,7 +591,6 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
-
 exports.checkUserExists = async (req, res) => {
   const userId = req.user?.id || req.session?.userId;
   if (!userId) {
@@ -600,6 +599,8 @@ exports.checkUserExists = async (req, res) => {
         authorized: false,
         userId: null,
         userRole: null,
+        userEmail: null,
+        userName: null,
       },
       message: 'Unauthorized',
       errors: ['No userId found in token or session'],
@@ -615,6 +616,8 @@ exports.checkUserExists = async (req, res) => {
           authorized: true,
           userId: user.id,
           userRole: user.role_id,
+          userEmail: user.email,
+          userName: user.name,
         },
         message: 'User exists',
         errors: [],
@@ -625,11 +628,88 @@ exports.checkUserExists = async (req, res) => {
           authorized: false,
           userId: null,
           userRole: null,
+          userEmail: null,
+          userName: null,
         },
         message: 'User does not exist',
         errors: [],
       });
     }
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
+
+exports.sendConsignmentRequestToAgents = async (req, res) => {
+  const { propertyInfo, customerInfo } = req.body;
+  const agents = await prisma.user.findMany({
+    where: { role: { rolename: 'Agent' } },
+    select: { email: true },
+  });
+  const agentEmails = agents.map((a) => a.email);
+  try {
+    await axios.post(
+      'http://mail-service:4003/mail/auth/sendConsignmentRequestToAgents',
+      {
+        propertyInfo,
+        customerInfo,
+        agentEmails,
+      }
+    );
+    res.status(200).json({ message: 'Đã gửi email cho agent' });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Gửi email cho agent thất bại', error: error.message });
+  }
+};
+
+exports.getProfileById = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    if (!userId) {
+      return res.status(400).json({
+        data: null,
+        message: 'Invalid user id.',
+        errors: ['Invalid user id.'],
+      });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+    if (!user)
+      return res.status(404).json({
+        data: null,
+        message: 'User not found.',
+        errors: [],
+      });
+    res.json({
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          dayOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          avatar: user.avatar,
+          role: user.role,
+          addr_city: user.addr_city,
+          addr_district: user.addr_district,
+          addr_street: user.addr_street,
+          addr_detail: user.addr_detail,
+          number_phone: user.number_phone,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+        },
+      },
+      message: 'Profile fetched successfully.',
+      errors: [],
+    });
   } catch (err) {
     res.status(500).json({
       data: null,

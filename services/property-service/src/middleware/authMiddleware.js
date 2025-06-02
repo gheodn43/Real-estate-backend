@@ -26,7 +26,10 @@ const authMiddleware = async (req, res, next) => {
     req.user = {
       userId: data.userId,
       userRole: data.userRole,
+      userEmail: data.userEmail,
+      userName: data.userName,
     };
+    req.token = token;
     next();
   } catch (error) {
     return res.status(500).json({

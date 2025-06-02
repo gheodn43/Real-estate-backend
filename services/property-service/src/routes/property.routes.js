@@ -8,6 +8,8 @@ import mediaService from '../services/media.service.js';
 import detailPropertyService from '../services/category.detail.service.js';
 import amenityService from '../services/amentity.service.js';
 
+import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
+
 router
   .route('/request')
   .post(authMiddleware, roleGuard([RoleName.Customer]), async (req, res) => {
@@ -27,6 +29,7 @@ router
         details,
         amenities,
       } = req.body;
+      const user = req.user;
       const property = await propertyService.createRequestProperty({
         senderId,
         title,
@@ -78,6 +81,11 @@ router
           }))
         );
       }
+      await propertyService.notifyNewPropertySubmission(
+        property,
+        location,
+        user
+      );
       return res.status(201).json({
         data: {
           property: property,
@@ -97,5 +105,55 @@ router
       });
     }
   });
+
+router
+  .route('/assign-agent')
+  .post(
+    authMiddleware,
+    roleGuard([RoleName.Customer, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const { propertyId, agents } = req.body;
+        const userRole = req.user.userRole;
+        const token = req.token;
+        const basicPropertyInfo =
+          await propertyService.getBasicProperty(propertyId);
+        if (!basicPropertyInfo) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Property not found'],
+          });
+        }
+        let customerProfile = null;
+        if (userRole === RoleName.Admin && basicPropertyInfo.sender_id) {
+          customerProfile = await getCustomerProfile(
+            basicPropertyInfo.sender_id,
+            token
+          );
+        } else {
+          customerProfile = await getProfile(token);
+        }
+        const propertyAgentHistories =
+          await propertyService.assignAgentToRequest(
+            basicPropertyInfo,
+            agents,
+            customerProfile
+          );
+
+        return res.status(200).json({
+          data: { history: propertyAgentHistories },
+          message: 'Property assigned',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
 
 export default router;
