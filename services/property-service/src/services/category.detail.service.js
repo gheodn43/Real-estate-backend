@@ -7,9 +7,11 @@ const createDetail = async (data) => {
       field_name: data.fieldName,
       field_type: data.fieldType,
       field_placeholder: data.fieldPlaceholder,
+      icon: data.icon,
       option: data.option,
       is_active: data.isActive,
       is_require: data.isRequire,
+      is_showing: data.isShowing,
     },
   });
   return categoryDetail;
@@ -43,9 +45,11 @@ const updateDetail = async (id, data) => {
       field_name: data.fieldName,
       field_type: data.fieldType,
       field_placeholder: data.fieldPlaceholder,
+      icon: data.icon,
       option: data.option,
       is_active: data.isActive,
       is_require: data.isRequire,
+      is_showing: data.isShowing,
     },
   });
   return categoryDetail;
