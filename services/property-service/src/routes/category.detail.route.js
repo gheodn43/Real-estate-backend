@@ -30,6 +30,8 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                 description: Mảng các ID của danh mục cần thêm field chi tiết
  *               fieldName:
  *                 type: string
+ *               icon:
+ *                 type: string
  *               fieldType:
  *                 type: string
  *                 enum: [number, text, select, date, boolean]
@@ -40,6 +42,8 @@ import categoryDetailService from '../services/category.detail.service.js';
  *               isActive:
  *                 type: boolean
  *               isRequire:
+ *                 type: boolean
+ *               isShowing:
  *                 type: boolean
  *     responses:
  *       201:
@@ -63,6 +67,8 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                             type: integer
  *                           fieldName:
  *                             type: string
+ *                           icon:
+ *                             type: string
  *                           fieldType:
  *                             type: string
  *                           fieldPlaceholder:
@@ -72,6 +78,8 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                           isActive:
  *                             type: boolean
  *                           isRequire:
+ *                             type: boolean
+ *                           isShowing:
  *                             type: boolean
  *                 message:
  *                   type: string
@@ -94,11 +102,13 @@ router
       const {
         categoryIds,
         fieldName,
+        icon,
         fieldType,
         fieldPlaceholder,
         option,
         isActive,
         isRequire,
+        isShowing,
       } = req.body;
 
       if (
@@ -119,11 +129,13 @@ router
           categoryDetailService.createDetail({
             categoryId,
             fieldName,
+            icon,
             fieldType,
             fieldPlaceholder,
             option,
             isActive,
             isRequire,
+            isShowing,
           })
         )
       );
@@ -174,6 +186,8 @@ router
  *                           type: integer
  *                         fieldName:
  *                           type: string
+ *                         icon:
+ *                           type: string
  *                         fieldType:
  *                           type: string
  *                         fieldPlaceholder:
@@ -183,6 +197,8 @@ router
  *                         isActive:
  *                           type: boolean
  *                         isRequire:
+ *                           type: boolean
+ *                         isShowing:
  *                           type: boolean
  *                 message:
  *                   type: string
@@ -258,6 +274,8 @@ router.route('/:id').get(async (req, res) => {
  *                           type: integer
  *                         fieldName:
  *                           type: string
+ *                         icon:
+ *                           type: string
  *                         fieldType:
  *                           type: string
  *                         fieldPlaceholder:
@@ -267,6 +285,8 @@ router.route('/:id').get(async (req, res) => {
  *                         isActive:
  *                           type: boolean
  *                         isRequire:
+ *                           type: boolean
+ *                         isShowing:
  *                           type: boolean
  *                 message:
  *                   type: string
@@ -334,6 +354,8 @@ router
  *                 type: integer
  *               fieldName:
  *                 type: string
+ *               icon:
+ *                 type: string
  *               fieldType:
  *                 type: string
  *                 enum: [number, text, select, date, boolean]
@@ -344,6 +366,8 @@ router
  *               isActive:
  *                 type: boolean
  *               isRequire:
+ *                 type: boolean
+ *               isShowing:
  *                 type: boolean
  *     responses:
  *       200:
@@ -365,6 +389,8 @@ router
  *                           type: integer
  *                         fieldName:
  *                           type: string
+ *                         icon:
+ *                           type: string
  *                         fieldType:
  *                           type: string
  *                         fieldPlaceholder:
@@ -374,6 +400,8 @@ router
  *                         isActive:
  *                           type: boolean
  *                         isRequire:
+ *                           type: boolean
+ *                         isShowing:
  *                           type: boolean
  *                 message:
  *                   type: string
@@ -398,11 +426,13 @@ router
       const {
         categoryId,
         fieldName,
+        icon,
         fieldType,
         fieldPlaceholder,
         option,
         isActive,
         isRequire,
+        isShowing,
       } = req.body;
       if (!categoryId || !fieldName || !fieldType) {
         return res.status(400).json({
@@ -416,9 +446,11 @@ router
         fieldName,
         fieldType,
         fieldPlaceholder,
+        icon,
         option,
         isActive,
         isRequire,
+        isShowing,
       });
       return res.status(200).json({
         data: { categoryDetail: categoryDetail },
@@ -468,6 +500,8 @@ router
  *                           type: integer
  *                         fieldName:
  *                           type: string
+ *                         icon:
+ *                           type: string
  *                         fieldType:
  *                           type: string
  *                         fieldPlaceholder:
@@ -477,6 +511,8 @@ router
  *                         isActive:
  *                           type: boolean
  *                         isRequire:
+ *                           type: boolean
+ *                         isShowing:
  *                           type: boolean
  *                 message:
  *                   type: string
@@ -543,6 +579,8 @@ router
  *                           type: integer
  *                         fieldName:
  *                           type: string
+ *                         icon:
+ *                           type: string
  *                         fieldType:
  *                           type: string
  *                         fieldPlaceholder:
@@ -552,6 +590,8 @@ router
  *                         isActive:
  *                           type: boolean
  *                         isRequire:
+ *                           type: boolean
+ *                         isShowing:
  *                           type: boolean
  *                 message:
  *                   type: string
