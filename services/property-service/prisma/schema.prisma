@@ -135,8 +135,8 @@ model property_agent_history {
   id           Int        @id @default(autoincrement())
   property_id  Int
   agent_id     Int
-  assigned_at  DateTime   @default(now())
-  unassigned_at DateTime?
+  type         AgentHistoryType
+  created_at   DateTime   @default(now())
 
   property     properties @relation(fields: [property_id], references: [id])
 } 
@@ -181,4 +181,10 @@ enum FieldType {
   select
   date
   boolean
+}
+
+enum AgentHistoryType {
+  request
+  assigned
+  leaved
 }

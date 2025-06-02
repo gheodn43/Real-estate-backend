@@ -113,26 +113,36 @@ router
     roleGuard([RoleName.Customer, RoleName.Admin]),
     async (req, res) => {
       try {
-        const { property, location, agents } = req.body;
+        const { propertyId, agents } = req.body;
         const userRole = req.user.userRole;
         const token = req.token;
-
+        const basicPropertyInfo =
+          await propertyService.getBasicProperty(propertyId);
+        if (!basicPropertyInfo) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Property not found'],
+          });
+        }
         let customerProfile = null;
-        if (userRole === RoleName.Admin && property.sender_id) {
-          customerProfile = await getCustomerProfile(property.sender_id, token);
+        if (userRole === RoleName.Admin && basicPropertyInfo.sender_id) {
+          customerProfile = await getCustomerProfile(
+            basicPropertyInfo.sender_id,
+            token
+          );
         } else {
           customerProfile = await getProfile(token);
         }
-
-        await propertyService.assignAgentToRequest(
-          property,
-          location,
-          agents,
-          customerProfile
-        );
+        const propertyAgentHistories =
+          await propertyService.assignAgentToRequest(
+            basicPropertyInfo,
+            agents,
+            customerProfile
+          );
 
         return res.status(200).json({
-          data: null,
+          data: { history: propertyAgentHistories },
           message: 'Property assigned',
           error: [],
         });
