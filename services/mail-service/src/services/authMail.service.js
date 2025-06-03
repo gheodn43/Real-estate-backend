@@ -29,12 +29,11 @@ const getEmailTemplate = ({ title, greeting, mainMessage, infoSections }) => `
       <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
       <style>
         body { margin: 0; padding: 0; background-color: #f5f7fa; font-family: 'Roboto', Arial, sans-serif; }
-        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 2px solid #ff0000; overflow: hidden; }
-        .header { background-color: #27ae60; padding: 20px; text-align: center; border-bottom: 2px solid #ff0000; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; overflow: hidden; }
+        .header { background-color: #27ae60; padding: 20px; text-align: center; }
         .header img { max-width: 120px; height: auto; }
         .header h1 { color: #ffffff; font-size: 24px; font-weight: 700; margin: 10px 0 0; }
         .content { padding: 20px; }
-        .ticket-id { font-size: 16px; color: #333333; margin-bottom: 10px; font-weight: bold; }
         .greeting { font-size: 18px; color: #333333; margin-bottom: 20px; }
         .main-message { font-size: 16px; color: #555555; line-height: 1.6; margin-bottom: 20px; }
         .highlight-section { background-color: #e8f5e9; padding: 15px; border: 1px solid #27ae60; border-radius: 5px; margin-bottom: 20px; }
@@ -43,7 +42,7 @@ const getEmailTemplate = ({ title, greeting, mainMessage, infoSections }) => `
         .highlight-section li { font-size: 16px; color: #333333; font-weight: bold; margin-bottom: 8px; }
         .highlight-section li:before { content: "•"; color: #27ae60; margin-right: 10px; }
         .otp-code { font-size: 36px; font-weight: bold; color: #27ae60; letter-spacing: 5px; text-align: center; padding: 15px; background-color: #f0f4f8; border-radius: 8px; margin: 20px 0; }
-        .footer { background-color: #27ae60; padding: 15px; text-align: center; border-top: 2px solid #ff0000; }
+        .footer { background-color: #27ae60; padding: 15px; text-align: center; }
         .footer p { font-size: 13px; color: #ffffff; margin: 5px 0; line-height: 1.5; }
         .footer a { color: #ffffff; text-decoration: none; }
         .footer .contact { margin-top: 10px; }
@@ -68,14 +67,13 @@ const getEmailTemplate = ({ title, greeting, mainMessage, infoSections }) => `
           <h1>${title}</h1>
         </div>
         <div class="content">
-          <div class="ticket-id">Mã số yêu cầu: #${Math.floor(Math.random() * 1000000)}</div>
           ${greeting ? `<p class="greeting">${greeting}</p>` : ''}
           <p class="main-message">${mainMessage}</p>
           ${infoSections}
         </div>
         <div class="footer">
           <p class="services">BEST SERVICES FOR YOUR BUSINESS: SERVER - CDN - CLOUD - VPS - HOSTING - WEBSITE - DOMAIN - EMAIL</p>
-          <p class="address">351/31 No Trang Long, Ward 13, Binh Thanh District, Ho Chi Minh City</p>
+          <p class="address"> FPT urban area, Hoa Hai ward,Ngu Hanh Son District, Da Nang City</p>
           <div class="contact">
             <p>Hotline: <a href="tel:0123456789">0123 456 789</a> | Email: <a href="mailto:support@realestate.com">support@realestate.com</a></p>
             <p>Follow us: <a href="https://facebook.com/realestate">Facebook</a> | <a href="https://linkedin.com/company/realestate">LinkedIn</a></p>
@@ -96,10 +94,10 @@ const sendRegisterOTP = async ({ email, otp, name }) => {
     };
   }
   const htmlContent = getEmailTemplate({
-    title: 'Real Estate OTP Verification',
+    title: 'Homihub OTP Verification',
     greeting: name ? `Dear ${name},` : '',
     mainMessage:
-      'Welcome to Real Estate! Please verify your OTP code to become a member of our platform. This OTP is valid for 5 minutes. Please do not share it with anyone.',
+      'Welcome to HomiHub! Please verify your OTP code to become a member of our platform. This OTP is valid for 5 minutes. Please do not share it with anyone.',
     infoSections: `
       <div class="otp-code">${otp}</div>
     `,
@@ -129,9 +127,9 @@ const sendPasswordEmail = async ({ email, password, name, roleName }) => {
     };
   }
   const htmlContent = getEmailTemplate({
-    title: 'Real Estate Account Password',
+    title: 'HomiHub Account Password',
     greeting: name ? `Dear ${name},` : '',
-    mainMessage: `Welcome to Real Estate! From today, you officially become a member of our platform as a <strong>${roleName}</strong>. Please change your password after logging in for security.`,
+    mainMessage: `Welcome to HomiHub! From today, you officially become a member of our platform as a <strong>${roleName}</strong>. Please change your password after logging in for security.`,
     infoSections: `
       <p class="main-message">Your account password is:</p>
       <div class="otp-code">${password}</div>
@@ -165,7 +163,7 @@ const sendResetPasswordOTP = async ({ email, otp, name }) => {
     title: 'Reset Password OTP',
     greeting: name ? `Dear ${name},` : '',
     mainMessage:
-      'You have requested to reset your password for your Real Estate account. This OTP is valid for 5 minutes. Please do not share it with anyone. If you did not request a password reset, please ignore this email.',
+      'You have requested to reset your password for your Homihub account. This OTP is valid for 5 minutes. Please do not share it with anyone. If you did not request a password reset, please ignore this email.',
     infoSections: `
       <p class="main-message">Your OTP code for password reset is:</p>
       <div class="otp-code">${otp}</div>
@@ -198,7 +196,7 @@ const sendConsignmentRequestToCustomer = async ({
       ? `Kính chào ${customer.name},`
       : 'Kính chào Quý khách,',
     mainMessage: `
-      Cảm ơn bạn đã tin tưởng và lựa chọn dịch vụ ký gửi bất động sản của Real Estate! Chúng tôi rất vui mừng thông báo rằng yêu cầu ký gửi của bạn đã được ghi nhận thành công. Đội ngũ chuyên gia của chúng tôi sẽ nhanh chóng xem xét và liên hệ với bạn trong vòng 24-48 giờ để hỗ trợ các bước tiếp theo.<br><br>
+      Cảm ơn bạn đã tin tưởng và lựa chọn dịch vụ ký gửi bất động sản của HomiHub! Chúng tôi rất vui mừng thông báo rằng yêu cầu ký gửi của bạn đã được ghi nhận thành công. Đội ngũ chuyên gia của chúng tôi sẽ nhanh chóng xem xét và liên hệ với bạn trong vòng 24-48 giờ để hỗ trợ các bước tiếp theo.<br><br>
       Với mạng lưới đại lý rộng khắp và kinh nghiệm chuyên sâu trong lĩnh vực bất động sản, chúng tôi cam kết mang đến cho bạn một quy trình ký gửi minh bạch, hiệu quả và tối ưu giá trị tài sản của bạn. Dưới đây là thông tin chi tiết về yêu cầu ký gửi của bạn:
     `,
     infoSections: `
@@ -253,7 +251,7 @@ const sendConsignmentRequestToAdmin = async ({
     title: 'Yêu cầu ký gửi bất động sản mới',
     greeting: 'Kính gửi Quý Quản trị viên,',
     mainMessage: `
-      Một yêu cầu ký gửi bất động sản mới vừa được gửi lên hệ thống Real Estate. Đây là cơ hội để chúng ta tiếp tục mang lại giá trị cho khách hàng thông qua dịch vụ chuyên nghiệp và hiệu quả. Vui lòng kiểm tra thông tin chi tiết dưới đây và thực hiện các bước xử lý cần thiết trong thời gian sớm nhất.<br><br>
+      Một yêu cầu ký gửi bất động sản mới vừa được gửi lên hệ thống HomiHub. Đây là cơ hội để chúng ta tiếp tục mang lại giá trị cho khách hàng thông qua dịch vụ chuyên nghiệp và hiệu quả. Vui lòng kiểm tra thông tin chi tiết dưới đây và thực hiện các bước xử lý cần thiết trong thời gian sớm nhất.<br><br>
       Đội ngũ HomiHub cam kết hỗ trợ bạn trong việc quản lý và phân phối yêu cầu này đến các đại lý phù hợp, đảm bảo quy trình minh bạch và tối ưu. Xin vui lòng cập nhật trạng thái xử lý trên hệ thống để theo dõi tiến độ.
     `,
     infoSections: `
@@ -319,7 +317,7 @@ const notifyAgentAssignedToProject = async ({
           greeting: agent?.name
             ? `Kính gửi ${agent.name},`
             : 'Kính gửi Nhà Môi Giới,',
-          mainMessage: `Một yêu cầu ký gửi bất động sản mới vừa được ghi nhận tại khu vực bạn phụ trách. Đây là cơ hội tuyệt vời để bạn kết nối với khách hàng và mang lại giá trị thông qua dịch vụ tư vấn chuyên nghiệp của Real Estate.<br><br>Vui lòng xem xét thông tin chi tiết dưới đây và chủ động liên hệ với khách hàng trong vòng 24 giờ để thảo luận về yêu cầu ký gửi. Đội ngũ HomiHub luôn sẵn sàng hỗ trợ bạn trong quá trình xử lý, đảm bảo quy trình diễn ra suôn sẻ và hiệu quả.`,
+          mainMessage: `Một yêu cầu ký gửi bất động sản mới vừa được ghi nhận tại khu vực bạn phụ trách. Đây là cơ hội tuyệt vời để bạn kết nối với khách hàng và mang lại giá trị thông qua dịch vụ tư vấn chuyên nghiệp của HomiHub.<br><br>Vui lòng xem xét thông tin chi tiết dưới đây và chủ động liên hệ với khách hàng trong vòng 24 giờ để thảo luận về yêu cầu ký gửi. Đội ngũ HomiHub luôn sẵn sàng hỗ trợ bạn trong quá trình xử lý, đảm bảo quy trình diễn ra suôn sẻ và hiệu quả.`,
           infoSections: `
             <div class="highlight-section">
               <h3>Thông tin bất động sản</h3>
