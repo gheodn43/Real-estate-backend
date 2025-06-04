@@ -128,7 +128,6 @@ router.post('/sendConsignmentRequestToAdmin', async (req, res) => {
 
 router.post('/notifyAgentAssignedToProject', async (req, res) => {
   const { property, agents, customer } = req.body;
-  // Always extract location from property.locations
   const location =
     property && property.locations ? { ...property.locations } : {};
   try {

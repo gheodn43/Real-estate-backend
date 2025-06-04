@@ -205,7 +205,7 @@ const sendConsignmentRequestToCustomer = async ({
         <ul>
           <li>Tiêu đề: ${property?.title || 'Chưa cung cấp'}</li>
           <li>Giá đề xuất: ${property?.price ? property.price.toLocaleString() + ' VNĐ' : 'Chưa cung cấp'}</li>
-          <li>Địa chỉ: ${location?.address || ''}${location?.city ? ', ' + location.city : ''}</li>
+          <li>Địa chỉ: ${location?.addrCity || ''}${location?.addrDistrict ? ', ' + location.addrStreet : ''}</li>
         </ul>
       </div>
       <div class="highlight-section">
@@ -260,7 +260,7 @@ const sendConsignmentRequestToAdmin = async ({
         <ul>
           <li>Tiêu đề: ${property?.title || 'Chưa cung cấp'}</li>
           <li>Giá đề xuất: ${property?.price ? property.price.toLocaleString() + ' VNĐ' : 'Chưa cung cấp'}</li>
-          <li>Địa chỉ: ${location?.address || ''}${location?.city ? ', ' + location.city : ''}</li>
+          <li>Địa chỉ: ${location?.addrCity || ''}${location?.addrDistrict ? ', ' + location.addrStreet : ''}</li>
         </ul>
       </div>
       <div class="highlight-section">

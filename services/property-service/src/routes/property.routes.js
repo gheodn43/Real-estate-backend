@@ -10,12 +10,154 @@ import amenityService from '../services/amentity.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
+/**
+ * @swagger
+ * /prop/request:
+ *   post:
+ *     summary: Gửi yêu cầu ký gửi bất động sản
+ *     description: API để khách hàng gửi yêu cầu ký gửi bất động sản
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - senderId
+ *               - title
+ *               - description
+ *               - beforePriceTag
+ *               - price
+ *               - afterPriceTag
+ *               - assetsId
+ *               - needsId
+ *               - stage
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Bán nhà phố trung tâm Quận 1
+ *               description:
+ *                 type: string
+ *                 example: Nhà phố sang trọng, tiện nghi đầy đủ, gần trung tâm thương mại.
+ *               beforePriceTag:
+ *                 type: string
+ *                 example: Giá chỉ từ
+ *               price:
+ *                 type: number
+ *                 format: double
+ *                 example: 50000000000.99
+ *               afterPriceTag:
+ *                 type: string
+ *                 example: VNĐ
+ *               assetsId:
+ *                 type: integer
+ *                 example: 2
+ *               needsId:
+ *                 type: integer
+ *                 example: 4
+ *               stage:
+ *                 type: string
+ *                 example: request
+ *               location:
+ *                 type: object
+ *                 properties:
+ *                   addrCity:
+ *                     type: string
+ *                     example: Hồ Chí Minh
+ *                   addrDistrict:
+ *                     type: string
+ *                     example: Quận 1
+ *                   addrStreet:
+ *                     type: string
+ *                     example: Nguyễn Huệ
+ *                   addrDetails:
+ *                     type: string
+ *                     example: Sát phố đi bộ
+ *                   latitude:
+ *                     type: number
+ *                     format: float
+ *                     example: 10.7769
+ *                   longitude:
+ *                     type: number
+ *                     format: float
+ *                     example: 106.7009
+ *               media:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     type:
+ *                       type: string
+ *                       example: image
+ *                     url:
+ *                       type: string
+ *                       format: uri
+ *                       example: https://example.com/image1.jpg
+ *               details:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetailId:
+ *                       type: integer
+ *                       example: 1
+ *                     value:
+ *                       type: string
+ *                       example: "3"
+ *               amenities:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 example: [1, 2]
+ *     responses:
+ *       201:
+ *         description: Property request created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     property:
+ *                       type: object
+ *                     location:
+ *                       type: object
+ *                     media:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     amenities:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *                     details:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                 message:
+ *                   type: string
+ *                   example: Property created
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: []
+ *       400:
+ *         description: Property creation failed
+ *       500:
+ *         description: Server error
+ */
 router
   .route('/request')
   .post(authMiddleware, roleGuard([RoleName.Customer]), async (req, res) => {
     try {
       const {
-        senderId,
         title,
         description,
         beforePriceTag,
@@ -30,6 +172,7 @@ router
         amenities,
       } = req.body;
       const user = req.user;
+      const senderId = user.userId;
       const property = await propertyService.createRequestProperty({
         senderId,
         title,
@@ -105,6 +248,77 @@ router
       });
     }
   });
+
+/**
+ * @swagger
+ * /prop/assign-agent:
+ *   post:
+ *     summary: Gán bất động sản cho các agent
+ *     description: API cho phép khách hàng hoặc admin gán một bất động sản cụ thể cho các agent
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - propertyId
+ *               - agents
+ *             properties:
+ *               propertyId:
+ *                 type: integer
+ *                 example: 14
+ *               agents:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - id
+ *                     - gmail
+ *                     - name
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 3
+ *                     gmail:
+ *                       type: string
+ *                       format: email
+ *                       example: agent@gmail.com
+ *                     name:
+ *                       type: string
+ *                       example: agent name
+ *     responses:
+ *       200:
+ *         description: Gán agent thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     history:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                 message:
+ *                   type: string
+ *                   example: Property assigned
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: []
+ *       404:
+ *         description: Bất động sản không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
 
 router
   .route('/assign-agent')
