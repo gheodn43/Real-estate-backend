@@ -1,6 +1,6 @@
 import prisma from '../middleware/prismaClient.js';
 import RequestStatus from '../enums/requestStatus.enum.js';
-// import AgentHistoryType from '../enums/agentHistoryType.enum.js';
+import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import axios from 'axios';
 
 const createRequestProperty = async (data) => {
@@ -47,26 +47,29 @@ const notifyNewPropertySubmission = async (property, location, customer) => {
 };
 
 const assignAgentToRequest = async (property, agents, customerData) => {
-  // const propertyAgentHistories = await prisma.property_agent_history.createMany(
-  //   {
-  //     data: agents.map((agent) => ({
-  //       property_id: property.id,
-  //       agent_id: agent.id,
-  //       type: AgentHistoryType.ASSIGNED,
-  //     })),
-  //   }
-  // );
+  const propertyAgentHistories = await prisma.property_agent_history.createMany(
+    {
+      data: agents.map((agent) => ({
+        property_id: property.id,
+        agent_id: agent.id,
+        type: AgentHistoryType.ASSIGNED,
+      })),
+    }
+  );
   const customer = customerData.data.user;
-  await axios.post('http://mail-service:4003/mail/auth/notifyAgentAssigned', {
-    property: property,
-    agents: agents,
-    customer: {
-      name: customer.name,
-      email: customer.email,
-      numberPhone: customer.number_phone,
-    },
-  });
-  // return propertyAgentHistories;
+  await axios.post(
+    'http://mail-service:4003/mail/auth/notifyAgentAssignedToProject',
+    {
+      property: property,
+      agents: agents,
+      customer: {
+        name: customer.name,
+        email: customer.email,
+        numberPhone: customer.number_phone,
+      },
+    }
+  );
+  return propertyAgentHistories;
 };
 
 const getBasicProperty = async (propertyId) => {
