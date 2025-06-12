@@ -370,4 +370,7 @@ router
     }
   );
 
+// Lấy danh sách sơ lược của bđs theo toạ độ user với tham số là bán kính
+// Lấy danh sách sơ lược của bđs theo category
+
 export default router;

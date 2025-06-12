@@ -8,9 +8,7 @@ const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 
 require('./passport');
-
 const app = express();
-
 app.use(express.json());
 
 app.use(
