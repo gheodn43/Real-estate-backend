@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id            Int           @id @default(autoincrement())
+  email         String        @unique
+  password      String?
+  name          String
+  googleId      String?       @unique
+  role_id       Int
+  avatar        String?
+  latitude      Float?
+  longitude     Float?
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  dateOfBirth   DateTime?
+  gender        String?
+  addr_city     String?
+  addr_detail   String?
+  addr_district String?
+  addr_street   String?
+  number_phone  String?
+  role          user_roles    @relation(fields: [role_id], references: [id])
+  agent_reviews agent_reviews[] @relation("AgentReviews")
+  user_reviews  agent_reviews[] @relation("UserReviews")
+}
+
+model user_roles {
+  id         Int      @id @default(autoincrement())
+  rolename   String   @unique
+  created_at DateTime @default(now())
+  users      users[]  // Quan hệ ngược với users
+}
+
+enum ReviewType {
+  comment
+  repcomment
+}
+
+enum ReviewStatus {
+  showing
+  deleted
+  rejected
+  pending
+}
+
+model agent_reviews {
+  id         Int          @id @default(autoincrement())
+  agent_id   Int
+  user_id    Int
+  rating     Int
+  comment    String?
+  images     Json?
+  parent_id  Int?
+  type       ReviewType   @default(comment)
+  status     ReviewStatus @default(pending)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+
+  agent      users         @relation("AgentReviews", fields: [agent_id], references: [id])
+  user       users         @relation("UserReviews", fields: [user_id], references: [id])
+  parent     agent_reviews? @relation("ReviewParent", fields: [parent_id], references: [id])
+  replies    agent_reviews[] @relation("ReviewParent")
+
+  @@unique([agent_id, user_id, type, parent_id])
+}
