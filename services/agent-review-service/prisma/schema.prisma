@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReviewType {
+  comment
+  repcomment
+}
+
+enum ReviewStatus {
+  showing
+  deleted
+  rejected
+  pending
+}
+
+model agent_reviews {
+  id         Int          @id @default(autoincrement())
+  agent_id   Int
+  user_id    Int
+  rating     Int
+  comment    String?
+  images     Json?
+  parent_id  Int?
+  type       ReviewType   @default(comment)
+  status     ReviewStatus @default(pending)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+
+  parent     agent_reviews? @relation("ReviewParent", fields: [parent_id], references: [id])
+  replies    agent_reviews[] @relation("ReviewParent")
+
+}
