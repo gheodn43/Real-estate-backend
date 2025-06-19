@@ -132,7 +132,6 @@ const getById = async (propertyId) => {
       media: true,
       details: true,
       amenities: true,
-      agentHistory: true,
     },
   });
   return property;

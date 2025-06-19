@@ -370,6 +370,7 @@ router
       }
     }
   );
+
 // agent/admin tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
 router
   .route('/post')
@@ -536,6 +537,7 @@ router
     }
   );
 
+// agent/admin cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
 router
   .route('/post/:id')
   .put(
