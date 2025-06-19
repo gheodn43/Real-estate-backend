@@ -21,6 +21,14 @@ const createAmenity = async ({ name, parentAmenityId, isActive }) => {
   });
   return amenity;
 };
+const createMultipleAmenities = async (amenities) => {
+  const createdAmenities = [];
+  for (const amenity of amenities) {
+    const createdAmenity = await createAmenity(amenity);
+    createdAmenities.push(createdAmenity);
+  }
+  return createdAmenities;
+};
 const getAmenityById = async (id) => {
   const amenity = await prisma.amenities.findUnique({
     where: { id: id },
@@ -97,6 +105,15 @@ const createAmenityProperty = async (dataArray) => {
   });
   return amenityProperties;
 };
+
+const deleteByPropertyId = async (propertyId) => {
+  const amenityProperties = await prisma.property_amenities.deleteMany({
+    where: {
+      property_id: propertyId,
+    },
+  });
+  return amenityProperties;
+};
 export default {
   createAmenity,
   getAmenityById,
@@ -104,4 +121,6 @@ export default {
   getActiveAmenities,
   updateAmenity,
   createAmenityProperty,
+  createMultipleAmenities,
+  deleteByPropertyId,
 };

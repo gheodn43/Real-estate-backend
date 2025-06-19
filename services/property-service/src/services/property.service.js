@@ -1,6 +1,8 @@
 import prisma from '../middleware/prismaClient.js';
+import Stage from '../enums/stage.enum.js';
 import RequestStatus from '../enums/requestStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
+import agentHistoryService from './propertyAgentHistory.service.js';
 import axios from 'axios';
 
 const createRequestProperty = async (data) => {
@@ -14,8 +16,43 @@ const createRequestProperty = async (data) => {
       after_price_tag: data.afterPriceTag,
       assets_id: data.assetsId,
       needs_id: data.needsId,
-      stage: data.stage,
+      stage: Stage.REQUEST,
       request_status: RequestStatus.PENDING,
+    },
+  });
+  return property;
+};
+
+const createPostProperty = async (data) => {
+  const property = await prisma.properties.create({
+    data: {
+      title: data.title,
+      description: data.description,
+      before_price_tag: data.beforePriceTag,
+      price: data.price,
+      after_price_tag: data.afterPriceTag,
+      assets_id: data.assetsId,
+      needs_id: data.needsId,
+      stage: Stage.POST,
+      requestpost_status: data.requestPostStatus,
+    },
+  });
+  return property;
+};
+const updatePostProperty = async (id, data) => {
+  const property = await prisma.properties.update({
+    where: {
+      id: id,
+    },
+    data: {
+      title: data.title,
+      description: data.description,
+      before_price_tag: data.beforePriceTag,
+      price: data.price,
+      after_price_tag: data.afterPriceTag,
+      assets_id: data.assetsId,
+      needs_id: data.needsId,
+      requestpost_status: data.requestPostStatus,
     },
   });
   return property;
@@ -84,9 +121,42 @@ const getBasicProperty = async (propertyId) => {
   return property;
 };
 
+// lấy property theo id gồm locations, media[], details[]. amenities[]
+const getById = async (propertyId) => {
+  const property = await prisma.properties.findUnique({
+    where: {
+      id: propertyId,
+    },
+    include: {
+      locations: true,
+      media: true,
+      details: true,
+      amenities: true,
+    },
+  });
+  return property;
+};
+
+const getDraftProperties = async (userId) => {
+  const propertyIds = await agentHistoryService.getHistoryByAgentId(userId);
+  const properties = await prisma.properties.findMany({
+    where: {
+      id: {
+        in: propertyIds,
+      },
+      stage: Stage.DRAFT,
+    },
+  });
+  return properties;
+};
+
 export default {
   createRequestProperty,
+  createPostProperty,
   assignAgentToRequest,
   notifyNewPropertySubmission,
   getBasicProperty,
+  updatePostProperty,
+  getById,
+  getDraftProperties,
 };
