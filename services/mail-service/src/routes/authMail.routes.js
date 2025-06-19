@@ -151,4 +151,117 @@ router.post('/notifyAgentAssignedToProject', async (req, res) => {
   }
 });
 
+router.post('/agent-review/notify', async (req, res) => {
+  const { agent_id, user_id, review_id, rating, comment } = req.body;
+  try {
+    await authMailService.sendAgentReviewNotification({
+      agent_id,
+      user_id,
+      review_id,
+      rating,
+      comment,
+    });
+    res.status(200).json({
+      data: null,
+      message: 'Agent review notification sent successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Failed to send agent review notification',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/agent-review/admin-notify', async (req, res) => {
+  const { review_id, reply_id, agent_id, comment } = req.body;
+  try {
+    await authMailService.sendAdminReviewNotification({
+      review_id,
+      reply_id,
+      agent_id,
+      comment,
+    });
+    res.status(200).json({
+      data: null,
+      message: 'Admin review notification sent successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Failed to send admin review notification',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/agent-review/approved', async (req, res) => {
+  const { review_id, reply_id, agent_id } = req.body;
+  try {
+    await authMailService.sendApprovedReplyNotification({
+      review_id,
+      reply_id,
+      agent_id,
+    });
+    res.status(200).json({
+      data: null,
+      message: 'Approved reply notification sent successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Failed to send approved reply notification',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/agent-review/rejected', async (req, res) => {
+  const { review_id, reply_id, agent_id } = req.body;
+  try {
+    await authMailService.sendRejectedReplyNotification({
+      review_id,
+      reply_id,
+      agent_id,
+    });
+    res.status(200).json({
+      data: null,
+      message: 'Rejected reply notification sent successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Failed to send rejected reply notification',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/agent-review/user-notify', async (req, res) => {
+  const { review_id, reply_id, user_id } = req.body;
+  try {
+    await authMailService.sendUserReplyNotification({
+      review_id,
+      reply_id,
+      user_id,
+    });
+    res.status(200).json({
+      data: null,
+      message: 'User reply notification sent successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Failed to send user reply notification',
+      error: [error.message],
+    });
+  }
+});
+
 export default router;

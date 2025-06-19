@@ -1,6 +1,9 @@
 import nodeMailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
+import { PrismaClient } from '@prisma/client'; // Thêm dòng này
+
+const prisma = new PrismaClient(); // Thêm dòng này
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -377,6 +380,201 @@ async function sendConsignmentRequestToAdmins({ propertyInfo, customerInfo }) {
   }
 }
 
+const sendAgentReviewNotification = async ({
+  agent_id,
+  user_id,
+  rating,
+  comment,
+}) => {
+  const agent = await prisma.users.findUnique({ where: { id: agent_id } });
+  const user = await prisma.users.findUnique({ where: { id: user_id } });
+  if (!agent || !user) throw new Error('Agent or User not found');
+
+  const htmlContent = getEmailTemplate({
+    title: 'New Review for You on HomiHub',
+    greeting: `Dear ${agent.name || 'Agent'},`,
+    mainMessage: `A new review has been submitted for you on HomiHub. Please review the details below and consider responding to engage with your client.`,
+    infoSections: `
+      <div class="highlight-section">
+        <h3>Review Details</h3>
+        <ul>
+          <li>Reviewer: ${user.name || user.email}</li>
+          <li>Rating: ${rating} stars</li>
+          <li>Comment: ${comment || 'No comment provided'}</li>
+        </ul>
+      </div>
+    `,
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: agent.email,
+    subject: 'New Review Notification',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
+const sendAdminReviewNotification = async ({
+  review_id,
+  reply_id,
+  agent_id,
+  comment,
+}) => {
+  const agent = await prisma.users.findUnique({ where: { id: agent_id } });
+  if (!agent) throw new Error('Agent not found');
+
+  const htmlContent = getEmailTemplate({
+    title: 'New Agent Reply Awaits Approval',
+    greeting: 'Dear Administrator,',
+    mainMessage: `An agent has submitted a reply to a review on HomiHub. Please review and approve or reject the reply as soon as possible.`,
+    infoSections: `
+      <div class="highlight-section">
+        <h3>Reply Details</h3>
+        <ul>
+          <li>Agent: ${agent.name || agent.email}</li>
+          <li>Review ID: ${review_id}</li>
+          <li>Reply ID: ${reply_id}</li>
+          <li>Comment: ${comment || 'No comment provided'}</li>
+        </ul>
+      </div>
+    `,
+  });
+
+  for (const adminEmail of ADMIN_EMAILS) {
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: adminEmail,
+      subject: 'New Agent Reply Notification',
+      html: htmlContent,
+      attachments: [
+        {
+          filename: 'homihub.png',
+          path: imagePath,
+          cid: 'companylogo',
+        },
+      ],
+    });
+  }
+};
+
+const sendApprovedReplyNotification = async ({
+  review_id,
+  reply_id,
+  agent_id,
+}) => {
+  const agent = await prisma.users.findUnique({ where: { id: agent_id } });
+  if (!agent) throw new Error('Agent not found');
+
+  const htmlContent = getEmailTemplate({
+    title: 'Your Reply Has Been Approved',
+    greeting: `Dear ${agent.name || 'Agent'},`,
+    mainMessage: `Your reply to a review on HomiHub has been approved and is now visible to users. Thank you for engaging with your clients.`,
+    infoSections: `
+      <div class="highlight-section">
+        <h3>Reply Details</h3>
+        <ul>
+          <li>Review ID: ${review_id}</li>
+          <li>Reply ID: ${reply_id}</li>
+        </ul>
+      </div>
+    `,
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: agent.email,
+    subject: 'Reply Approval Notification',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
+const sendRejectedReplyNotification = async ({
+  review_id,
+  reply_id,
+  agent_id,
+}) => {
+  const agent = await prisma.users.findUnique({ where: { id: agent_id } });
+  if (!agent) throw new Error('Agent not found');
+
+  const htmlContent = getEmailTemplate({
+    title: 'Your Reply Has Been Rejected',
+    greeting: `Dear ${agent.name || 'Agent'},`,
+    mainMessage: `Your reply to a review on HomiHub has been rejected. Please review our guidelines and submit a new reply if necessary.`,
+    infoSections: `
+      <div class="highlight-section">
+        <h3>Reply Details</h3>
+        <ul>
+          <li>Review ID: ${review_id}</li>
+          <li>Reply ID: ${reply_id}</li>
+        </ul>
+      </div>
+    `,
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: agent.email,
+    subject: 'Reply Rejection Notification',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
+const sendUserReplyNotification = async ({ review_id, reply_id, user_id }) => {
+  const user = await prisma.users.findUnique({ where: { id: user_id } });
+  if (!user) throw new Error('User not found');
+
+  const htmlContent = getEmailTemplate({
+    title: 'New Response to Your Review',
+    greeting: `Dear ${user.name || 'User'},`,
+    mainMessage: `An admin has responded to your review on HomiHub. Please check the details below to stay updated.`,
+    infoSections: `
+      <div class="highlight-section">
+        <h3>Response Details</h3>
+        <ul>
+          <li>Review ID: ${review_id}</li>
+          <li>Reply ID: ${reply_id}</li>
+        </ul>
+      </div>
+    `,
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: user.email,
+    subject: 'Response to Your Review',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
+// Update export
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
@@ -385,4 +583,9 @@ export default {
   sendConsignmentRequestToCustomer,
   notifyAgentAssignedToProject,
   sendConsignmentRequestToAdmins,
+  sendAgentReviewNotification,
+  sendAdminReviewNotification,
+  sendApprovedReplyNotification,
+  sendRejectedReplyNotification,
+  sendUserReplyNotification,
 };
