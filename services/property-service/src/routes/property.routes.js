@@ -2,11 +2,13 @@ import express from 'express';
 const router = express.Router();
 import authMiddleware from '../middleware/authMiddleware.js';
 import roleGuard, { RoleName } from '../middleware/roleGuard.js';
+import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import propertyService from '../services/property.service.js';
 import locationService from '../services/location.service.js';
 import mediaService from '../services/media.service.js';
 import detailPropertyService from '../services/category.detail.service.js';
 import amenityService from '../services/amentity.service.js';
+import agentHistory from '../services/propertyAgentHistory.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
@@ -194,7 +196,7 @@ router
       }
       const propertyId = property.id;
       if (location) {
-        await locationService.createLocation({
+        await locationService.updateOrCreateLocation({
           propertyId: propertyId,
           ...location,
         });
@@ -319,7 +321,6 @@ router
  *       500:
  *         description: Lỗi server
  */
-
 router
   .route('/assign-agent')
   .post(
@@ -358,6 +359,427 @@ router
         return res.status(200).json({
           data: { history: propertyAgentHistories },
           message: 'Property assigned',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
+// agent/admin tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+router
+  .route('/post')
+  .post(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const {
+          title,
+          description,
+          beforePriceTag,
+          price,
+          afterPriceTag,
+          assetsId,
+          needsId,
+          requestPostStatus,
+          location,
+          media,
+          details,
+          amenities,
+        } = req.body;
+
+        const user = req.user;
+        const senderId = user.userId;
+
+        let property = null;
+        let locationSaved = null;
+        let mediaSaved = null;
+        let detailsSaved = null;
+        let amenitiesSaved = null;
+
+        const errors = [];
+
+        // Phân quyền trạng thái theo role
+        if (user.userRole === RoleName.Agent) {
+          if (
+            requestPostStatus !== RequestPostStatus.PENDING_APPROVAL &&
+            requestPostStatus !== RequestPostStatus.DRAFT
+          ) {
+            return res.status(400).json({
+              data: null,
+              message: '',
+              error: ['You do not have permission to set this status.'],
+            });
+          }
+        }
+
+        // Tạo property
+        property = await propertyService.createPostProperty({
+          senderId,
+          title,
+          description,
+          beforePriceTag,
+          price,
+          afterPriceTag,
+          assetsId,
+          needsId,
+          requestPostStatus,
+        });
+
+        if (!property) {
+          return res.status(400).json({
+            data: null,
+            message: '',
+            error: ['Property not created'],
+          });
+        }
+
+        const propertyId = property.id;
+
+        // Tạo location
+        if (location) {
+          try {
+            locationSaved = await locationService.updateOrCreateLocation({
+              propertyId,
+              ...location,
+            });
+          } catch (err) {
+            errors.push('Failed to create location: ' + err.message);
+          }
+        }
+
+        // Tạo media
+        if (Array.isArray(media) && media.length > 0) {
+          try {
+            mediaSaved = await mediaService.createMedia(
+              media.map((item, index) => ({
+                propertyId,
+                ...item,
+                order: index + 1,
+              }))
+            );
+          } catch (err) {
+            errors.push('Failed to create media: ' + err.message);
+          }
+        }
+
+        // Tạo details
+        if (Array.isArray(details) && details.length > 0) {
+          try {
+            detailsSaved = await detailPropertyService.createProperyDetail(
+              details.map((detail) => ({
+                ...detail,
+                propertyId,
+              }))
+            );
+          } catch (err) {
+            errors.push('Failed to create property details: ' + err.message);
+          }
+        }
+
+        // Tạo amenities
+        if (Array.isArray(amenities) && amenities.length > 0) {
+          try {
+            amenitiesSaved = await amenityService.createAmenityProperty(
+              amenities.map((amenityId) => ({
+                amenity_id: amenityId,
+                propertyId,
+              }))
+            );
+          } catch (err) {
+            errors.push('Failed to attach amenities: ' + err.message);
+          }
+        }
+        // tạo mới history cho agent/admin.
+        try {
+          await propertyService.createHistory({
+            propertyId,
+            agentId: user.userId,
+            userRole: user.userRole,
+          });
+        } catch (err) {
+          errors.push('Failed to create history:' + err.message);
+        }
+
+        // Gửi noti đến admin nếu agent là người tạo
+        // if(user.userRole === RoleName.Agent) {
+        //   try {
+        //     await propertyService.notifyNewPropertySubmission(property, location, user);
+        //   } catch (err) {
+        //     errors.push('Failed to send notification: ' + err.message);
+        //   }
+        // }
+
+        return res.status(201).json({
+          data: {
+            property: property,
+            location: locationSaved,
+            media: mediaSaved ?? null,
+            amenities: amenitiesSaved ?? [],
+            details: detailsSaved ?? [],
+          },
+          message: 'Property created',
+          error: errors,
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
+
+router
+  .route('/post/:id')
+  .put(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const {
+          title,
+          description,
+          beforePriceTag,
+          price,
+          afterPriceTag,
+          assetsId,
+          needsId,
+          requestPostStatus,
+          location,
+          media,
+          details,
+          amenities,
+        } = req.body;
+
+        const { id } = req.params;
+        const user = req.user;
+
+        let property = await propertyService.getById(id);
+        if (!property) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Property not found'],
+          });
+        }
+
+        const errors = [];
+
+        // AGENT: chỉ được sửa bài của mình + bài ở trạng thái DRAFT
+        if (user.userRole === RoleName.Agent) {
+          const isAgentOwner = agentHistory.verifyOwnerPost(user.userId, id);
+          if (!isAgentOwner) {
+            return res.status(403).json({
+              data: null,
+              message: '',
+              error: ['You are not allowed to update this property'],
+            });
+          }
+
+          if (property.requestPostStatus === RequestPostStatus.PUBLISHED) {
+            return res.status(400).json({
+              data: null,
+              message: '',
+              error: [
+                'Cannot update published posts, must have admin approval',
+              ],
+            });
+          }
+
+          if (
+            requestPostStatus !== RequestPostStatus.DRAFT &&
+            requestPostStatus !== RequestPostStatus.PENDING_APPROVAL
+          ) {
+            return res.status(400).json({
+              data: null,
+              message: '',
+              error: ['Invalid status transition'],
+            });
+          }
+        }
+
+        // Cập nhật property
+        property = await propertyService.updatePostProperty(id, {
+          title,
+          description,
+          beforePriceTag,
+          price,
+          afterPriceTag,
+          assetsId,
+          needsId,
+          requestPostStatus,
+        });
+
+        if (!property) {
+          return res.status(400).json({
+            data: null,
+            message: '',
+            error: ['Failed to update property'],
+          });
+        }
+
+        const propertyId = property.id;
+        let locationSaved = null;
+        let mediaSaved = null;
+        let detailsSaved = null;
+        let amenitiesSaved = null;
+
+        // Update location
+        if (location) {
+          try {
+            locationSaved = await locationService.updateOrCreateLocation({
+              propertyId,
+              ...location,
+            });
+          } catch (err) {
+            errors.push('Failed to update location: ' + err.message);
+          }
+        }
+
+        // Update media
+        if (Array.isArray(media)) {
+          try {
+            await mediaService.deleteByPropertyId(propertyId); // xóa cũ
+            mediaSaved = await mediaService.createMedia(
+              media.map((item, index) => ({
+                propertyId,
+                ...item,
+                order: index + 1,
+              }))
+            );
+          } catch (err) {
+            errors.push('Failed to update media: ' + err.message);
+          }
+        }
+
+        // Update details
+        if (Array.isArray(details)) {
+          try {
+            await detailPropertyService.deleteByPropertyId(propertyId); // xóa cũ
+            detailsSaved = await detailPropertyService.createProperyDetail(
+              details.map((detail) => ({
+                ...detail,
+                propertyId,
+              }))
+            );
+          } catch (err) {
+            errors.push('Failed to update property details: ' + err.message);
+          }
+        }
+
+        // Update amenities
+        if (Array.isArray(amenities)) {
+          try {
+            await amenityService.deleteByPropertyId(propertyId); // xóa cũ
+            amenitiesSaved = await amenityService.createAmenityProperty(
+              amenities.map((amenityId) => ({
+                amenity_id: amenityId,
+                propertyId,
+              }))
+            );
+          } catch (err) {
+            errors.push('Failed to update amenities: ' + err.message);
+          }
+        }
+
+        return res.status(200).json({
+          data: {
+            property: property,
+            location: locationSaved,
+            media: mediaSaved ?? null,
+            details: detailsSaved ?? [],
+            amenities: amenitiesSaved ?? [],
+          },
+          message: 'Property updated',
+          error: errors,
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
+
+// admin/agent lấy chi tiết 1 bất động sản để phục vụ cho update
+router
+  .route('/post/:id')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const user = req.user;
+        const property = await propertyService.getById(id);
+        if (!property) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Property not found'],
+          });
+        }
+        // AGENT: chỉ được xem bài của mình
+        if (user.userRole === RoleName.Agent) {
+          const isAgentOwner = agentHistory.verifyOwnerPost(user.userId, id);
+          if (!isAgentOwner) {
+            return res.status(403).json({
+              data: null,
+              message: '',
+              error: ['You are not allowed to view this property'],
+            });
+          }
+        }
+        return res.status(200).json({
+          data: {
+            property: property,
+          },
+          message: 'Property found',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
+
+// admin/agent lấy danh sách các property đang nháp
+router
+  .route('/post/draft')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const user = req.user;
+        const properties = await propertyService.getDraftProperties(
+          user.userId
+        );
+        if (!properties) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Properties not found'],
+          });
+        }
+        return res.status(200).json({
+          data: {
+            properties: properties,
+          },
+          message: 'Properties found',
           error: [],
         });
       } catch (error) {

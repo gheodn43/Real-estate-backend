@@ -85,6 +85,14 @@ const createProperyDetail = async (dataArray) => {
   });
   return propertyDetail;
 };
+const deleteByPropertyId = async (propertyId) => {
+  const propertyDetail = await prisma.property_detail.deleteMany({
+    where: {
+      property_id: propertyId,
+    },
+  });
+  return propertyDetail;
+};
 
 export default {
   createDetail,
@@ -94,4 +102,5 @@ export default {
   getDetailByCategoryId,
   getActiveDetailByCategoryId,
   createProperyDetail,
+  deleteByPropertyId,
 };
