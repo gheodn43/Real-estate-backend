@@ -9,11 +9,12 @@ const app = express();
 
 app.get('/swagger.json', async (req, res) => {
   try {
-    const [auth, property] = await Promise.all([
+    const [auth, property, agentReview] = await Promise.all([
       axios.get('http://auth-service:4001/swagger.json'),
       axios.get('http://property-service:4002/swagger.json'),
+      axios.get('http://agent-review-service:4004/swagger.json'),
     ]);
-    const mergedSpec = mergeSpecs([auth.data, property.data]);
+    const mergedSpec = mergeSpecs([auth.data, property.data, agentReview.data]);
     mergedSpec.info = {
       title: 'Merged API Documentation',
       version: '1.0.0',
