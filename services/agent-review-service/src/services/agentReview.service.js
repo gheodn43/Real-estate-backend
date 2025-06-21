@@ -1,29 +1,33 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import axios from 'axios';
+import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
-// Hàm gọi sang auth-service để lấy thông tin user
-async function getUserFromAuthService(user_id) {
-  try {
-    const res = await axios.get(`http://auth-service:4001/auth/users/${user_id}`);
-    return res.data;
-  } catch (err) {
-    return null;
-  }
-}
 
-// Hàm gọi sang auth-service để lấy thông tin agent
-async function getAgentFromAuthService(agent_id) {
-  try {
-    const res = await axios.get(`http://auth-service:4001/auth/profile/${agent_id}`);
-    return res.data;
-  } catch (err) {
-    return null;
-  }
-}
+
+// // Hàm gọi sang auth-service để lấy thông tin user
+// async function getUserFromAuthService(user_id) {
+//   try {
+//     const res = await axios.get(`http://auth-service:4001/auth/users/${user_id}`);
+//     return res.data;
+//   } catch (err) {
+//     return null;
+//   }
+// }
+
+// // Hàm gọi sang auth-service để lấy thông tin agent
+// async function getAgentFromAuthService(agent_id) {
+//   try {
+//     const res = await axios.get(`http://auth-service:4001/auth/profile/${agent_id}`);
+//     return res.data;
+//   } catch (err) {
+//     return null;
+//   }
+// }
 
 class AgentReviewService {
   async createOrUpdateReview({
+    token,
     agent_id,
     user_id,
     rating,
@@ -32,81 +36,52 @@ class AgentReviewService {
     parent_id,
     type,
   }) {
-    try {
+    
       // Kiểm tra agent qua auth-service
-      const agent = await getAgentFromAuthService(agent_id);
-      const agentUser = agent?.data?.user;
-      if (!agentUser || Number(agentUser.role?.id) !== 2) {
-        throw new Error('Agent not found or invalid role');
-      }
+      const agent = await getCustomerProfile(agent_id, token);
       // Kiểm tra user qua auth-service
-      const user = await getUserFromAuthService(user_id);
-      if (!user) throw new Error('User not found');
+    
       let review;
       if (!parent_id && type === 'comment') {
-        const existing = await prisma.agent_reviews.findFirst({
-          where: {
-            agent_id: Number(agent_id),
-            user_id: Number(user_id),
-            type: 'comment',
-            parent_id: null,
-          },
-        });
-        if (existing) {
-          review = await prisma.agent_reviews.update({
-            where: { id: existing.id },
+       review = await prisma.agent_reviews.create({
             data: {
-              rating,
-              comment,
-              images,
-              updated_at: new Date(),
-              status: 'pending',
-            },
-          });
-        } else {
-          review = await prisma.agent_reviews.create({
-            data: {
-              agent_id: Number(agent_id),
-              user_id: Number(user_id),
+              agent_id: agent_id,
+              user_id: user_id,
               rating,
               comment,
               images,
               parent_id,
               type: 'comment',
               status: 'pending',
-            },
-          });
-        }
+       }})
       } else {
         throw new Error('Invalid review type or parent_id for comment');
       }
       // Gửi mail thông báo cho agent khi có review mới
-      try {
-        await axios.post(
-          'http://mail-service:4003/mail/auth/notifyAgentNewReview',
-          {
-            agentEmail: agentUser.email,
-            agentName: agentUser.name,
-            review: {
-              id: review.id,
-              rating: review.rating,
-              comment: review.comment,
-              images: review.images,
-              created_at: review.created_at
-            },
-            reviewer: {
-              id: user.id,
-              name: user.name,
-              email: user.email
-            }
-          },
-          { timeout: 5000 }
-        );
-      } catch (err) {}
+      // try {
+      //   await axios.post(
+      //     'http://mail-service:4003/mail/auth/notifyAgentNewReview',
+      //     {
+      //       agentEmail: agentUser.email,
+      //       agentName: agentUser.name,
+      //       review: {
+      //         id: review.id,
+      //         rating: review.rating,
+      //         comment: review.comment,
+      //         images: review.images,
+      //         created_at: review.created_at
+      //       },
+      //       reviewer: {
+      //         id: user.id,
+      //         name: user.name,
+      //         email: user.email
+      //       }
+      //     },
+      //     { timeout: 5000 }
+      //   );
+      // } catch (err) {}
       return review;
-    } catch (err) {
-      throw err;
-    }
+    
   }
 
   async createReply(review_id, agent_id, { comment, images }) {

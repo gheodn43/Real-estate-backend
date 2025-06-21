@@ -15,9 +15,11 @@ class AgentReviewController {
 
   async createOrUpdateReview(req, res) {
     try {
+      const token = req.token;
       const { agent_id, rating, comment, images, parent_id, type } = req.body;
-      const user_id = Number(req.user.id); // Lấy từ middleware
+      const user_id = Number(req.user.userId); // Lấy từ middleware
       const review = await agentReviewService.createOrUpdateReview({
+        token,
         agent_id: Number(agent_id),
         user_id,
         rating,
@@ -26,12 +28,16 @@ class AgentReviewController {
         parent_id,
         type,
       });
-      res.status(201).json({ success: true, data: review });
+      res.status(201).json({ 
+        data: {review: review},
+        message: 'Create or update review successfully',
+        errors: [],
+      });
     } catch (err) {
       return res.status(403).json({
         data: null,
-        message: err.message || 'Invalid token.',
-        errors: [],
+        message: 'Create or update review failed',
+        errors: [err.message],
       });
     }
   }

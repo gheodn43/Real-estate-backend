@@ -5,37 +5,43 @@ export const authenticateToken = async (req, res, next) => {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       data: null,
-      message: 'No token provided.',
-      errors: [],
+      message: '',
+      error: ['No token provided'],
     });
   }
+
   const token = authHeader.split(' ')[1];
   try {
     const response = await axios.get('http://auth-service:4001/auth/verify', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
-    const user = response.data?.data?.user;
-    if (!user) {
+    const { data, errors } = response.data;
+    if (!data?.authorized || errors?.length > 0) {
       return res.status(403).json({
         data: null,
-        message: 'Invalid token.',
-        errors: [],
+        message: '',
+        error: errors?.length > 0 ? errors.join(', ') : 'Unauthorized',
       });
     }
-    req.user = user;
+    req.user = {
+      userId: data.userId,
+      userRole: data.userRole,
+      userEmail: data.userEmail,
+      userName: data.userName,
+    };
     req.token = token;
     next();
   } catch (error) {
-    return res.status(403).json({
+    return res.status(500).json({
       data: null,
-      message: 'Invalid token.',
-      errors: [],
+      message: '',
+      error: ['Failed to verify token'],
     });
   }
 };
 
 export const authorizeAdmin = (req, res, next) => {
-  if (!req.user || req.user.role?.id !== 'admin') {
+  if (!req.user || req.user.role?.id !== 'Admin') {
     return res.status(403).json({
       data: null,
       message: 'Access denied. Admins only.',
@@ -46,7 +52,7 @@ export const authorizeAdmin = (req, res, next) => {
 };
 
 export const authorizeAgent = (req, res, next) => {
-  if (!req.user || req.user.role?.id !== 'agent') {
+  if (!req.user || req.user.role?.id !== 'Agent') {
     return res.status(403).json({
       data: null,
       message: 'Access denied. Agents only.',
