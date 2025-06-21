@@ -4,27 +4,6 @@ import axios from 'axios';
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
 
-
-// // Hàm gọi sang auth-service để lấy thông tin user
-// async function getUserFromAuthService(user_id) {
-//   try {
-//     const res = await axios.get(`http://auth-service:4001/auth/users/${user_id}`);
-//     return res.data;
-//   } catch (err) {
-//     return null;
-//   }
-// }
-
-// // Hàm gọi sang auth-service để lấy thông tin agent
-// async function getAgentFromAuthService(agent_id) {
-//   try {
-//     const res = await axios.get(`http://auth-service:4001/auth/profile/${agent_id}`);
-//     return res.data;
-//   } catch (err) {
-//     return null;
-//   }
-// }
-
 class AgentReviewService {
   async createOrUpdateReview({
     token,
@@ -52,34 +31,34 @@ class AgentReviewService {
               images,
               parent_id,
               type: 'comment',
-              status: 'pending',
+              status: 'showing',
        }})
       } else {
         throw new Error('Invalid review type or parent_id for comment');
       }
       // Gửi mail thông báo cho agent khi có review mới
-      // try {
-      //   await axios.post(
-      //     'http://mail-service:4003/mail/auth/notifyAgentNewReview',
-      //     {
-      //       agentEmail: agentUser.email,
-      //       agentName: agentUser.name,
-      //       review: {
-      //         id: review.id,
-      //         rating: review.rating,
-      //         comment: review.comment,
-      //         images: review.images,
-      //         created_at: review.created_at
-      //       },
-      //       reviewer: {
-      //         id: user.id,
-      //         name: user.name,
-      //         email: user.email
-      //       }
-      //     },
-      //     { timeout: 5000 }
-      //   );
-      // } catch (err) {}
+      try {
+        await axios.post(
+          'http://mail-service:4003/mail/auth/notifyAgentNewReview',
+          {
+            agentEmail: agentUser.email,
+            agentName: agentUser.name,
+            review: {
+              id: review.id,
+              rating: review.rating,
+              comment: review.comment,
+              images: review.images,
+              created_at: review.created_at
+            },
+            reviewer: {
+              id: user.id,
+              name: user.name,
+              email: user.email
+            }
+          },
+          { timeout: 5000 }
+        );
+      } catch (err) {}
       return review;
     
   }
@@ -89,17 +68,21 @@ class AgentReviewService {
       const review = await prisma.agent_reviews.findUnique({
         where: { id: Number(review_id) },
       });
-      if (!review || review.agent_id !== Number(agent_id))
-        throw new Error('Review or Agent not found');
+      if (!review) throw new Error('Review not found');
+      console.log('DEBUG: review.agent_id =', review.agent_id, '| agent_id =', agent_id, '| typeof review.agent_id =', typeof review.agent_id, '| typeof agent_id =', typeof agent_id);
+      if (Number(review.agent_id) !== Number(agent_id)) {
+        throw new Error('Agent not authorized to reply this review');
+      }
       const reply = await prisma.agent_reviews.create({
         data: {
           agent_id: Number(agent_id),
-          user_id: Number(agent_id), // Agent cũng là user
+          user_id: review.user_id,
           comment,
           images,
           parent_id: Number(review_id),
           type: 'repcomment',
           status: 'pending',
+          rating: 0 // hoặc null nếu schema cho phép
         },
       });
       // Gửi mail cho admin khi agent reply
@@ -170,7 +153,7 @@ class AgentReviewService {
     }
   }
 
-  async rejectReply(review_id) {
+  async rejectReply(review_id, admin_id) {
     try {
       const reply = await prisma.agent_reviews.findUnique({
         where: { id: Number(review_id) },
@@ -185,15 +168,21 @@ class AgentReviewService {
       try {
         const agent = await getAgentFromAuthService(reply.agent_id);
         const agentUser = agent?.data?.user;
-        await axios.post(
-          'http://mail-service:4003/mail/auth/notifyAgentReplyRejected',
-          {
-            agentEmail: agentUser?.email,
-            agentName: agentUser?.name
-          },
-          { timeout: 5000 }
-        );
-      } catch (err) {}
+        if (agentUser?.email) {
+          await axios.post(
+            'http://mail-service:4003/mail/auth/notifyAgentReplyRejected',
+            {
+              agentEmail: agentUser.email,
+              agentName: agentUser.name,
+              replyId: updatedReply.id,
+              adminId: admin_id
+            },
+            { timeout: 5000 }
+          );
+        }
+      } catch (err) {
+        console.error('Send reject mail failed:', err);
+      }
       return updatedReply;
     } catch (err) {
       throw err;

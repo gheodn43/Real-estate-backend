@@ -44,19 +44,23 @@ class AgentReviewController {
 
   async createReply(req, res) {
     try {
-      const review_id = Number(req.params.id);
-      const agent_id = Number(req.user.id);
+      const review_id = Number(req.params.id); // Ép kiểu sang số
+      const agent_id = Number(req.user.userId); // Ép kiểu sang số
       const { comment, images } = req.body;
       const reply = await agentReviewService.createReply(review_id, agent_id, {
         comment,
         images,
       });
-      res.status(201).json({ success: true, data: reply });
+      res.status(201).json({ 
+        data: {reply: reply}, 
+        message: 'Create reply successfully',
+        errors: [],
+      });
     } catch (err) {
       return res.status(403).json({
         data: null,
-        message: err.message || 'Invalid token.',
-        errors: [],
+        message: 'Create reply failed',
+        errors: [err.message],
       });
     }
   }
@@ -66,12 +70,16 @@ class AgentReviewController {
       const review_id = Number(req.params.id);
       const user_id = Number(req.user.id);
       const review = await agentReviewService.deleteReview(review_id, user_id);
-      res.status(200).json({ success: true, data: review });
+      res.status(200).json({ 
+        data: {review: review},
+        message: 'Delete review successfully',
+        errors: [],
+      });
     } catch (err) {
       return res.status(403).json({
-        data: null,
-        message: err.message || 'Invalid token.',
-        errors: [],
+        data: {review: null},
+        message: 'Delete review failed',
+        errors: [err.message],
       });
     }
   }
@@ -79,14 +87,17 @@ class AgentReviewController {
   async approveReply(req, res) {
     try {
       const review_id = Number(req.params.id);
-      const admin_id = Number(req.user.id);
-      const reply = await agentReviewService.approveReply(review_id, admin_id);
-      res.status(200).json({ success: true, data: reply });
-    } catch (err) {
-      return res.status(403).json({
-        data: null,
-        message: err.message || 'Invalid token.',
+      const updatedReply = await agentReviewService.approveReply(review_id);
+      res.status(200).json({
+        data: { reply: updatedReply },
+        message: 'Approve reply successfully',
         errors: [],
+      });
+    } catch (err) {
+      res.status(400).json({
+        data: null,
+        message: 'Approve reply failed',
+        errors: [err.message],
       });
     }
   }
@@ -96,12 +107,17 @@ class AgentReviewController {
       const review_id = Number(req.params.id);
       const admin_id = Number(req.user.id);
       const reply = await agentReviewService.rejectReply(review_id, admin_id);
-      res.status(200).json({ success: true, data: reply });
-    } catch (err) {
-      return res.status(403).json({
-        data: null,
-        message: err.message || 'Invalid token.',
+      res.status(200).json({ 
+        data: {reply: reply},
+        message: 'Reject reply successfully',
         errors: [],
+      });
+    } catch (err) {
+      console.error('Reject reply error:', err);
+      return res.status(403).json({
+        data: {reply: null},
+        message: 'Reject reply failed',
+        errors: [err.message],
       });
     }
   }
@@ -115,12 +131,16 @@ class AgentReviewController {
         comment,
         images,
       });
-      res.status(201).json({ success: true, data: reply });
+      res.status(201).json({ 
+        data: {reply: reply}, 
+        message: 'Admin reply successfully',
+        errors: [],
+      });
     } catch (err) {
       return res.status(403).json({
-        data: null,
-        message: err.message || 'Invalid token.',
-        errors: [],
+        data: {reply: null},
+        message: 'Admin reply failed',
+        errors: [err.message],
       });
     }
   }
@@ -134,12 +154,16 @@ class AgentReviewController {
         Number(page),
         Number(pageSize)
       );
-      res.status(200).json({ success: true, data: reviews });
+      res.status(200).json({ 
+        data: {reviews: reviews},
+        message: 'Get agent reviews successfully',
+        errors: [],
+      });
     } catch (err) {
       return res.status(403).json({
-        data: null,
-        message: err.message || 'Invalid token.',
-        errors: [],
+        data: {reviews: null},
+        message: 'Get agent reviews failed',
+        errors: [err.message],
       });
     }
   }
@@ -151,12 +175,16 @@ class AgentReviewController {
       const summary = await agentReviewService.getAgentReviewSummary(
         Number(agent_id)
       );
-      res.status(200).json({ success: true, data: summary });
+      res.status(200).json({ 
+        data: {summary: summary},
+        message: 'Get agent review summary successfully',
+        errors: [],
+      });
     } catch (err) {
       return res.status(403).json({
-        data: null,
-        message: err.message || 'Invalid token.',
-        errors: [],
+        data: {summary: null},
+        message: 'Get agent review summary failed',
+        errors: [err.message],
       });
     }
   }
@@ -169,12 +197,16 @@ class AgentReviewController {
         Number(agent_id),
         user_id
       );
-      res.status(200).json({ success: true, data: review });
+      res.status(200).json({ 
+        data: {review: review},
+        message: 'Get user review successfully',
+        errors: [],
+      });
     } catch (err) {
       return res.status(403).json({
-        data: null,
-        message: err.message || 'Invalid token.',
-        errors: [],
+        data: {review: null},
+        message: 'Get user review failed',
+        errors: [err.message],
       });
     }
   }

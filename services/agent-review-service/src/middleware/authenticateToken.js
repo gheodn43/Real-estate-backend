@@ -29,6 +29,7 @@ export const authenticateToken = async (req, res, next) => {
       userEmail: data.userEmail,
       userName: data.userName,
     };
+    console.log('req.user:', req.user); 
     req.token = token;
     next();
   } catch (error) {
@@ -41,7 +42,8 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 export const authorizeAdmin = (req, res, next) => {
-  if (!req.user || req.user.role?.id !== 'Admin') {
+  if (!req.user || req.user.userRole !== 4) {
+
     return res.status(403).json({
       data: null,
       message: 'Access denied. Admins only.',
@@ -52,7 +54,7 @@ export const authorizeAdmin = (req, res, next) => {
 };
 
 export const authorizeAgent = (req, res, next) => {
-  if (!req.user || req.user.role?.id !== 'Agent') {
+  if (!req.user || req.user.userRole !== 2) {
     return res.status(403).json({
       data: null,
       message: 'Access denied. Agents only.',
