@@ -8,11 +8,6 @@ import {
 
 const router = express.Router();
 
-console.log('authenticateToken:', typeof authenticateToken);
-console.log('authorizeAgent:', typeof authorizeAgent);
-console.log('authorizeAdmin:', typeof authorizeAdmin);
-console.log('createReply:', typeof agentReviewController.createReply);
-
 /**
  * @swagger
  * /agent-reviews:

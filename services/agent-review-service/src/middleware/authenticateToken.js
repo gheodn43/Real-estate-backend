@@ -1,50 +1,59 @@
-import jwt from 'jsonwebtoken';
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+import axios from 'axios';
 
-function authenticateToken(req, res, next) {
+export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token)
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       data: null,
       message: 'No token provided.',
       errors: [],
     });
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err)
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const response = await axios.get('http://auth-service:4001/auth/verify', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const user = response.data?.data?.user;
+    if (!user) {
       return res.status(403).json({
         data: null,
         message: 'Invalid token.',
         errors: [],
       });
+    }
     req.user = user;
+    req.token = token;
     next();
-  });
-}
-
-function authorizeAgent(req, res, next) {
-  if (!req.user.roleId || req.user.roleId !== 2) {
-    // Giả định roleId = 2 là 'agent'
+  } catch (error) {
     return res.status(403).json({
       data: null,
-      message: 'Not authorized as agent.',
+      message: 'Invalid token.',
+      errors: [],
+    });
+  }
+};
+
+export const authorizeAdmin = (req, res, next) => {
+  if (!req.user || req.user.role?.id !== 'admin') {
+    return res.status(403).json({
+      data: null,
+      message: 'Access denied. Admins only.',
       errors: [],
     });
   }
   next();
-}
+};
 
-function authorizeAdmin(req, res, next) {
-  if (!req.user.roleId || req.user.roleId !== 4) {
-    // Giả định roleId = 3 là 'admin'
+export const authorizeAgent = (req, res, next) => {
+  if (!req.user || req.user.role?.id !== 'agent') {
     return res.status(403).json({
       data: null,
-      message: 'Not authorized as admin.',
+      message: 'Access denied. Agents only.',
       errors: [],
     });
   }
   next();
-}
+};
 
-export { authenticateToken, authorizeAgent, authorizeAdmin };
+export default authenticateToken;

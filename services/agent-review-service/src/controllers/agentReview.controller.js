@@ -28,7 +28,11 @@ class AgentReviewController {
       });
       res.status(201).json({ success: true, data: review });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -43,7 +47,11 @@ class AgentReviewController {
       });
       res.status(201).json({ success: true, data: reply });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -54,7 +62,11 @@ class AgentReviewController {
       const review = await agentReviewService.deleteReview(review_id, user_id);
       res.status(200).json({ success: true, data: review });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -65,7 +77,11 @@ class AgentReviewController {
       const reply = await agentReviewService.approveReply(review_id, admin_id);
       res.status(200).json({ success: true, data: reply });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -76,7 +92,11 @@ class AgentReviewController {
       const reply = await agentReviewService.rejectReply(review_id, admin_id);
       res.status(200).json({ success: true, data: reply });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -91,7 +111,11 @@ class AgentReviewController {
       });
       res.status(201).json({ success: true, data: reply });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -106,7 +130,11 @@ class AgentReviewController {
       );
       res.status(200).json({ success: true, data: reviews });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -119,7 +147,11 @@ class AgentReviewController {
       );
       res.status(200).json({ success: true, data: summary });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 
@@ -133,7 +165,11 @@ class AgentReviewController {
       );
       res.status(200).json({ success: true, data: review });
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      return res.status(403).json({
+        data: null,
+        message: err.message || 'Invalid token.',
+        errors: [],
+      });
     }
   }
 }
