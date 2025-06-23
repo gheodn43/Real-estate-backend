@@ -189,12 +189,12 @@ class AgentReviewService {
     }
   }
 
-  async deleteReview(review_id, user_id) {
+  async deleteReview(review_id, user_id, user_role) {
     try {
       const review = await prisma.agent_reviews.findUnique({
         where: { id: Number(review_id) },
       });
-      if (!review || review.user_id !== Number(user_id))
+      if (!review || (Number(review.user_id) !== Number(user_id) && user_role !== 4))
         throw new Error('Review not found or unauthorized');
       return prisma.agent_reviews.update({
         where: { id: Number(review_id) },
@@ -220,6 +220,7 @@ class AgentReviewService {
           parent_id: Number(review_id),
           type: 'repcomment',
           status: 'showing',
+          rating: 0
         },
       });
       // Gửi mail cho user khi admin trả lời review
@@ -299,7 +300,7 @@ class AgentReviewService {
 
   async getUserReview(agent_id, user_id) {
     try {
-      return prisma.agent_reviews.findFirst({
+      return prisma.agent_reviews.findMany({
         where: {
           agent_id: Number(agent_id),
           user_id: Number(user_id),

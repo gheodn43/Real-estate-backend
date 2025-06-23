@@ -68,8 +68,9 @@ class AgentReviewController {
   async deleteReview(req, res) {
     try {
       const review_id = Number(req.params.id);
-      const user_id = Number(req.user.id);
-      const review = await agentReviewService.deleteReview(review_id, user_id);
+      const user_id = Number(req.user.userId);
+      const user_role = Number(req.user.userRole);
+      const review = await agentReviewService.deleteReview(review_id, user_id, user_role);
       res.status(200).json({ 
         data: {review: review},
         message: 'Delete review successfully',
@@ -125,7 +126,7 @@ class AgentReviewController {
   async adminReply(req, res) {
     try {
       const review_id = Number(req.params.id);
-      const admin_id = Number(req.user.id);
+      const admin_id = Number(req.user.userId);
       const { comment, images } = req.body;
       const reply = await agentReviewService.adminReply(review_id, admin_id, {
         comment,
@@ -192,7 +193,7 @@ class AgentReviewController {
   async getUserReview(req, res) {
     try {
       const { agent_id } = req.params;
-      const user_id = Number(req.user.id);
+      const user_id = Number(req.user.userId);
       const review = await agentReviewService.getUserReview(
         Number(agent_id),
         user_id
