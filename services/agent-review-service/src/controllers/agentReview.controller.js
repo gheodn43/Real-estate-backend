@@ -17,9 +17,11 @@ class AgentReviewController {
     try {
       const token = req.token;
       const { agent_id, rating, comment, images, parent_id, type } = req.body;
-      const user_id = Number(req.user.userId); // Lấy từ middleware
+      const user_id = Number(req.user.userId); 
+      const user = req.user;
       const review = await agentReviewService.createOrUpdateReview({
         token,
+        user,
         agent_id: Number(agent_id),
         user_id,
         rating,
@@ -44,8 +46,8 @@ class AgentReviewController {
 
   async createReply(req, res) {
     try {
-      const review_id = Number(req.params.id); // Ép kiểu sang số
-      const agent_id = Number(req.user.userId); // Ép kiểu sang số
+      const review_id = Number(req.params.id); 
+      const agent_id = Number(req.user.userId); 
       const { comment, images } = req.body;
       const reply = await agentReviewService.createReply(review_id, agent_id, {
         comment,

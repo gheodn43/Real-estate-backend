@@ -1,9 +1,8 @@
 import express from 'express';
 import agentReviewController from '../controllers/agentReview.controller.js';
+import roleGuard, { RoleName } from '../middleware/roleGuard.js';
 import {
   authenticateToken,
-  authorizeAgent,
-  authorizeAdmin,
 } from '../middleware/authenticateToken.js';
 
 const router = express.Router();
@@ -43,7 +42,8 @@ const router = express.Router();
  *       201:
  *         description: Thành công
  */
-router.post('/', authenticateToken, agentReviewController.createOrUpdateReview);
+router.post('/', authenticateToken,roleGuard([RoleName.Customer, RoleName.Admin]), agentReviewController.createOrUpdateReview);
+
 
 /**
  * @swagger
@@ -120,7 +120,7 @@ router.put(
 router.post(
   '/:id/reply',
   authenticateToken,
-  authorizeAgent,
+  roleGuard([RoleName.Agent]),
   agentReviewController.createReply
 );
 
@@ -233,7 +233,7 @@ router.get(
 router.put(
   '/:id/approve',
   authenticateToken,
-  authorizeAdmin,
+  roleGuard([RoleName.Admin]),
   agentReviewController.approveReply
 );
 
@@ -258,7 +258,7 @@ router.put(
 router.put(
   '/:id/reject',
   authenticateToken,
-  authorizeAdmin,
+  roleGuard([RoleName.Admin]),
   agentReviewController.rejectReply
 );
 
@@ -296,7 +296,7 @@ router.put(
 router.post(
   '/:id/admin-reply',
   authenticateToken,
-  authorizeAdmin,
+  roleGuard([RoleName.Admin]),
   agentReviewController.adminReply
 );
 

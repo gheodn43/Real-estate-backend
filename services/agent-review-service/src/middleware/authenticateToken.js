@@ -41,27 +41,4 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
-export const authorizeAdmin = (req, res, next) => {
-  if (!req.user || req.user.userRole !== 4) {
-
-    return res.status(403).json({
-      data: null,
-      message: 'Access denied. Admins only.',
-      errors: [],
-    });
-  }
-  next();
-};
-
-export const authorizeAgent = (req, res, next) => {
-  if (!req.user || req.user.userRole !== 2) {
-    return res.status(403).json({
-      data: null,
-      message: 'Access denied. Agents only.',
-      errors: [],
-    });
-  }
-  next();
-};
-
 export default authenticateToken;

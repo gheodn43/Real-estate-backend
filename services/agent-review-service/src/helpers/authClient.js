@@ -15,4 +15,12 @@ const getCustomerProfile = async (customerId, token) => {
   );
   return res.data;
 };
-export { getProfile, getCustomerProfile };
+const getUserFromAuthService = async (userId) => {
+  const res = await axios.get(`http://auth-service:4001/auth/profile/${userId}`);
+  return res.data;
+};
+const getAgentFromAuthService = async (agentId) => {
+  const res = await axios.get(`http://auth-service:4001/auth/profile/${agentId}`);
+  return res.data;
+};
+export { getProfile, getCustomerProfile, getUserFromAuthService, getAgentFromAuthService };

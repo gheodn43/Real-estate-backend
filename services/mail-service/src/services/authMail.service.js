@@ -377,29 +377,49 @@ async function sendConsignmentRequestToAdmins({ propertyInfo, customerInfo }) {
   }
 }
 
-// Gửi mail cho agent khi có review mới từ user
-const sendAgentReviewNotify = async ({ agentEmail, agentName, userName, rating, comment }) => {
+
+const notifyAgentNewReview = async ({ agentEmail, agentName, review, reviewer }) => {
+  // Kiểm tra đầu vào (tương tự các hàm auth-service)
+  if (!agentEmail || !review?.rating || !reviewer?.name) {
+    return {
+      data: null,
+      message: 'agentEmail, review.rating, and reviewer.name are required',
+      errors: ['agentEmail, review.rating, and reviewer.name are required'],
+    };
+  }
+
   const htmlContent = getEmailTemplate({
     title: 'Bạn nhận được một đánh giá mới',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Nhà Môi Giới,',
-    mainMessage: `Bạn vừa nhận được một đánh giá mới từ khách hàng <b>${userName || ''}</b> với số sao: <b>${rating}</b>.<br><br>Nội dung đánh giá: <i>${comment}</i>`,
-    infoSections: ''
+    mainMessage: `Bạn vừa nhận được một đánh giá mới từ khách hàng <b>${reviewer.name}
+    </b> với số sao: <b>${review.rating}
+    </b>.<br><br>Nội dung đánh giá: <i>${review.comment || ''}</i>`,
+    infoSections: '',
   });
+
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: agentEmail,
     subject: 'Bạn nhận được một đánh giá mới',
     html: htmlContent,
-    attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
   });
-};
+}
 
-// Gửi mail cho admin khi agent reply đánh giá
+
+
 const sendAgentReplyAdminNotify = async ({ adminEmail, agentName, comment }) => {
   const htmlContent = getEmailTemplate({
     title: 'Agent vừa trả lời đánh giá',
     greeting: 'Kính gửi Quản trị viên,',
-    mainMessage: `Agent <b>${agentName}</b> vừa trả lời một đánh giá của khách hàng.<br><br>Nội dung trả lời: <i>${comment}</i>`,
+    mainMessage: `Agent <b>${agentName}
+    </b> vừa trả lời một đánh giá của khách hàng.<br><br>Nội dung trả lời: <i>${comment}</i>`,
     infoSections: ''
   });
   await transporter.sendMail({
@@ -411,7 +431,7 @@ const sendAgentReplyAdminNotify = async ({ adminEmail, agentName, comment }) => 
   });
 };
 
-// Gửi mail cho agent khi reply được duyệt
+
 const sendAgentReplyApproved = async ({ agentEmail, agentName }) => {
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn đã được duyệt',
@@ -428,7 +448,7 @@ const sendAgentReplyApproved = async ({ agentEmail, agentName }) => {
   });
 };
 
-// Gửi mail cho agent khi reply bị từ chối
+
 const sendAgentReplyRejected = async ({ agentEmail, agentName }) => {
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn bị từ chối',
@@ -445,7 +465,7 @@ const sendAgentReplyRejected = async ({ agentEmail, agentName }) => {
   });
 };
 
-// Gửi mail cho user khi admin trả lời đánh giá
+
 const sendAdminReplyUserNotify = async ({ userEmail, userName, comment }) => {
   const htmlContent = getEmailTemplate({
     title: 'Quản trị viên đã trả lời đánh giá của bạn',
@@ -470,7 +490,8 @@ export default {
   sendConsignmentRequestToCustomer,
   notifyAgentAssignedToProject,
   sendConsignmentRequestToAdmins,
-  sendAgentReviewNotify,
+
+  notifyAgentNewReview,
   sendAgentReplyAdminNotify,
   sendAgentReplyApproved,
   sendAgentReplyRejected,

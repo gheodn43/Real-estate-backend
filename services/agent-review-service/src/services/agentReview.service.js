@@ -7,8 +7,8 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 class AgentReviewService {
   async createOrUpdateReview({
     token,
+    user,
     agent_id,
-    user_id,
     rating,
     comment,
     images,
@@ -16,16 +16,31 @@ class AgentReviewService {
     type,
   }) {
     
-      // Kiểm tra agent qua auth-service
+      
       const agent = await getCustomerProfile(agent_id, token);
-      // Kiểm tra user qua auth-service
+      const agentUser = agent?.data?.user;
+
+      console.log('Agent info:', {
+        agentEmail: agentUser?.email,
+        agentName: agentUser?.name,
+      });
+      console.log('User info:', user);
+
+      if (!agentUser?.email || !agentUser?.name || !user?.name) {
+        console.log('Missing required data for email notification:', {
+          agentEmail: agentUser?.email,
+          agentName: agentUser?.name,
+          userName: user?.name,
+        });
+      }
+      
     
       let review;
       if (!parent_id && type === 'comment') {
        review = await prisma.agent_reviews.create({
             data: {
               agent_id: agent_id,
-              user_id: user_id,
+              user_id: user.userId,
               rating,
               comment,
               images,
@@ -36,9 +51,9 @@ class AgentReviewService {
       } else {
         throw new Error('Invalid review type or parent_id for comment');
       }
-      // Gửi mail thông báo cho agent khi có review mới
-      try {
-        await axios.post(
+      
+      if (agentUser?.email && agentUser?.name && user?.userName) {
+        const response = await axios.post(
           'http://mail-service:4003/mail/auth/notifyAgentNewReview',
           {
             agentEmail: agentUser.email,
@@ -48,20 +63,23 @@ class AgentReviewService {
               rating: review.rating,
               comment: review.comment,
               images: review.images,
-              created_at: review.created_at
+              created_at: review.created_at,
             },
             reviewer: {
-              id: user.id,
-              name: user.name,
-              email: user.email
-            }
+              id: user?.id,
+              name: user?.userName,
+              email: user?.userEmail,
+            },
           },
-          { timeout: 5000 }
+      
         );
-      } catch (err) {}
-      return review;
+        console.log('Email notification response:', response.data);
+      } else {
+        console.log('Skipping email notification due to missing data');
+      }
     
-  }
+      return review;
+    }
 
   async createReply(review_id, agent_id, { comment, images }) {
     try {
@@ -82,10 +100,10 @@ class AgentReviewService {
           parent_id: Number(review_id),
           type: 'repcomment',
           status: 'pending',
-          rating: 0 // hoặc null nếu schema cho phép
+          rating: 0 
         },
       });
-      // Gửi mail cho admin khi agent reply
+      
       try {
         const admin = { email: 'kietnguyen23012002@gmail.com', name: 'Admin' };
         const agent = await getAgentFromAuthService(agent_id);
@@ -134,7 +152,7 @@ class AgentReviewService {
         where: { id: Number(review_id) },
         data: { status: 'showing' },
       });
-      // Gửi mail cho agent khi reply được duyệt
+      
       try {
         const agent = await getAgentFromAuthService(reply.agent_id);
         const agentUser = agent?.data?.user;
@@ -164,7 +182,7 @@ class AgentReviewService {
         where: { id: Number(review_id) },
         data: { status: 'rejected' },
       });
-      // Gửi mail cho agent khi reply bị từ chối
+      
       try {
         const agent = await getAgentFromAuthService(reply.agent_id);
         const agentUser = agent?.data?.user;
@@ -223,7 +241,7 @@ class AgentReviewService {
           rating: 0
         },
       });
-      // Gửi mail cho user khi admin trả lời review
+      
       try {
         const user = await getUserFromAuthService(review.user_id);
         const admin = await getUserFromAuthService(admin_id);

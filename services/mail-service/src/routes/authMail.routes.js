@@ -151,52 +151,56 @@ router.post('/notifyAgentAssignedToProject', async (req, res) => {
   }
 });
 
-// Gửi email khi có review mới cho agent
 router.post('/notifyAgentNewReview', async (req, res) => {
-  const { agentEmail, agentName, review, reviewer } = req.body;
   try {
-    await authMailService.notifyAgentNewReview({ agentEmail, agentName, review, reviewer });
+    await authMailService.notifyAgentNewReview(req.body);
     res.status(200).json({
-      data: null,
+      data: {},
       message: 'Agent notified of new review',
       error: [],
     });
   } catch (error) {
     res.status(500).json({
-      data: null,
+      data: {},
       message: 'Failed to notify agent',
       error: [error.message],
     });
   }
 });
 
-// Gửi email khi agent reply, thông báo cho admin
+
 router.post('/notifyAdminAgentReply', async (req, res) => {
   const { adminEmail, adminName, reply, agent, review } = req.body;
   try {
     await authMailService.notifyAdminAgentReply({ adminEmail, adminName, reply, agent, review });
     res.status(200).json({
-      data: null,
+      data: {},
       message: 'Admin notified of agent reply',
       error: [],
     });
   } catch (error) {
     res.status(500).json({
-      data: null,
+      data: {},
       message: 'Failed to notify admin',
       error: [error.message],
     });
   }
 });
 
-// Gửi email khi admin duyệt hoặc từ chối reply của agent
+
 router.post('/notifyAgentReplyApproved', async (req, res) => {
   const { agentEmail, agentName } = req.body;
   try {
     await authMailService.sendAgentReplyApproved({ agentEmail, agentName });
-    res.status(200).json({ data: null, message: 'Agent notified of reply approval', error: [] });
+    res.status(200).json({ 
+      data: {}, 
+      message: 'Agent notified of reply approval', 
+      error: [] });
   } catch (error) {
-    res.status(500).json({ data: null, message: 'Failed to notify agent', error: [error.message] });
+    res.status(500).json({ 
+      data: {}, 
+      message: 'Failed to notify agent', 
+      error: [error.message] });
   }
 });
 
@@ -204,25 +208,31 @@ router.post('/notifyAgentReplyRejected', async (req, res) => {
   const { agentEmail, agentName } = req.body;
   try {
     await authMailService.sendAgentReplyRejected({ agentEmail, agentName });
-    res.status(200).json({ data: null, message: 'Agent notified of reply rejection', error: [] });
+    res.status(200).json({ 
+      data: {}, 
+      message: 'Agent notified of reply rejection', 
+      error: [] });
   } catch (error) {
-    res.status(500).json({ data: null, message: 'Failed to notify agent', error: [error.message] });
+    res.status(500).json({ 
+      data: {}, 
+      message: 'Failed to notify agent', 
+      error: [error.message] });
   }
 });
 
-// Gửi email khi admin trả lời review cho user
+
 router.post('/notifyUserAdminReply', async (req, res) => {
   const { userEmail, userName, reply, review, admin } = req.body;
   try {
     await authMailService.notifyUserAdminReply({ userEmail, userName, reply, review, admin });
     res.status(200).json({
-      data: null,
+      data: {},
       message: 'User notified of admin reply',
       error: [],
     });
   } catch (error) {
     res.status(500).json({
-      data: null,
+      data: {},
       message: 'Failed to notify user',
       error: [error.message],
     });
