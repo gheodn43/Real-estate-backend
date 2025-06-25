@@ -171,14 +171,16 @@ router.post('/notifyAgentNewReview', async (req, res) => {
 
 router.post('/notifyAdminAgentReply', async (req, res) => {
   const { adminEmail, adminName, reply, agent, review } = req.body;
+  console.log('DEBUG: Received payload for notifyAdminAgentReply:', req.body);
   try {
-    await authMailService.notifyAdminAgentReply({ adminEmail, adminName, reply, agent, review });
+    await authMailService.sendAgentReplyAdminNotify({ adminEmail, adminName, reply, agent, review });
     res.status(200).json({
       data: {},
       message: 'Admin notified of agent reply',
       error: [],
     });
   } catch (error) {
+    console.error('ERROR: Failed to process notifyAdminAgentReply:', error.message);
     res.status(500).json({
       data: {},
       message: 'Failed to notify admin',
@@ -187,9 +189,9 @@ router.post('/notifyAdminAgentReply', async (req, res) => {
   }
 });
 
-
 router.post('/notifyAgentReplyApproved', async (req, res) => {
   const { agentEmail, agentName } = req.body;
+  console.log('DEBUG: Received payload for notifyAgentReplyApproved:', req.body);
   try {
     await authMailService.sendAgentReplyApproved({ agentEmail, agentName });
     res.status(200).json({ 
@@ -197,6 +199,7 @@ router.post('/notifyAgentReplyApproved', async (req, res) => {
       message: 'Agent notified of reply approval', 
       error: [] });
   } catch (error) {
+    console.error('ERROR: Failed to process notifyAgentReplyApproved:', error.message);
     res.status(500).json({ 
       data: {}, 
       message: 'Failed to notify agent', 
@@ -206,6 +209,7 @@ router.post('/notifyAgentReplyApproved', async (req, res) => {
 
 router.post('/notifyAgentReplyRejected', async (req, res) => {
   const { agentEmail, agentName } = req.body;
+  console.log('DEBUG: Received payload for notifyAgentReplyRejected:', req.body);
   try {
     await authMailService.sendAgentReplyRejected({ agentEmail, agentName });
     res.status(200).json({ 
@@ -213,6 +217,7 @@ router.post('/notifyAgentReplyRejected', async (req, res) => {
       message: 'Agent notified of reply rejection', 
       error: [] });
   } catch (error) {
+    console.error('ERROR: Failed to process notifyAgentReplyRejected:', error.message);
     res.status(500).json({ 
       data: {}, 
       message: 'Failed to notify agent', 
@@ -220,17 +225,18 @@ router.post('/notifyAgentReplyRejected', async (req, res) => {
   }
 });
 
-
 router.post('/notifyUserAdminReply', async (req, res) => {
   const { userEmail, userName, reply, review, admin } = req.body;
+  console.log('DEBUG: Received payload for notifyUserAdminReply:', req.body);
   try {
-    await authMailService.notifyUserAdminReply({ userEmail, userName, reply, review, admin });
+    await authMailService.sendAdminReplyUserNotify({ userEmail, userName, comment: reply.comment, admin: { name: admin.name, email: admin.email }, review });
     res.status(200).json({
       data: {},
       message: 'User notified of admin reply',
       error: [],
     });
   } catch (error) {
+    console.error('ERROR: Failed to process notifyUserAdminReply:', error.message);
     res.status(500).json({
       data: {},
       message: 'Failed to notify user',

@@ -15,12 +15,19 @@ const getCustomerProfile = async (customerId, token) => {
   );
   return res.data;
 };
-const getUserFromAuthService = async (userId) => {
-  const res = await axios.get(`http://auth-service:4001/auth/profile/${userId}`);
+const getUserFromAuthService = async (userId, token) => {
+  const res = await axios.get(`http://auth-service:4001/auth/profile/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
-const getAgentFromAuthService = async (agentId) => {
-  const res = await axios.get(`http://auth-service:4001/auth/profile/${agentId}`);
+const getAgentFromAuthService = async (agentId, token) => {
+  const res = await axios.get(
+    `http://auth-service:4001/auth/profile/${agentId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return res.data;
 };
 export { getProfile, getCustomerProfile, getUserFromAuthService, getAgentFromAuthService };

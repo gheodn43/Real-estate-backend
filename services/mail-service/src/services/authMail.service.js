@@ -414,14 +414,22 @@ const notifyAgentNewReview = async ({ agentEmail, agentName, review, reviewer })
 
 
 
-const sendAgentReplyAdminNotify = async ({ adminEmail, agentName, comment }) => {
+const sendAgentReplyAdminNotify = async ({ adminEmail, adminName, reply, agent, review }) => {
+  if (!adminEmail || !reply?.comment || !agent?.name || !review?.id || !review.rating) {
+    throw new Error('adminEmail, reply.comment, agent.name, review.id, and review.rating are required');
+  }
+
+  console.log('DEBUG: Processing sendAgentReplyAdminNotify with payload:', { adminEmail, adminName, reply, agent, review });
+
   const htmlContent = getEmailTemplate({
     title: 'Agent vừa trả lời đánh giá',
-    greeting: 'Kính gửi Quản trị viên,',
-    mainMessage: `Agent <b>${agentName}
-    </b> vừa trả lời một đánh giá của khách hàng.<br><br>Nội dung trả lời: <i>${comment}</i>`,
+    greeting: adminName ? `Kính gửi ${adminName},` : 'Kính gửi Quản trị viên,',
+    mainMessage: `Agent <b>${agent.name}</b> vừa trả lời một đánh giá của khách hàng.<br><br>Nội dung trả lời: <i>${reply.comment}</i><br><br>Thông tin đánh giá gốc:<br>Đánh giá ID: ${review.id}<br>Số sao: ${review.rating}<br>Nội dung: <i>${review.comment || ''}</i>`,
     infoSections: ''
   });
+
+  console.log('DEBUG: Generated HTML content for sendAgentReplyAdminNotify');
+
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: adminEmail,
@@ -429,16 +437,22 @@ const sendAgentReplyAdminNotify = async ({ adminEmail, agentName, comment }) => 
     html: htmlContent,
     attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
   });
+
+  console.log('DEBUG: Email sent successfully to', adminEmail);
 };
 
-
 const sendAgentReplyApproved = async ({ agentEmail, agentName }) => {
+  if (!agentEmail) {
+    throw new Error('Agent email is required');
+  }
+
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn đã được duyệt',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Nhà Môi Giới,',
     mainMessage: 'Phản hồi của bạn cho đánh giá khách hàng đã được quản trị viên duyệt và hiển thị công khai.',
     infoSections: ''
   });
+
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: agentEmail,
@@ -448,14 +462,18 @@ const sendAgentReplyApproved = async ({ agentEmail, agentName }) => {
   });
 };
 
-
 const sendAgentReplyRejected = async ({ agentEmail, agentName }) => {
+  if (!agentEmail) {
+    throw new Error('Agent email is required');
+  }
+
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn bị từ chối',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Nhà Môi Giới,',
     mainMessage: 'Phản hồi của bạn cho đánh giá khách hàng đã bị quản trị viên từ chối. Vui lòng kiểm tra lại nội dung và gửi lại nếu cần.',
     infoSections: ''
   });
+
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: agentEmail,
@@ -465,14 +483,18 @@ const sendAgentReplyRejected = async ({ agentEmail, agentName }) => {
   });
 };
 
-
 const sendAdminReplyUserNotify = async ({ userEmail, userName, comment }) => {
+  if (!userEmail || !comment) {
+    throw new Error('userEmail and comment are required');
+  }
+
   const htmlContent = getEmailTemplate({
     title: 'Quản trị viên đã trả lời đánh giá của bạn',
     greeting: userName ? `Kính gửi ${userName},` : 'Kính gửi Quý khách,',
     mainMessage: `Quản trị viên đã trả lời đánh giá của bạn với nội dung: <i>${comment}</i>`,
     infoSections: ''
   });
+
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: userEmail,
@@ -490,7 +512,6 @@ export default {
   sendConsignmentRequestToCustomer,
   notifyAgentAssignedToProject,
   sendConsignmentRequestToAdmins,
-
   notifyAgentNewReview,
   sendAgentReplyAdminNotify,
   sendAgentReplyApproved,

@@ -46,12 +46,14 @@ class AgentReviewController {
 
   async createReply(req, res) {
     try {
+      const token = req.token;
       const review_id = Number(req.params.id); 
       const agent_id = Number(req.user.userId); 
       const { comment, images } = req.body;
       const reply = await agentReviewService.createReply(review_id, agent_id, {
         comment,
         images,
+        token
       });
       res.status(201).json({ 
         data: {reply: reply}, 
@@ -60,8 +62,47 @@ class AgentReviewController {
       });
     } catch (err) {
       return res.status(403).json({
-        data: null,
+        data: {reply: null},
         message: 'Create reply failed',
+        errors: [err.message],
+      });
+    }
+  }
+
+  async approveReply(req, res) {
+    try {
+      const token = req.token;
+      const review_id = Number(req.params.id);
+      const updatedReply = await agentReviewService.approveReply(review_id, token);
+      res.status(200).json({
+        data: { reply: updatedReply },
+        message: 'Approve reply successfully',
+        errors: [],
+      });
+    } catch (err) {
+      res.status(400).json({
+        data: null,
+        message: 'Approve reply failed',
+        errors: [err.message],
+      });
+    }
+  }
+
+  async rejectReply(req, res) {
+    try {
+      const token = req.token;
+      const review_id = Number(req.params.id);
+      const reply = await agentReviewService.rejectReply(review_id, token);
+      res.status(200).json({ 
+        data: {reply: reply},
+        message: 'Reject reply successfully',
+        errors: [],
+      });
+    } catch (err) {
+      console.error('Reject reply error:', err);
+      return res.status(403).json({
+        data: {reply: null},
+        message: 'Reject reply failed',
         errors: [err.message],
       });
     }
@@ -87,52 +128,16 @@ class AgentReviewController {
     }
   }
 
-  async approveReply(req, res) {
-    try {
-      const review_id = Number(req.params.id);
-      const updatedReply = await agentReviewService.approveReply(review_id);
-      res.status(200).json({
-        data: { reply: updatedReply },
-        message: 'Approve reply successfully',
-        errors: [],
-      });
-    } catch (err) {
-      res.status(400).json({
-        data: null,
-        message: 'Approve reply failed',
-        errors: [err.message],
-      });
-    }
-  }
-
-  async rejectReply(req, res) {
-    try {
-      const review_id = Number(req.params.id);
-      const admin_id = Number(req.user.id);
-      const reply = await agentReviewService.rejectReply(review_id, admin_id);
-      res.status(200).json({ 
-        data: {reply: reply},
-        message: 'Reject reply successfully',
-        errors: [],
-      });
-    } catch (err) {
-      console.error('Reject reply error:', err);
-      return res.status(403).json({
-        data: {reply: null},
-        message: 'Reject reply failed',
-        errors: [err.message],
-      });
-    }
-  }
-
   async adminReply(req, res) {
     try {
+      const token = req.token;
       const review_id = Number(req.params.id);
       const admin_id = Number(req.user.userId);
       const { comment, images } = req.body;
       const reply = await agentReviewService.adminReply(review_id, admin_id, {
         comment,
         images,
+        token
       });
       res.status(201).json({ 
         data: {reply: reply}, 
