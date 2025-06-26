@@ -406,6 +406,50 @@ async rejectReply(review_id, token) {
       throw err;
     }
   }
+
+  async getPendingReplies(page = 1, pageSize = 10) {
+  try {
+    return await prisma.agent_reviews.findMany({
+      where: {
+        type: 'repcomment',
+        status: 'pending',
+      },
+      orderBy: { created_at: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        parent: { select: { id: true, comment: true, rating: true, user_id: true } },
+      },
+    });
+  } catch (err) {
+    throw new Error('Failed to get pending replies: ' + err.message);
+  }
 }
+
+async getMyReplies(agent_id, status = null, page = 1, pageSize = 10) {
+  try {
+    const where = {
+      agent_id: Number(agent_id),
+      type: 'repcomment',
+    };
+    if (status) {
+      where.status = status;
+    }
+    return await prisma.agent_reviews.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        parent: { select: { id: true, comment: true, rating: true, user_id: true } },
+      },
+    });
+  } catch (err) {
+    throw new Error('Failed to get agent replies: ' + err.message);
+  }
+}
+}
+
+
 
 export default new AgentReviewService();

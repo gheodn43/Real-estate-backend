@@ -12,6 +12,8 @@ class AgentReviewController {
     this.getAgentReviews = this.getAgentReviews.bind(this);
     this.getAgentReviewSummary = this.getAgentReviewSummary.bind(this);
     this.getUserReview = this.getUserReview.bind(this);
+    this.getPendingReplies = this.getPendingReplies.bind(this);
+    this.getMyReplies = this.getMyReplies.bind(this);
   }
 
 async createReview(req, res) {
@@ -246,6 +248,51 @@ async updateReview(req, res) {
       });
     }
   }
+
+  async getPendingReplies(req, res) {
+  try {
+    const { page = 1, pageSize = 10 } = req.query;
+    const replies = await agentReviewService.getPendingReplies(
+      Number(page),
+      Number(pageSize)
+    );
+    res.status(200).json({
+      data: { replies },
+      message: 'Get pending replies successfully',
+      errors: [],
+    });
+  } catch (err) {
+    return res.status(403).json({
+      data: { replies: null },
+      message: 'Get pending replies failed',
+      errors: [err.message],
+    });
+  }
+}
+
+async getMyReplies(req, res) {
+  try {
+    const { status, page = 1, pageSize = 10 } = req.query;
+    const agent_id = Number(req.user.userId);
+    const replies = await agentReviewService.getMyReplies(
+      agent_id,
+      status,
+      Number(page),
+      Number(pageSize)
+    );
+    res.status(200).json({
+      data: { replies },
+      message: 'Get agent replies successfully',
+      errors: [],
+    });
+  } catch (err) {
+    return res.status(403).json({
+      data: { replies: null },
+      message: 'Get agent replies failed',
+      errors: [err.message],
+    });
+  }
+}
 }
 
 export default new AgentReviewController();
