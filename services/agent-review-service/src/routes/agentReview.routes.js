@@ -42,7 +42,7 @@ const router = express.Router();
  *       201:
  *         description: Thành công
  */
-router.post('/', authenticateToken,roleGuard([RoleName.Customer, RoleName.Admin]), agentReviewController.createOrUpdateReview);
+router.post('/', authenticateToken,roleGuard([RoleName.Customer, RoleName.Admin]), agentReviewController.createReview);
 
 
 /**
@@ -83,7 +83,8 @@ router.post('/', authenticateToken,roleGuard([RoleName.Customer, RoleName.Admin]
 router.put(
   '/:id',
   authenticateToken,
-  agentReviewController.createOrUpdateReview
+  roleGuard([RoleName.Customer, RoleName.Admin]),
+  agentReviewController.updateReview,
 );
 
 /**

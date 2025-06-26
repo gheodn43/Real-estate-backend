@@ -6,88 +6,163 @@ import { getCustomerProfile, getAgentFromAuthService, getUserFromAuthService } f
 
 
 class AgentReviewService {
-  async createOrUpdateReview({
-    token,
-    user,
-    agent_id,
-    rating,
-    comment,
-    images,
-    parent_id,
-    type,
-  }) {
-    
-      
-      const agent = await getCustomerProfile(agent_id, token);
-      const agentUser = agent?.data?.user;
+  async createReview({
+  token,
+  user,
+  agent_id,
+  rating,
+  comment,
+  images,
+  parent_id,
+  type,
+}) {
+  if (!parent_id && type === 'comment') {
+    const existingReview = await prisma.agent_reviews.findFirst({
+      where: {
+        user_id: Number(user.userId),
+        agent_id: Number(agent_id),
+        type: 'comment',
+      },
+    });
 
-      console.log('Agent info:', {
-        agentEmail: agentUser?.email,
-        agentName: agentUser?.name,
-      });
-      console.log('User info:', user);
+    if (existingReview) {
+      throw new Error('Review already exists for this user and agent. Use PUT to update.');
+    }
 
-      if (!agentUser?.email || !agentUser?.name || !user?.name) {
-        console.log('Missing required data for email notification:', {
-          agentEmail: agentUser?.email,
-          agentName: agentUser?.name,
-          userName: user?.name,
-        });
-      }
+    const review = await prisma.agent_reviews.create({
+      data: {
+        agent_id: Number(agent_id),
+        user_id: Number(user.userId),
+        rating,
+        comment,
+        images: images || [],
+        parent_id,
+        type: 'comment',
+        status: 'showing',
+      },
+    });
+
+    const agent = await getCustomerProfile(agent_id, token);
+    const agentUser = agent?.data?.user;
+
+   
+
+    if (agentUser?.email && agentUser?.name && user?.userName) {
+      const emailPayload = {
+        agentEmail: agentUser.email,
+        agentName: agentUser.name,
+        review: {
+          id: review.id,
+          rating: review.rating,
+          comment: review.comment,
+          images: review.images,
+          created_at: review.created_at,
+        },
+        reviewer: {
+          id: user?.userId,
+          name: user?.userName,
+          email: user?.userEmail,
+        },
+      };
+
       
-    
-      let review;
-      if (!parent_id && type === 'comment') {
-       review = await prisma.agent_reviews.create({
-            data: {
-              agent_id: agent_id,
-              user_id: user.userId,
-              rating,
-              comment,
-              images,
-              parent_id,
-              type: 'comment',
-              status: 'showing',
-       }})
-      } else {
-        throw new Error('Invalid review type or parent_id for comment');
-      }
-      
-      if (agentUser?.email && agentUser?.name && user?.userName) {
+      try {
         const response = await axios.post(
           'http://mail-service:4003/mail/auth/notifyAgentNewReview',
-          {
-            agentEmail: agentUser.email,
-            agentName: agentUser.name,
-            review: {
-              id: review.id,
-              rating: review.rating,
-              comment: review.comment,
-              images: review.images,
-              created_at: review.created_at,
-            },
-            reviewer: {
-              id: user?.id,
-              name: user?.userName,
-              email: user?.userEmail,
-            },
-          },
-      
+          emailPayload,
         );
-        console.log('Email notification response:', response.data);
-      } else {
-        console.log('Skipping email notification due to missing data');
+  
+      } catch (emailErr) {
+        
       }
-    
-      return review;
+    } else {
     }
+
+    return review;
+  } else {
+    throw new Error('Invalid review type or parent_id for comment');
+  }
+}
+
+async updateReview({
+  review_id,
+  user_id,
+  rating,
+  comment,
+  images,
+  token,
+  user, 
+}) {
+  const review = await prisma.agent_reviews.findUnique({
+    where: { id: Number(review_id) },
+  });
+
+  if (!review) {
+    throw new Error('Review not found');
+  }
+  if (review.user_id !== Number(user_id)) {
+    throw new Error('Unauthorized to update this review');
+  }
+  if (review.type !== 'comment') {
+    throw new Error('Invalid review type');
+  }
+
+  const agent = await getCustomerProfile(review.agent_id, token);
+  const agentUser = agent?.data?.user;
+
+  let emailResponse;
+  if (agentUser?.email && agentUser?.name && user?.userName) {
+    const emailPayload = {
+      agentEmail: agentUser.email,
+      agentName: agentUser.name,
+      review: {
+        id: review.id,
+        rating: rating, 
+        comment: comment, 
+        images: images || [],
+        created_at: review.created_at,
+      },
+      reviewer: {
+        id: user_id,
+        name: user?.userName,
+        email: user?.userEmail,
+      },
+    };
+
+    try {
+      emailResponse = await axios.post(
+        'http://mail-service:4003/mail/auth/notifyAgentReviewUpdated',
+        emailPayload,
+      );
+    } catch (emailErr) {
+      
+      throw new Error('Failed to send update email notification');
+    }
+  } else {
+  }
+
+  const updatedReview = await prisma.$transaction(async (prisma) => {
+    const reviewUpdate = await prisma.agent_reviews.update({
+      where: { id: Number(review_id) },
+      data: {
+        rating,
+        comment,
+        images: images || [],
+        status: 'showing',
+        updated_at: new Date(),
+      },
+    });
+    return reviewUpdate;
+  });
+
+  return updatedReview;
+}
 
   async createReply(review_id, agent_id, { comment, images, token }) {
   const review = await prisma.agent_reviews.findUnique({
     where: { id: Number(review_id) },
   });
   if (!review) throw new Error('Review not found');
-  console.log('DEBUG: review.agent_id =', review.agent_id, '| agent_id =', agent_id, '| typeof review.agent_id =', typeof review.agent_id, '| typeof agent_id =', typeof agent_id);
   if (Number(review.agent_id) !== Number(agent_id)) {
     throw new Error('Agent not authorized to reply this review');
   }
@@ -106,12 +181,9 @@ class AgentReviewService {
 
   try {
     const admin = { email: 'kietnguyen23012002@gmail.com', name: 'Admin' };
-    console.log('DEBUG: Calling getAgentFromAuthService with agent_id =', agent_id, 'and token =', token);
     const agent = await getAgentFromAuthService(agent_id, token);
     const agentUser = agent?.data?.user;
-    if (!agentUser?.email || !agentUser?.name) {
-      console.warn('WARNING: Agent user data incomplete:', agentUser);
-    }
+    
     const emailPayload = {
       adminEmail: admin.email,
       adminName: admin.name,
@@ -134,19 +206,12 @@ class AgentReviewService {
         created_at: review.created_at
       }
     };
-    console.log('DEBUG: Sending email to admin with payload:', emailPayload);
     const emailResponse = await axios.post(
       'http://mail-service:4003/mail/auth/notifyAdminAgentReply',
       emailPayload,
-      { timeout: 5000 }
     );
-    console.log('DEBUG: Email sent successfully to admin, response:', emailResponse.status, emailResponse.data);
   } catch (emailErr) {
-    console.error('ERROR: Failed to send email:', {
-      message: emailErr.message,
-      response: emailErr.response?.data,
-      status: emailErr.response?.status
-    });
+    
   }
 
   return reply;
@@ -168,12 +233,7 @@ class AgentReviewService {
   const agent = await getAgentFromAuthService(reply.agent_id, token);
   const agentUser = agent?.data?.user;
   if (agentUser?.email) {
-    console.log('DEBUG: Sending approval mail with payload:', {
-      agentEmail: agentUser.email,
-      agentName: agentUser.name,
-      replyId: updatedReply.id,
-      timestamp: new Date().toISOString()
-    });
+    
     const response = await axios.post(
       'http://mail-service:4003/mail/auth/notifyAgentReplyApproved',
       {
@@ -182,9 +242,7 @@ class AgentReviewService {
         replyId: updatedReply.id
       }
     );
-    console.log('INFO: Approval mail sent successfully for replyId:', updatedReply.id, 'Response:', response.data);
   } else {
-    console.log('INFO: No email found for agent:', reply.agent_id);
   }
 
   return updatedReply;
@@ -206,12 +264,7 @@ async rejectReply(review_id, token) {
   const agent = await getAgentFromAuthService(reply.agent_id, token);
   const agentUser = agent?.data?.user;
   if (agentUser?.email) {
-    console.log('DEBUG: Sending rejection mail with payload:', {
-      agentEmail: agentUser.email,
-      agentName: agentUser.name,
-      replyId: updatedReply.id,
-      timestamp: new Date().toISOString()
-    });
+    
     const response = await axios.post(
       'http://mail-service:4003/mail/auth/notifyAgentReplyRejected',
       {
@@ -220,9 +273,7 @@ async rejectReply(review_id, token) {
         replyId: updatedReply.id,
       }
     );
-    console.log('INFO: Rejection mail sent successfully for replyId:', updatedReply.id, 'Response:', response.data);
   } else {
-    console.log('INFO: No email found for agent:', reply.agent_id);
   }
 
   return updatedReply;
@@ -265,18 +316,12 @@ async rejectReply(review_id, token) {
     });
 
     try {
-      console.log('DEBUG: Fetching user with user_id:', review.user_id, 'and admin with admin_id:', admin_id);
       const user = await getUserFromAuthService(review.user_id, token);
       const admin = await getUserFromAuthService(admin_id, token);
       const userData = user?.data?.user;
       const adminData = admin?.data?.user;
 
-      if (!userData?.email || !adminData?.name) {
-        console.warn('WARNING: User or admin data incomplete:', {
-          userEmail: userData?.email,
-          adminName: adminData?.name
-        });
-      }
+      
 
       const emailPayload = {
         userEmail: userData?.email,
@@ -301,18 +346,12 @@ async rejectReply(review_id, token) {
         }
       };
 
-      console.log('DEBUG: Sending email to user with payload:', emailPayload);
       const emailResponse = await axios.post(
         'http://mail-service:4003/mail/auth/notifyUserAdminReply',
         emailPayload,
       );
-      console.log('DEBUG: Email sent successfully to user, response:', emailResponse.status, emailResponse.data);
     } catch (emailErr) {
-      console.error('ERROR: Failed to send email:', {
-        message: emailErr.message,
-        response: emailErr.response?.data,
-        status: emailErr.response?.status
-      });
+      
     }
 
     return reply;

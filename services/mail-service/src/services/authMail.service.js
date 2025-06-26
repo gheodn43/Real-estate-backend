@@ -412,6 +412,33 @@ const notifyAgentNewReview = async ({ agentEmail, agentName, review, reviewer })
   });
 }
 
+const sendAgentReviewUpdatedNotify = async ({ agentEmail, agentName, review, reviewer }) => {
+  if (!agentEmail || !review?.comment || !review?.id || !review?.rating || !agentName) {
+    throw new Error('agentEmail, review.comment, review.id, review.rating, and agentName are required');
+  }
+
+
+  const htmlContent = getEmailTemplate({
+    title: 'Đánh giá đã được cập nhật',
+    greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Agent,',
+    mainMessage: `Khách hàng <b>${reviewer.name}</b> vừa cập nhật đánh giá.<br><br>` +
+                 `Nội dung đánh giá: <i>${review.comment}</i><br>` +
+                 `Đánh giá ID: ${review.id}<br>Số sao: ${review.rating}<br>` +
+                 `Ảnh đính kèm: ${review.images?.length ? review.images.join('<br>') : 'Không có ảnh'}`,
+    infoSections: ''
+  });
+
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: agentEmail,
+    subject: 'Đánh giá đã được cập nhật',
+    html: htmlContent,
+    attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+  });
+
+};
+
 
 
 const sendAgentReplyAdminNotify = async ({ adminEmail, adminName, reply, agent, review }) => {
@@ -419,7 +446,6 @@ const sendAgentReplyAdminNotify = async ({ adminEmail, adminName, reply, agent, 
     throw new Error('adminEmail, reply.comment, agent.name, review.id, and review.rating are required');
   }
 
-  console.log('DEBUG: Processing sendAgentReplyAdminNotify with payload:', { adminEmail, adminName, reply, agent, review });
 
   const htmlContent = getEmailTemplate({
     title: 'Agent vừa trả lời đánh giá',
@@ -428,7 +454,6 @@ const sendAgentReplyAdminNotify = async ({ adminEmail, adminName, reply, agent, 
     infoSections: ''
   });
 
-  console.log('DEBUG: Generated HTML content for sendAgentReplyAdminNotify');
 
   await transporter.sendMail({
     from: process.env.MAIL_USER,
@@ -438,7 +463,6 @@ const sendAgentReplyAdminNotify = async ({ adminEmail, adminName, reply, agent, 
     attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
   });
 
-  console.log('DEBUG: Email sent successfully to', adminEmail);
 };
 
 const sendAgentReplyApproved = async ({ agentEmail, agentName }) => {
@@ -513,6 +537,7 @@ export default {
   notifyAgentAssignedToProject,
   sendConsignmentRequestToAdmins,
   notifyAgentNewReview,
+  sendAgentReviewUpdatedNotify,
   sendAgentReplyAdminNotify,
   sendAgentReplyApproved,
   sendAgentReplyRejected,
