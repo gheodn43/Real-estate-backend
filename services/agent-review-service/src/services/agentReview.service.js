@@ -22,6 +22,7 @@ class AgentReviewService {
         user_id: Number(user.userId),
         agent_id: Number(agent_id),
         type: 'comment',
+        status: { not: 'deleted' },
       },
     });
 
@@ -45,8 +46,6 @@ class AgentReviewService {
     const agent = await getCustomerProfile(agent_id, token);
     const agentUser = agent?.data?.user;
 
-   
-
     if (agentUser?.email && agentUser?.name && user?.userName) {
       const emailPayload = {
         agentEmail: agentUser.email,
@@ -65,17 +64,14 @@ class AgentReviewService {
         },
       };
 
-      
       try {
         const response = await axios.post(
           'http://mail-service:4003/mail/auth/notifyAgentNewReview',
           emailPayload,
+          { timeout: 20000 }
         );
-  
       } catch (emailErr) {
-        
       }
-    } else {
     }
 
     return review;
@@ -91,7 +87,7 @@ async updateReview({
   comment,
   images,
   token,
-  user, 
+  user,
 }) {
   const review = await prisma.agent_reviews.findUnique({
     where: { id: Number(review_id) },
@@ -106,6 +102,9 @@ async updateReview({
   if (review.type !== 'comment') {
     throw new Error('Invalid review type');
   }
+  if (review.status === 'deleted') {
+    throw new Error('Cannot update a deleted review');
+  }
 
   const agent = await getCustomerProfile(review.agent_id, token);
   const agentUser = agent?.data?.user;
@@ -117,8 +116,8 @@ async updateReview({
       agentName: agentUser.name,
       review: {
         id: review.id,
-        rating: rating, 
-        comment: comment, 
+        rating: rating,
+        comment: comment,
         images: images || [],
         created_at: review.created_at,
       },
@@ -133,12 +132,11 @@ async updateReview({
       emailResponse = await axios.post(
         'http://mail-service:4003/mail/auth/notifyAgentReviewUpdated',
         emailPayload,
+        { timeout: 20000 }
       );
     } catch (emailErr) {
-      
       throw new Error('Failed to send update email notification');
     }
-  } else {
   }
 
   const updatedReview = await prisma.$transaction(async (prisma) => {
