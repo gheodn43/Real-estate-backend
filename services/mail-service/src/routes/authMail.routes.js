@@ -151,4 +151,107 @@ router.post('/notifyAgentAssignedToProject', async (req, res) => {
   }
 });
 
+router.post('/notifyAgentNewReview', async (req, res) => {
+  try {
+    await authMailService.notifyAgentNewReview(req.body);
+    res.status(200).json({
+      data: {},
+      message: 'Agent notified of new review',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify agent',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyAgentReviewUpdated', async (req, res) => {
+  const { agentEmail, agentName, review, reviewer } = req.body;
+  try {
+    await authMailService.sendAgentReviewUpdatedNotify({ agentEmail, agentName, review, reviewer });
+    res.status(200).json({
+      data: {},
+      message: 'Agent notified of review updated',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify agent',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyAdminAgentReply', async (req, res) => {
+  const { adminEmail, adminName, reply, agent, review } = req.body;
+  try {
+    await authMailService.sendAgentReplyAdminNotify({ adminEmail, adminName, reply, agent, review });
+    res.status(200).json({
+      data: {},
+      message: 'Admin notified of agent reply',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify admin',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyAgentReplyApproved', async (req, res) => {
+  const { agentEmail, agentName } = req.body;
+  try {
+    await authMailService.sendAgentReplyApproved({ agentEmail, agentName });
+    res.status(200).json({ 
+      data: {}, 
+      message: 'Agent notified of reply approval', 
+      error: [] });
+  } catch (error) {
+    res.status(500).json({ 
+      data: {}, 
+      message: 'Failed to notify agent', 
+      error: [error.message] });
+  }
+});
+
+router.post('/notifyAgentReplyRejected', async (req, res) => {
+  const { agentEmail, agentName } = req.body;
+  try {
+    await authMailService.sendAgentReplyRejected({ agentEmail, agentName });
+    res.status(200).json({ 
+      data: {}, 
+      message: 'Agent notified of reply rejection', 
+      error: [] });
+  } catch (error) {
+    res.status(500).json({ 
+      data: {}, 
+      message: 'Failed to notify agent', 
+      error: [error.message] });
+  }
+});
+
+router.post('/notifyUserAdminReply', async (req, res) => {
+  const { userEmail, userName, reply, review, admin } = req.body;
+  try {
+    await authMailService.sendAdminReplyUserNotify({ userEmail, userName, comment: reply.comment, admin: { name: admin.name, email: admin.email }, review });
+    res.status(200).json({
+      data: {},
+      message: 'User notified of admin reply',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify user',
+      error: [error.message],
+    });
+  }
+});
+
 export default router;

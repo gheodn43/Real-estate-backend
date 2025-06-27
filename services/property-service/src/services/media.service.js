@@ -13,6 +13,15 @@ const createMedia = async (dataArray) => {
   });
 };
 
+const deleteByPropertyId = async (propertyId) => {
+  return await prisma.property_media.deleteMany({
+    where: {
+      property_id: propertyId,
+    },
+  });
+};
+
 export default {
   createMedia,
+  deleteByPropertyId,
 };

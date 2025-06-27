@@ -98,6 +98,85 @@ router
     }
   });
 
+//post: add một lúc nhiều amenity
+/**
+ * @swagger
+ * /prop/amenity/multiple:
+ *   post:
+ *     summary: Giới hạn chỉ tạo được 2 cấp [ADMIN]
+ *     tags: [Amenities]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amenities:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                     parentAmenityId:
+ *                       type: integer
+ *                     isActive:
+ *                       type: boolean
+ *     responses:
+ *       201:
+ *         description: Amenities created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router
+  .route('/multiple')
+  .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    try {
+      const { amenities } = req.body;
+      if (!amenities || !Array.isArray(amenities) || amenities.length === 0) {
+        return res.status(400).json({
+          data: null,
+          message: '',
+          error: ['Field "amenities" is required'],
+        });
+      }
+      const createdAmenities =
+        await amentityService.createMultipleAmenities(amenities);
+      const countOfAmenitiesCreated = createdAmenities.length;
+      return res.status(201).json({
+        data: null,
+        message: `Has been created ${countOfAmenitiesCreated} amenities successfully`,
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  });
+
 /**
  * @swagger
  * /prop/amenity/active:
