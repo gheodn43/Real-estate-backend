@@ -1,6 +1,7 @@
 import prisma from '../middleware/prismaClient.js';
 import Stage from '../enums/stage.enum.js';
 import RequestStatus from '../enums/requestStatus.enum.js';
+import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
 import axios from 'axios';
@@ -144,7 +145,7 @@ const getDraftProperties = async (userId) => {
       id: {
         in: propertyIds,
       },
-      stage: Stage.DRAFT,
+      requestpost_status: RequestPostStatus.DRAFT,
     },
   });
   return properties;
