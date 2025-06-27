@@ -7,7 +7,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /agent-reviews:
+ * /review/agent-reviews:
  *   post:
  *     summary: Tạo đánh giá mới cho Agent
  *     tags: [AgentReview]
@@ -76,7 +76,8 @@ router.post('/', authenticateToken, roleGuard([RoleName.Customer, RoleName.Admin
 
 /**
  * @swagger
- * /agent-reviews/{id}:
+ * /review/agent-reviews/{id}:
+
  *   put:
  *     summary: Cập nhật đánh giá cho Agent
  *     tags: [AgentReview]
@@ -148,7 +149,8 @@ router.put(
 
 /**
  * @swagger
- * /agent-reviews/{id}/reply:
+ * /review/agent-reviews/{id}/reply:
+
  *   post:
  *     summary: Agent trả lời đánh giá
  *     tags: [AgentReview]
@@ -218,7 +220,8 @@ router.post(
 
 /**
  * @swagger
- * /agent-reviews/{id}:
+ * /review/agent-reviews/{id}:
+
  *   delete:
  *     summary: Xóa đánh giá
  *     tags: [AgentReview]
@@ -270,7 +273,8 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
 
 /**
  * @swagger
- * /agent-reviews:
+ * /review/agent-reviews:
+
  *   get:
  *     summary: Lấy danh sách đánh giá của Agent
  *     tags: [AgentReview]
@@ -328,7 +332,7 @@ router.get('/', agentReviewController.getAgentReviews);
 
 /**
  * @swagger
- * /agent-reviews/summary:
+ * /review/agent-reviews/summary:
  *   get:
  *     summary: Lấy tổng kết đánh giá của Agent
  *     tags: [AgentReview]
@@ -378,7 +382,8 @@ router.get('/summary', agentReviewController.getAgentReviewSummary);
 
 /**
  * @swagger
- * /agent-reviews/{agent_id}/user:
+ * /review/agent-reviews/{agent_id}/user:
+
  *   get:
  *     summary: Lấy danh sách đánh giá của user hiện tại với Agent
  *     tags: [AgentReview]
@@ -467,7 +472,8 @@ router.get(
 
 /**
  * @swagger
- * /agent-reviews/{id}/approve:
+ * /review/agent-reviews/{id}/approve:
+
  *   put:
  *     summary: Admin duyệt rep-comment
  *     tags: [AgentReview]
@@ -541,7 +547,8 @@ router.put(
 
 /**
  * @swagger
- * /agent-reviews/{id}/reject:
+ * /review/agent-reviews/{id}/reject:
+
  *   put:
  *     summary: Admin từ chối rep-comment
  *     tags: [AgentReview]
@@ -615,7 +622,8 @@ router.put(
 
 /**
  * @swagger
- * /agent-reviews/{id}/admin-reply:
+ * /review/agent-reviews/{id}/admin-reply:
+
  *   post:
  *     summary: Admin trả lời đánh giá
  *     tags: [AgentReview]
@@ -685,7 +693,8 @@ router.post(
 
 /**
  * @swagger
- * /agent-reviews/pending-replies:
+ * /review/agent-reviews/pending-replies:
+
  *   get:
  *     summary: Admin lấy danh sách rep-comment cần phê duyệt
  *     tags: [AgentReview]
@@ -728,7 +737,8 @@ router.get(
 
 /**
  * @swagger
- * /agent-reviews/my-replies:
+ * /review/agent-reviews/my-replies:
+
  *   get:
  *     summary: Agent xem danh sách rep-comment của mình
  *     tags: [AgentReview]
