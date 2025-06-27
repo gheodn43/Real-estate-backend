@@ -8,7 +8,7 @@ import locationService from '../services/location.service.js';
 import mediaService from '../services/media.service.js';
 import detailPropertyService from '../services/category.detail.service.js';
 import amenityService from '../services/amentity.service.js';
-import agentHistory from '../services/propertyAgentHistory.service.js';
+import agentHistoryService from '../services/propertyAgentHistory.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
@@ -16,8 +16,8 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  * @swagger
  * /prop/request:
  *   post:
- *     summary: Gửi yêu cầu ký gửi bất động sản
- *     description: API để khách hàng gửi yêu cầu ký gửi bất động sản
+ *     summary: Tạo mới một yêu cầu bất động sản
+ *     description: API cho phép khách hàng tạo mới một yêu cầu bất động sản
  *     tags:
  *       - Property
  *     security:
@@ -29,7 +29,6 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  *           schema:
  *             type: object
  *             required:
- *               - senderId
  *               - title
  *               - description
  *               - beforePriceTag
@@ -98,7 +97,7 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  *                     url:
  *                       type: string
  *                       format: uri
- *                       example: https://example.com/image1.jpg
+ *                       example: image
  *               details:
  *                 type: array
  *                 items:
@@ -117,7 +116,7 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  *                 example: [1, 2]
  *     responses:
  *       201:
- *         description: Property request created successfully
+ *         description: Tạo mới yêu cầu bất động sản thành công
  *         content:
  *           application/json:
  *             schema:
@@ -140,8 +139,6 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  *                         type: integer
  *                     details:
  *                       type: array
- *                       items:
- *                         type: object
  *                 message:
  *                   type: string
  *                   example: Property created
@@ -151,9 +148,9 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  *                     type: string
  *                   example: []
  *       400:
- *         description: Property creation failed
+ *         description: Tạo mới yêu cầu bất động sản không thành công
  *       500:
- *         description: Server error
+ *         description: Lỗi server
  */
 router
   .route('/request')
@@ -372,6 +369,146 @@ router
   );
 
 // agent/admin tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+/**
+ * @swagger
+ * /prop/post:
+ *   post:
+ *     summary: Tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+ *     description: API cho phép agent/admin tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - beforePriceTag
+ *               - price
+ *               - afterPriceTag
+ *               - assetsId
+ *               - needsId
+ *               - requestPostStatus
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Bán nhà phố trung tâm Quận 1
+ *               description:
+ *                 type: string
+ *                 example: Nhà phố sang trọng, tiện nghi đầy đủ, gần trung tâm thương mại.
+ *               beforePriceTag:
+ *                 type: string
+ *                 example: Giá chỉ từ
+ *               price:
+ *                 type: number
+ *                 format: double
+ *                 example: 50000000000.99
+ *               afterPriceTag:
+ *                 type: string
+ *                 example: VNĐ
+ *               assetsId:
+ *                 type: integer
+ *                 example: 2
+ *               needsId:
+ *                 type: integer
+ *                 example: 4
+ *               requestPostStatus:
+ *                 type: string
+ *                 example: pending_approval
+ *               location:
+ *                 type: object
+ *                 properties:
+ *                   addrCity:
+ *                     type: string
+ *                     example: Hồ Chí Minh
+ *                   addrDistrict:
+ *                     type: string
+ *                     example: Quận 1
+ *                   addrStreet:
+ *                     type: string
+ *                     example: Nguyễn Huệ
+ *                   addrDetails:
+ *                     type: string
+ *                     example: Sát phố đi bộ
+ *                   latitude:
+ *                     type: number
+ *                     format: float
+ *                     example: 10.7769
+ *                   longitude:
+ *                     type: number
+ *                     format: float
+ *                     example: 106.7009
+ *               media:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     type:
+ *                       type: string
+ *                       example: image
+ *                     url:
+ *                       type: string
+ *                       format: uri
+ *                       example: image
+ *               details:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetailId:
+ *                       type: integer
+ *                       example: 1
+ *                     value:
+ *                       type: string
+ *                       example: "3"
+ *               amenities:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 example: [1, 2]
+ *     responses:
+ *       200:
+ *         description: Tạo mới hoặc cập nhật bất động sản thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     property:
+ *                       type: object
+ *                     location:
+ *                       type: object
+ *                     media:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     amenities:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *                     details:
+ *                       type: array
+ *                 message:
+ *                   type: string
+ *                   example: Property created
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: []
+ *       400:
+ *         description: Tạo mới hoặc cập nhật bất động sản không thành công
+ *       500:
+ *         description: Lỗi server
+ */
 router
   .route('/post')
   .post(
@@ -498,7 +635,7 @@ router
         }
         // tạo mới history cho agent/admin.
         try {
-          await propertyService.createHistory({
+          await agentHistoryService.createHistory({
             propertyId,
             agentId: user.userId,
             userRole: user.userRole,
@@ -538,6 +675,152 @@ router
   );
 
 // agent/admin cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+/**
+ * @swagger
+ * /prop/post/{id}:
+ *   put:
+ *     summary: Cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+ *     description: API cho phép agent/admin cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - beforePriceTag
+ *               - price
+ *               - afterPriceTag
+ *               - assetsId
+ *               - needsId
+ *               - requestPostStatus
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Bán nhà phố trung tâm Quận 1
+ *               description:
+ *                 type: string
+ *                 example: Nhà phố sang trọng, tiện nghi đầy đủ, gần trung tâm thương mại.
+ *               beforePriceTag:
+ *                 type: string
+ *                 example: Giá chỉ từ
+ *               price:
+ *                 type: number
+ *                 format: double
+ *                 example: 50000000000.99
+ *               afterPriceTag:
+ *                 type: string
+ *                 example: VNĐ
+ *               assetsId:
+ *                 type: integer
+ *                 example: 2
+ *               needsId:
+ *                 type: integer
+ *                 example: 4
+ *               requestPostStatus:
+ *                 type: string
+ *                 example: pending_approval
+ *               location:
+ *                 type: object
+ *                 properties:
+ *                   addrCity:
+ *                     type: string
+ *                     example: Hồ Chí Minh
+ *                   addrDistrict:
+ *                     type: string
+ *                     example: Quận 1
+ *                   addrStreet:
+ *                     type: string
+ *                     example: Nguyễn Huệ
+ *                   addrDetails:
+ *                     type: string
+ *                     example: Sát phố đi bộ
+ *                   latitude:
+ *                     type: number
+ *                     format: float
+ *                     example: 10.7769
+ *                   longitude:
+ *                     type: number
+ *                     format: float
+ *                     example: 106.7009
+ *               media:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     type: string
+ *                     example: image
+ *                     url:
+ *                       type: string
+ *                       format: uri
+ *                       example: image
+ *               details:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     categoryDetailId:
+ *                       type: integer
+ *                       example: 1
+ *                     value:
+ *                       type: string
+ *                       example: "3"
+ *               amenities:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 example: [1, 2]
+ *     responses:
+ *       200:
+ *         description: Cập nhật bất động sản thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     property:
+ *                       type: object
+ *                     location:
+ *                       type: object
+ *                     media:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     amenities:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *                     details:
+ *                       type: array
+ *                 message:
+ *                   type: string
+ *                   example: Property updated
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: []
+ *       400:
+ *         description: Cập nhật bất động sản không thành công
+ *       500:
+ *         description: Lỗi server
+ */
 router
   .route('/post/:id')
   .put(
@@ -576,7 +859,10 @@ router
 
         // AGENT: chỉ được sửa bài của mình + bài ở trạng thái DRAFT
         if (user.userRole === RoleName.Agent) {
-          const isAgentOwner = agentHistory.verifyOwnerPost(user.userId, id);
+          const isAgentOwner = agentHistoryService.verifyOwnerPost(
+            user.userId,
+            id
+          );
           if (!isAgentOwner) {
             return res.status(403).json({
               data: null,
@@ -585,7 +871,7 @@ router
             });
           }
 
-          if (property.requestPostStatus === RequestPostStatus.PUBLISHED) {
+          if (property.requestpost_status === RequestPostStatus.PUBLISHED) {
             return res.status(400).json({
               data: null,
               message: '',
@@ -712,52 +998,6 @@ router
     }
   );
 
-// admin/agent lấy chi tiết 1 bất động sản để phục vụ cho update
-router
-  .route('/post/:id')
-  .get(
-    authMiddleware,
-    roleGuard([RoleName.Agent, RoleName.Admin]),
-    async (req, res) => {
-      try {
-        const { id } = req.params;
-        const user = req.user;
-        const property = await propertyService.getById(id);
-        if (!property) {
-          return res.status(404).json({
-            data: null,
-            message: '',
-            error: ['Property not found'],
-          });
-        }
-        // AGENT: chỉ được xem bài của mình
-        if (user.userRole === RoleName.Agent) {
-          const isAgentOwner = agentHistory.verifyOwnerPost(user.userId, id);
-          if (!isAgentOwner) {
-            return res.status(403).json({
-              data: null,
-              message: '',
-              error: ['You are not allowed to view this property'],
-            });
-          }
-        }
-        return res.status(200).json({
-          data: {
-            property: property,
-          },
-          message: 'Property found',
-          error: [],
-        });
-      } catch (error) {
-        return res.status(500).json({
-          data: null,
-          message: '',
-          error: [error.message],
-        });
-      }
-    }
-  );
-
 // admin/agent lấy danh sách các property đang nháp
 router
   .route('/post/draft')
@@ -782,6 +1022,54 @@ router
             properties: properties,
           },
           message: 'Properties found',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
+// admin/agent lấy chi tiết 1 bất động sản để phục vụ cho update
+router
+  .route('/post/:id')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const user = req.user;
+        const property = await propertyService.getById(id);
+        if (!property) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Property not found'],
+          });
+        }
+        // AGENT: chỉ được xem bài của mình
+        if (user.userRole === RoleName.Agent) {
+          const isAgentOwner = agentHistoryService.verifyOwnerPost(
+            user.userId,
+            id
+          );
+          if (!isAgentOwner) {
+            return res.status(403).json({
+              data: null,
+              message: '',
+              error: ['You are not allowed to view this property'],
+            });
+          }
+        }
+        return res.status(200).json({
+          data: {
+            property: property,
+          },
+          message: 'Property found',
           error: [],
         });
       } catch (error) {
