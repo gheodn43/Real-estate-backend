@@ -9,7 +9,8 @@ const router = express.Router();
  * @swagger
  * /review/agent-reviews:
  *   post:
- *     summary: Tạo đánh giá mới cho Agent
+ *     summary: Tạo đánh giá mới cho Agent [Customer]
+
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -79,7 +80,7 @@ router.post('/', authenticateToken, roleGuard([RoleName.Customer, RoleName.Admin
  * /review/agent-reviews/{id}:
 
  *   put:
- *     summary: Cập nhật đánh giá cho Agent
+ *     summary: Cập nhật đánh giá cho Agent [Customer]
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -152,7 +153,8 @@ router.put(
  * /review/agent-reviews/{id}/reply:
 
  *   post:
- *     summary: Agent trả lời đánh giá
+ *     summary: Agent trả lời đánh giá [Agent]
+
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -223,7 +225,8 @@ router.post(
  * /review/agent-reviews/{id}:
 
  *   delete:
- *     summary: Xóa đánh giá
+ *     summary: Xóa đánh giá [Customer]
+
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -276,7 +279,7 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
  * /review/agent-reviews:
 
  *   get:
- *     summary: Lấy danh sách đánh giá của Agent
+ *     summary: Lấy danh sách đánh giá của Agent [Customer]
  *     tags: [AgentReview]
  *     parameters:
  *       - in: query
@@ -334,7 +337,8 @@ router.get('/', agentReviewController.getAgentReviews);
  * @swagger
  * /review/agent-reviews/summary:
  *   get:
- *     summary: Lấy tổng kết đánh giá của Agent
+ *     summary: Lấy tổng kết đánh giá của Agent [Customer]
+
  *     tags: [AgentReview]
  *     parameters:
  *       - in: query
@@ -385,7 +389,7 @@ router.get('/summary', agentReviewController.getAgentReviewSummary);
  * /review/agent-reviews/{agent_id}/user:
 
  *   get:
- *     summary: Lấy danh sách đánh giá của user hiện tại với Agent
+ *     summary: Lấy danh sách đánh giá của user hiện tại với Agent [Customer]
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -475,7 +479,7 @@ router.get(
  * /review/agent-reviews/{id}/approve:
 
  *   put:
- *     summary: Admin duyệt rep-comment
+ *     summary: Admin duyệt rep-comment [Admin]
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -550,7 +554,8 @@ router.put(
  * /review/agent-reviews/{id}/reject:
 
  *   put:
- *     summary: Admin từ chối rep-comment
+ *     summary: Admin từ chối rep-comment [Admin]
+
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -625,7 +630,8 @@ router.put(
  * /review/agent-reviews/{id}/admin-reply:
 
  *   post:
- *     summary: Admin trả lời đánh giá
+ *     summary: Admin trả lời đánh giá [Admin]
+
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -696,7 +702,8 @@ router.post(
  * /review/agent-reviews/pending-replies:
 
  *   get:
- *     summary: Admin lấy danh sách rep-comment cần phê duyệt
+ *     summary: Admin lấy danh sách rep-comment cần phê duyệt [Admin]
+
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -740,7 +747,7 @@ router.get(
  * /review/agent-reviews/my-replies:
 
  *   get:
- *     summary: Agent xem danh sách rep-comment của mình
+ *     summary: Agent xem danh sách rep-comment của mình [Agent]
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
