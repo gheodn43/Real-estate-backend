@@ -476,10 +476,10 @@ router.get(
 
 /**
  * @swagger
- * /review/agent-reviews/{id}/approve:
+ * /review/agent-reviews/{id}/action:
 
  *   put:
- *     summary: Admin duyệt rep-comment [Admin]
+ *     summary: Admin thực hiện hành động duyệt hoặc từ chối rep-comment
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -489,9 +489,17 @@ router.get(
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID của rep-comment
+ *       - in: query
+ *         name: action
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [approve, reject]
+ *         description: Hành động cần thực hiện (approve hoặc reject)
  *     responses:
  *       200:
- *         description: Duyệt rep-comment thành công
+ *         description: Hành động thực hiện thành công
  *         content:
  *           application/json:
  *             schema:
@@ -501,14 +509,14 @@ router.get(
  *                   type: object
  *                 message:
  *                   type: string
- *                   example: Trả lời được duyệt thành công
+ *                   example: Hành động thực hiện thành công
  *                 errors:
  *                   type: array
  *                   items:
  *                     type: string
  *                   example: []
  *       400:
- *         description: 'Duyệt thất bại (ví dụ: reply không tồn tại)'
+ *         description: 'Hành động thất bại (ví dụ: rep-comment không tồn tại hoặc hành động không hợp lệ)'
  *         content:
  *           application/json:
  *             schema:
@@ -518,14 +526,14 @@ router.get(
  *                   type: object
  *                 message:
  *                   type: string
- *                   example: Duyệt trả lời thất bại
+ *                   example: Hành động thất bại
  *                 errors:
  *                   type: array
  *                   items:
  *                     type: string
- *                   example: [Trả lời không tồn tại]
+ *                   example: [Rep-comment không tồn tại, Hành động không hợp lệ]
  *       403:
- *         description: Không có quyền
+ *         description: 'Không có quyền'
  *         content:
  *           application/json:
  *             schema:
@@ -543,86 +551,10 @@ router.get(
  *                   example: [Không có quyền]
  */
 router.put(
-  '/:id/approve',
+  '/:id/action',
   authenticateToken,
   roleGuard([RoleName.Admin]),
-  agentReviewController.approveReply
-);
-
-/**
- * @swagger
- * /review/agent-reviews/{id}/reject:
-
- *   put:
- *     summary: Admin từ chối rep-comment [Admin]
-
- *     tags: [AgentReview]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Từ chối rep-comment thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Trả lời bị từ chối thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
- *       400:
- *         description: 'Từ chối thất bại (ví dụ: reply không tồn tại)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Từ chối trả lời thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Trả lời không tồn tại]
- *       403:
- *         description: Không có quyền
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Không có quyền
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Không có quyền]
- */
-router.put(
-  '/:id/reject',
-  authenticateToken,
-  roleGuard([RoleName.Admin]),
-  agentReviewController.rejectReply
+  agentReviewController.handleReviewAction
 );
 
 /**
