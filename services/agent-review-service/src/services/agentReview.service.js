@@ -215,13 +215,13 @@ async updateReview({
   return reply;
 }
 
-  async approveReply(review_id, token) {
-
+async approveReply(review_id, token) {
   const reply = await prisma.agent_reviews.findUnique({
     where: { id: Number(review_id) },
   });
-  if (!reply || reply.type !== 'repcomment')
+  if (!reply || reply.type !== 'repcomment') {
     throw new Error('Reply not found or invalid');
+  }
 
   const updatedReply = await prisma.agent_reviews.update({
     where: { id: Number(review_id) },
@@ -230,52 +230,109 @@ async updateReview({
 
   const agent = await getAgentFromAuthService(reply.agent_id, token);
   const agentUser = agent?.data?.user;
+  const review = await prisma.agent_reviews.findUnique({ where: { id: reply.parent_id } });
+
   if (agentUser?.email) {
-    
-    const response = await axios.post(
-      'http://mail-service:4003/mail/auth/notifyAgentReplyApproved',
-      {
+    try {
+      const emailPayload = {
         agentEmail: agentUser.email,
-        agentName: agentUser.name,
-        replyId: updatedReply.id
-      }
-    );
+        agentName: agentUser.name || 'Unknown Agent',
+        reply: {
+          id: updatedReply.id,
+          comment: updatedReply.comment || '',
+          images: updatedReply.images || [],
+          created_at: updatedReply.created_at ? updatedReply.created_at.toISOString() : '',
+          status: updatedReply.status || 'showing'
+        },
+        review: review ? {
+          id: review.id,
+          rating: review.rating || '',
+          comment: review.comment || '',
+          images: review.images || [],
+          created_at: review.created_at ? review.created_at.toISOString() : ''
+        } : {
+          id: '',
+          rating: '',
+          comment: 'Không tìm thấy đánh giá gốc',
+          images: [],
+          created_at: ''
+        }
+      };
+
+      await axios.post(
+        'http://mail-service:4003/mail/auth/notifyAgentReplyApproved',
+        emailPayload,
+        { headers: { 'Content-Type': 'application/json' }}
+      );
+    } catch (emailErr) {
+      
+    }
   } else {
+    
   }
 
   return updatedReply;
 }
 
-async rejectReply(review_id, token) {
-
-  const reply = await prisma.agent_reviews.findUnique({
-    where: { id: Number(review_id) },
-  });
-  if (!reply || reply.type !== 'repcomment')
-    throw new Error('Reply not found or invalid');
-
-  const updatedReply = await prisma.agent_reviews.update({
-    where: { id: Number(review_id) },
-    data: { status: 'rejected' },
-  });
-
-  const agent = await getAgentFromAuthService(reply.agent_id, token);
-  const agentUser = agent?.data?.user;
-  if (agentUser?.email) {
+  async rejectReply(review_id, token) {
+    const reply = await prisma.agent_reviews.findUnique({
+      where: { id: Number(review_id) },
+    });
+    if (!reply || reply.type !== 'repcomment') {
+      throw new Error('Reply not found or invalid');
+    }
+  
+    const updatedReply = await prisma.agent_reviews.update({
+      where: { id: Number(review_id) },
+      data: { status: 'rejected' },
+    });
+  
+    const agent = await getAgentFromAuthService(reply.agent_id, token);
+    const agentUser = agent?.data?.user;
+    const review = await prisma.agent_reviews.findUnique({ where: { id: reply.parent_id } });
+  
+    if (agentUser?.email) {
+      try {
+        const emailPayload = {
+          agentEmail: agentUser.email,
+          agentName: agentUser.name || 'Unknown Agent',
+          reply: {
+            id: updatedReply.id,
+            comment: updatedReply.comment || '',
+            images: updatedReply.images || [],
+            created_at: updatedReply.created_at ? updatedReply.created_at.toISOString() : '',
+            status: updatedReply.status || 'rejected'
+          },
+          review: review ? {
+            id: review.id,
+            rating: review.rating || '',
+            comment: review.comment || '',
+            images: review.images || [],
+            created_at: review.created_at ? review.created_at.toISOString() : ''
+          } : {
+            id: '',
+            rating: '',
+            comment: 'Không tìm thấy đánh giá gốc',
+            images: [],
+            created_at: ''
+          }
+        };
     
-    const response = await axios.post(
-      'http://mail-service:4003/mail/auth/notifyAgentReplyRejected',
-      {
-        agentEmail: agentUser.email,
-        agentName: agentUser.name,
-        replyId: updatedReply.id,
-      }
-    );
-  } else {
-  }
+        await axios.post(
+          'http://mail-service:4003/mail/auth/notifyAgentReplyRejected',
+          emailPayload,
+          { headers: { 'Content-Type': 'application/json' }}
+        );
 
-  return updatedReply;
-}
+      } catch (emailErr) {
+        
+      }
+    } else {
+  
+    }
+  
+    return updatedReply;
+  }
 
 
   async deleteReview(review_id, user_id, user_role) {
@@ -307,7 +364,7 @@ async rejectReply(review_id, token) {
         comment,
         images: images || [],
         parent_id: Number(review_id),
-        type: 'comment',
+        type: 'repcomment',
         status: 'showing',
         rating: 0
       },
