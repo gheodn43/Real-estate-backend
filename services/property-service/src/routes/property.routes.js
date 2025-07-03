@@ -16,7 +16,7 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  * @swagger
  * /prop/request:
  *   post:
- *     summary: Tạo mới một yêu cầu bất động sản
+ *     summary: Tạo mới một yêu cầu bất động sản [CUSTOMER]
  *     description: API cho phép khách hàng tạo mới một yêu cầu bất động sản
  *     tags:
  *       - Property
@@ -252,7 +252,7 @@ router
  * @swagger
  * /prop/assign-agent:
  *   post:
- *     summary: Gán bất động sản cho các agent
+ *     summary: Gán bất động sản cho các agent [CUSTOMER, ADMIN]
  *     description: API cho phép khách hàng hoặc admin gán một bất động sản cụ thể cho các agent
  *     tags:
  *       - Property
@@ -368,12 +368,11 @@ router
     }
   );
 
-// agent/admin tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
 /**
  * @swagger
  * /prop/post:
  *   post:
- *     summary: Tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+ *     summary: Tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval [ADMIN, AGENT]
  *     description: API cho phép agent/admin tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
  *     tags:
  *       - Property
@@ -674,12 +673,11 @@ router
     }
   );
 
-// agent/admin cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
 /**
  * @swagger
  * /prop/post/{id}:
  *   put:
- *     summary: Cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+ *     summary: Cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval [ADMIN, AGENT]
  *     description: API cho phép agent/admin cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
  *     tags:
  *       - Property
@@ -698,15 +696,6 @@ router
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - title
- *               - description
- *               - beforePriceTag
- *               - price
- *               - afterPriceTag
- *               - assetsId
- *               - needsId
- *               - requestPostStatus
  *             properties:
  *               title:
  *                 type: string
@@ -761,8 +750,9 @@ router
  *                 items:
  *                   type: object
  *                   properties:
- *                     type: string
- *                     example: image
+ *                     type:
+ *                        type: string
+ *                        example: image
  *                     url:
  *                       type: string
  *                       format: uri
@@ -999,6 +989,92 @@ router
   );
 
 // admin/agent lấy danh sách các property đang nháp
+/**
+ * @swagger
+ * /prop/post/draft:
+ *   get:
+ *     summary: Lấy danh sách bất động sản ở trạng thái draft [ADMIN, AGENT]
+ *     description: API cho phép agent hoặc admin lấy danh sách các bất động sản có requestPostStatus là draft. Yêu cầu xác thực và vai trò phù hợp.
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lấy danh sách bất động sản thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     properties:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 18
+ *                           sender_id:
+ *                             type: integer
+ *                             nullable: true
+ *                             example: null
+ *                           title:
+ *                             type: string
+ *                             example: Bán nhà phố trung tâm Quận 2
+ *                           description:
+ *                             type: string
+ *                             example: Nhà phố sang trọng, tiện nghi đầy đủ, gần trung tâm thương mại.
+ *                           before_price_tag:
+ *                             type: string
+ *                             example: Giá chỉ từ
+ *                           price:
+ *                             type: string
+ *                             example: "50000000000.99"
+ *                           after_price_tag:
+ *                             type: string
+ *                             example: VNĐ
+ *                           assets_id:
+ *                             type: integer
+ *                             example: 2
+ *                           needs_id:
+ *                             type: integer
+ *                             example: 4
+ *                           stage:
+ *                             type: string
+ *                             example: post
+ *                           request_status:
+ *                             type: string
+ *                             nullable: true
+ *                             example: null
+ *                           requestpost_status:
+ *                             type: string
+ *                             example: draft
+ *                           created_at:
+ *                             type: string
+ *                             format: date-time
+ *                             example: 2025-06-21T07:50:59.989Z
+ *                           updated_at:
+ *                             type: string
+ *                             format: date-time
+ *                             example: 2025-06-21T07:50:59.989Z
+ *                 message:
+ *                   type: string
+ *                   example: Properties found
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: []
+ *       404:
+ *         description: Không tìm thấy bất động sản
+ *       500:
+ *         description: Lỗi server
+
+ */
 router
   .route('/post/draft')
   .get(
@@ -1033,6 +1109,7 @@ router
       }
     }
   );
+
 // admin/agent lấy chi tiết 1 bất động sản để phục vụ cho update
 router
   .route('/post/:id')
