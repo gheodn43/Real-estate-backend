@@ -205,9 +205,9 @@ router.post('/notifyAdminAgentReply', async (req, res) => {
 });
 
 router.post('/notifyAgentReplyApproved', async (req, res) => {
-  const { agentEmail, agentName } = req.body;
+  const { agentEmail, agentName, reply, review } = req.body;
   try {
-    await authMailService.sendAgentReplyApproved({ agentEmail, agentName });
+    await authMailService.sendAgentReplyApproved({ agentEmail, agentName, reply, review });
     res.status(200).json({ 
       data: {}, 
       message: 'Agent notified of reply approval', 
@@ -221,18 +221,23 @@ router.post('/notifyAgentReplyApproved', async (req, res) => {
 });
 
 router.post('/notifyAgentReplyRejected', async (req, res) => {
-  const { agentEmail, agentName } = req.body;
   try {
-    await authMailService.sendAgentReplyRejected({ agentEmail, agentName });
+    console.log('Raw request body:', JSON.stringify(req.body, null, 2));
+    const { agentEmail, agentName, reply, review } = req.body;
+    console.log('Parsed request body:', { agentEmail, agentName, reply, review });
+    await authMailService.sendAgentReplyRejected({ agentEmail, agentName, reply, review });
     res.status(200).json({ 
       data: {}, 
       message: 'Agent notified of reply rejection', 
-      error: [] });
+      error: [] 
+    });
   } catch (error) {
+    console.error('Error in notifyAgentReplyRejected:', error.message);
     res.status(500).json({ 
       data: {}, 
       message: 'Failed to notify agent', 
-      error: [error.message] });
+      error: [error.message] 
+    });
   }
 });
 

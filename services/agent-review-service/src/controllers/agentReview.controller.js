@@ -14,6 +14,7 @@ class AgentReviewController {
     this.getUserReview = this.getUserReview.bind(this);
     this.getPendingReplies = this.getPendingReplies.bind(this);
     this.getMyReplies = this.getMyReplies.bind(this);
+    this.handleReviewAction = this.handleReviewAction.bind(this);
   }
 
 async createReview(req, res) {
@@ -96,6 +97,35 @@ async updateReview(req, res) {
         data: {reply: null},
         message: 'Create reply failed',
         errors: [err.message],
+      });
+    }
+  }
+
+  async handleReviewAction(req, res) {
+    try {
+      const { id } = req.params;
+      const { action } = req.query;
+
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({
+          data: {},
+          message: 'Hành động không hợp lệ',
+          errors: ['Hành động phải là approve hoặc reject'],
+        });
+      }
+
+      if (action === 'approve') {
+        // Gọi logic phê duyệt (tái sử dụng từ approveReply)
+        return await this.approveReply(req, res);
+      } else {
+        // Gọi logic từ chối (tái sử dụng từ rejectReply)
+        return await this.rejectReply(req, res);
+      }
+    } catch (error) {
+      return res.status(500).json({
+        data: {},
+        message: 'Lỗi server',
+        errors: [error.message],
       });
     }
   }

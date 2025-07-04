@@ -465,16 +465,27 @@ const sendAgentReplyAdminNotify = async ({ adminEmail, adminName, reply, agent, 
 
 };
 
-const sendAgentReplyApproved = async ({ agentEmail, agentName }) => {
+const sendAgentReplyApproved = async ({ agentEmail, agentName, reply, review }) => {
+
   if (!agentEmail) {
     throw new Error('Agent email is required');
   }
+
+  const infoSections = [
+    `<b>Mã phản hồi:</b> ${reply?.id || 'Không có'}`,
+    `<b>Nội dung phản hồi:</b> ${reply?.comment || 'Không có'}`,
+    `<b>Ngày tạo phản hồi:</b> ${reply?.created_at ? new Date(reply.created_at).toLocaleString('vi-VN') : 'Không có'}`,
+    `<b>Trạng thái phản hồi:</b> ${reply?.status || 'Không có'}`,
+    `<b>Mã đánh giá gốc:</b> ${review?.id || 'Không có'}`,
+    `<b>Điểm đánh giá:</b> ${review?.rating || 'Không có'}`,
+    `<b>Nội dung đánh giá:</b> ${review?.comment || 'Không có'}`
+  ].join('<br>');
 
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn đã được duyệt',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Nhà Môi Giới,',
     mainMessage: 'Phản hồi của bạn cho đánh giá khách hàng đã được quản trị viên duyệt và hiển thị công khai.',
-    infoSections: ''
+    infoSections
   });
 
   await transporter.sendMail({
@@ -486,25 +497,40 @@ const sendAgentReplyApproved = async ({ agentEmail, agentName }) => {
   });
 };
 
-const sendAgentReplyRejected = async ({ agentEmail, agentName }) => {
+const sendAgentReplyRejected = async ({ agentEmail, agentName, reply, review }) => {
+
   if (!agentEmail) {
     throw new Error('Agent email is required');
   }
+
+  const infoSections = [
+    `<b>Mã phản hồi:</b> ${reply?.id || 'Không có'}`,
+    `<b>Nội dung phản hồi:</b> ${reply?.comment || 'Không có'}`,
+    `<b>Ngày tạo phản hồi:</b> ${reply?.created_at ? new Date(reply.created_at).toLocaleString('vi-VN') : 'Không có'}`,
+    `<b>Trạng thái phản hồi:</b> ${reply?.status || 'Không có'}`,
+    `<b>Mã đánh giá gốc:</b> ${review?.id || 'Không có'}`,
+    `<b>Điểm đánh giá:</b> ${review?.rating || 'Không có'}`,
+    `<b>Nội dung đánh giá:</b> ${review?.comment || 'Không có'}`
+  ].join('<br>');
 
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn bị từ chối',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Nhà Môi Giới,',
     mainMessage: 'Phản hồi của bạn cho đánh giá khách hàng đã bị quản trị viên từ chối. Vui lòng kiểm tra lại nội dung và gửi lại nếu cần.',
-    infoSections: ''
+    infoSections
   });
 
-  await transporter.sendMail({
-    from: process.env.MAIL_USER,
-    to: agentEmail,
-    subject: 'Phản hồi của bạn bị từ chối',
-    html: htmlContent,
-    attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
-  });
+  try {
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: agentEmail,
+      subject: 'Phản hồi của bạn bị từ chối',
+      html: htmlContent,
+      attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+    });
+  } catch (mailErr) {
+    throw new Error('Failed to send email notification');
+  }
 };
 
 const sendAdminReplyUserNotify = async ({ userEmail, userName, comment }) => {
