@@ -131,8 +131,48 @@ const getById = async (propertyId) => {
     include: {
       locations: true,
       media: true,
-      details: true,
-      amenities: true,
+      details: {
+        include: {
+          category_detail: {
+            select: {
+              id: true,
+              field_name: true,
+              field_type: true,
+              field_placeholder: true,
+              icon: true,
+              option: true,
+              is_active: true,
+              is_require: true,
+              is_showing: true,
+            },
+          },
+        },
+      },
+      amenities: {
+        include: {
+          amenity: {
+            select: {
+              id: true,
+              name: true,
+              is_active: true,
+            },
+          },
+        },
+      },
+      assets: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      },
+      needs: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      },
     },
   });
   return property;
