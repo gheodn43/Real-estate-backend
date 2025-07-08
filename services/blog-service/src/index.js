@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
+import blogReviewRoutes from './routes/blog.routes.js';
 
 dotenv.config();
 

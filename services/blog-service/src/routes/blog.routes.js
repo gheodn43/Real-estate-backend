@@ -1,7 +1,8 @@
 import express from 'express';
-import * as blogController from '../controllers/blog.controller';
-import authenticateToken from '../middleware/authenticateToken';
-import roleGuard, { RoleName } from '../middleware/roleGuard';
+import blogController from '../controllers/blog.controller.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import roleGuard, { RoleName } from '../middleware/roleGuard.js';
+
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ const router = express.Router();
  *       201: { description: Blog đã được đăng }
  *       400: { description: Thiếu thông tin }
  */
-router.post('/create', roleGuard([RoleName.Journalist, RoleName.Admin]), authenticateToken, blogController.createBlog);
+router.post('/create', roleGuard([RoleName.Journalist, RoleName.Admin]), authMiddleware, blogController.createBlog);
 
 /**
  * @swagger
@@ -55,7 +56,8 @@ router.post('/create', roleGuard([RoleName.Journalist, RoleName.Admin]), authent
  *       201: { description: Blog đã được lưu nháp }
  *       400: { description: Thiếu thông tin }
  */
-router.post('/draft', roleGuard([RoleName.Journalist, RoleName.Admin]), authenticateToken, blogController.saveDraftBlog);
+router.post('/draft', roleGuard([RoleName.Journalist, RoleName.Admin]), authMiddleware, blogController.saveDraftBlog);
+
 
 /**
  * @swagger
@@ -81,7 +83,8 @@ router.post('/draft', roleGuard([RoleName.Journalist, RoleName.Admin]), authenti
  *       201: { description: Blog đã được gửi duyệt }
  *       400: { description: Thiếu thông tin }
  */
-router.post('/submit', roleGuard([RoleName.Journalist]), authenticateToken, blogController.submitBlogForReview);
+router.post('/submit', roleGuard([RoleName.Journalist]), authMiddleware, blogController.submitBlogForReview);
+
 
 /**
  * @swagger
@@ -104,7 +107,8 @@ router.post('/submit', roleGuard([RoleName.Journalist]), authenticateToken, blog
  *       201: { description: Bình luận đã được thêm }
  *       400: { description: Thiếu thông tin }
  */
-router.post('/review', authenticateToken, blogController.createBlogReview);
+router.post('/review', authMiddleware, blogController.createBlogReview);
+
 
 /**
  * @swagger
@@ -126,7 +130,8 @@ router.post('/review', authenticateToken, blogController.createBlogReview);
  *       201: { description: Đã like blog }
  *       400: { description: Thiếu blog_id }
  */
-router.post('/react', authenticateToken, blogController.createBlogReact);
+router.post('/react', authMiddleware, blogController.createBlogReact);
+
 
 /**
  * @swagger
@@ -149,7 +154,8 @@ router.post('/react', authenticateToken, blogController.createBlogReact);
  *       200: { description: Blog đã được chia sẻ }
  *       400: { description: Thiếu blog_id hoặc email }
  */
-router.post('/share', authenticateToken, blogController.shareBlog);
+router.post('/share', authMiddleware, blogController.shareBlog);
+
 
 /**
  * @swagger
@@ -171,7 +177,8 @@ router.post('/share', authenticateToken, blogController.shareBlog);
  *       200: { description: Blog đã được đăng }
  *       400: { description: Thiếu blog_id }
  */
-router.post('/publish', roleGuard([RoleName.Admin]), authenticateToken, blogController.publishBlog);
+router.post('/publish', roleGuard([RoleName.Admin]), authMiddleware, blogController.publishBlog);
+
 
 /**
  * @swagger
@@ -193,7 +200,8 @@ router.post('/publish', roleGuard([RoleName.Admin]), authenticateToken, blogCont
  *       200: { description: Blog đã được duyệt }
  *       400: { description: Thiếu blog_id }
  */
-router.post('/approve', roleGuard([RoleName.Admin]), authenticateToken, blogController.approveBlog);
+router.post('/approve', roleGuard([RoleName.Admin]), authMiddleware, blogController.approveBlog);
+
 
 /**
  * @swagger
@@ -215,6 +223,7 @@ router.post('/approve', roleGuard([RoleName.Admin]), authenticateToken, blogCont
  *       200: { description: Blog đã bị từ chối }
  *       400: { description: Thiếu blog_id }
  */
-router.post('/reject', roleGuard([RoleName.Admin]), authenticateToken, blogController.rejectBlog);
+router.post('/reject', roleGuard([RoleName.Admin]), authMiddleware, blogController.rejectBlog);
+
 
 export default router;
