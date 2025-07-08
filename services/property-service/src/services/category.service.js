@@ -1,11 +1,22 @@
 import prisma from '../middleware/prismaClient.js';
+import slugify from 'slugify';
 
 const createCategory = async ({ type, parentCategoryId, name, isActive }) => {
+  const slug = slugify(name, { lower: true, strict: true });
+  const existing = await prisma.property_categories.findUnique({
+    where: { slug },
+  });
+
+  if (existing) {
+    throw new Error('This name is already taken');
+  }
+
   const category = await prisma.property_categories.create({
     data: {
       type,
       parent_category_id: parentCategoryId,
       name,
+      slug,
       is_active: isActive ?? true,
     },
   });
@@ -13,13 +24,21 @@ const createCategory = async ({ type, parentCategoryId, name, isActive }) => {
 };
 
 const updateCategory = async (id, { parentCategoryId, name, isActive }) => {
+  const slug = slugify(name, { lower: true, strict: true });
+  const existing = await prisma.property_categories.findUnique({
+    where: { slug },
+  });
+
+  if (existing && existing.id !== id) {
+    throw new Error('This name is already taken');
+  }
+
   const category = await prisma.property_categories.update({
-    where: {
-      id,
-    },
+    where: { id },
     data: {
       parent_category_id: parentCategoryId,
       name,
+      slug,
       is_active: isActive,
     },
   });

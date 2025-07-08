@@ -5,6 +5,7 @@ const RequestPostStatus = {
   PUBLISHED: 'published',
   EXPIRED: 'expired',
   HIDDEN: 'hidden',
+  SOLD: 'sold',
 };
 
 export default RequestPostStatus;

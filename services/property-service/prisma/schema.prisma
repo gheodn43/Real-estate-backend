@@ -12,6 +12,7 @@ model properties {
   id                  Int                  @id @default(autoincrement())
   sender_id           Int?
   title               String
+  slug                String?               @unique
   description         String?
   before_price_tag    String
   price               Decimal              @db.Decimal(15, 2)
@@ -67,6 +68,7 @@ model property_categories {
   type                CategoryType
   parent_category_id  Int?
   name                String?
+  slug                String?                    @unique
   is_active           Boolean?
   created_at          DateTime                   @default(now())
   updated_at          DateTime                   @default(now())
