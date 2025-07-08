@@ -7,3 +7,61 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+enum Status {
+  published
+  draft
+  pending
+  rejected
+  hidden
+}
+
+enum BlogReviewStatus {
+  published
+  hidden
+}
+
+
+model blogs {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  content     String
+  small_image       String
+  short_link  String
+  status      Status   
+  journalist_Id     Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  reacts      blog_react[]
+  reviews     blog_reviews[]
+
+
+}
+
+model blog_reviews {
+  id          Int      @id @default(autoincrement())
+  blog_id     Int
+  user_id     Int
+  comment     String
+  parent_id   Int
+  status      BlogReviewStatus @default(published)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  blogs       blogs @relation(fields: [blog_id], references: [id])
+
+
+}
+
+model blog_react {
+  id          Int      @id @default(autoincrement())
+  blog_id     Int
+  user_id     Int
+  created_at  DateTime @default(now())
+
+  blogs       blogs @relation(fields: [blog_id], references: [id])
+
+}
+
