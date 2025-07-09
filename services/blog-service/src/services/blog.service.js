@@ -2,23 +2,21 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { getJournalistFromAuthService, getUserFromAuthService } from '../helpers/authClient.js';
 
-
 const prisma = new PrismaClient();
 
 class BlogService {
-  
   async createBlog(journalist_id, title, description, content, small_image, short_link, token) {
     try {
-      const existingBlog = await prisma.blog.findFirst({
-        where: { title, journalist_id: Number(journalist_id), status: { not: 'rejected' } },
+      const existingBlog = await prisma.blogs.findFirst({
+        where: { title, journalist_Id: Number(journalist_id), status: { not: 'rejected' } },
       });
       if (existingBlog) {
         throw new Error('Blog with this title already exists for this journalist');
       }
 
-      const blog = await prisma.blog.create({
+      const blog = await prisma.blogs.create({
         data: {
-          journalist_id: Number(journalist_id),
+          journalist_Id: Number(journalist_id),
           title,
           description,
           content,
@@ -49,7 +47,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistNewBlog',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);
@@ -64,9 +62,9 @@ class BlogService {
 
   async saveDraftBlog(journalist_id, title, description, content, small_image, short_link, token) {
     try {
-      const blog = await prisma.blog.create({
+      const blog = await prisma.blogs.create({
         data: {
-          journalist_id: Number(journalist_id),
+          journalist_Id: Number(journalist_id),
           title,
           description,
           content,
@@ -97,7 +95,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistDraftBlog',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);
@@ -112,9 +110,9 @@ class BlogService {
 
   async submitBlogForReview(journalist_id, title, description, content, small_image, short_link, token) {
     try {
-      const blog = await prisma.blog.create({
+      const blog = await prisma.blogs.create({
         data: {
-          journalist_id: Number(journalist_id),
+          journalist_Id: Number(journalist_id),
           title,
           description,
           content,
@@ -150,7 +148,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyAdminBlogSubmitted',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);
@@ -165,21 +163,22 @@ class BlogService {
 
   async createBlogReview(blog_id, user_id, comment, token) {
     try {
-      const blog = await prisma.blog.findUnique({ where: { id: Number(blog_id) } });
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) throw new Error('Blog not found');
 
-      const review = await prisma.blog_review.create({
+      const review = await prisma.blog_reviews.create({
         data: {
           blog_id: Number(blog_id),
           user_id: Number(user_id),
           comment,
-          status: 'showing',
+          parent_id: 0, // Thêm parent_id vì schema yêu cầu
+          status: 'published', // Sửa thành 'published' để khớp với BlogReviewStatus
         },
       });
 
       const user = await getUserFromAuthService(user_id, token);
       const userData = user?.data?.user;
-      const journalist = await getJournalistFromAuthService(blog.journalist_id, token);
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name && userData?.name) {
@@ -205,7 +204,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistNewReview',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);
@@ -220,7 +219,7 @@ class BlogService {
 
   async createBlogReact(blog_id, user_id, token) {
     try {
-      const blog = await prisma.blog.findUnique({ where: { id: Number(blog_id) } });
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) throw new Error('Blog not found');
 
       const existingReact = await prisma.blog_react.findFirst({
@@ -237,7 +236,7 @@ class BlogService {
 
       const user = await getUserFromAuthService(user_id, token);
       const userData = user?.data?.user;
-      const journalist = await getJournalistFromAuthService(blog.journalist_id, token);
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name && userData?.name) {
@@ -262,7 +261,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistNewReact',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);
@@ -277,7 +276,7 @@ class BlogService {
 
   async shareBlog(blog_id, user_id, email, token) {
     try {
-      const blog = await prisma.blog.findUnique({ where: { id: Number(blog_id) } });
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) throw new Error('Blog not found');
 
       const user = await getUserFromAuthService(user_id, token);
@@ -302,7 +301,7 @@ class BlogService {
         await axios.post(
           'http://mail-service:4003/mail/auth/shareBlog',
           emailPayload,
-          { headers: { 'Content-Type': 'application/json' }}
+          { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
         );
       } catch (emailErr) {
         console.error('Failed to send share email:', emailErr.message);
@@ -316,11 +315,11 @@ class BlogService {
 
   async publishBlog(blog_id) {
     try {
-      const blog = await prisma.blog.findUnique({ where: { id: Number(blog_id) } });
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) throw new Error('Blog not found');
       if (blog.status === 'published') throw new Error('Blog already published');
 
-      const updatedBlog = await prisma.blog.update({
+      const updatedBlog = await prisma.blogs.update({
         where: { id: Number(blog_id) },
         data: { status: 'published', updated_at: new Date() },
       });
@@ -333,15 +332,15 @@ class BlogService {
 
   async approveBlog(blog_id, token) {
     try {
-      const blog = await prisma.blog.findUnique({ where: { id: Number(blog_id) } });
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog || blog.status !== 'pending') throw new Error('Blog not found or not pending');
 
-      const updatedBlog = await prisma.blog.update({
+      const updatedBlog = await prisma.blogs.update({
         where: { id: Number(blog_id) },
         data: { status: 'published', updated_at: new Date() },
       });
 
-      const journalist = await getJournalistFromAuthService(blog.journalist_id, token);
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name) {
@@ -359,7 +358,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistBlogApproved',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);
@@ -374,15 +373,15 @@ class BlogService {
 
   async rejectBlog(blog_id, token) {
     try {
-      const blog = await prisma.blog.findUnique({ where: { id: Number(blog_id) } });
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog || blog.status !== 'pending') throw new Error('Blog not found or not pending');
 
-      const updatedBlog = await prisma.blog.update({
+      const updatedBlog = await prisma.blogs.update({
         where: { id: Number(blog_id) },
         data: { status: 'rejected', updated_at: new Date() },
       });
 
-      const journalist = await getJournalistFromAuthService(blog.journalist_id, token);
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name) {
@@ -400,7 +399,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistBlogRejected',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);

@@ -30,7 +30,7 @@ const router = express.Router();
  *       201: { description: Blog đã được đăng }
  *       400: { description: Thiếu thông tin }
  */
-router.post('/create', roleGuard([RoleName.Journalist, RoleName.Admin]), authMiddleware, blogController.createBlog);
+router.post('/create', authMiddleware, roleGuard([RoleName.Journalist, RoleName.Admin]), blogController.createBlog);
 
 /**
  * @swagger
@@ -56,7 +56,7 @@ router.post('/create', roleGuard([RoleName.Journalist, RoleName.Admin]), authMid
  *       201: { description: Blog đã được lưu nháp }
  *       400: { description: Thiếu thông tin }
  */
-router.post('/draft', roleGuard([RoleName.Journalist, RoleName.Admin]), authMiddleware, blogController.saveDraftBlog);
+router.post('/draft', authMiddleware, roleGuard([RoleName.Journalist, RoleName.Admin]), blogController.saveDraftBlog);
 
 
 /**
@@ -83,7 +83,7 @@ router.post('/draft', roleGuard([RoleName.Journalist, RoleName.Admin]), authMidd
  *       201: { description: Blog đã được gửi duyệt }
  *       400: { description: Thiếu thông tin }
  */
-router.post('/submit', roleGuard([RoleName.Journalist]), authMiddleware, blogController.submitBlogForReview);
+router.post('/submit', authMiddleware, roleGuard([RoleName.Journalist]), blogController.submitBlogForReview);
 
 
 /**
@@ -177,7 +177,7 @@ router.post('/share', authMiddleware, blogController.shareBlog);
  *       200: { description: Blog đã được đăng }
  *       400: { description: Thiếu blog_id }
  */
-router.post('/publish', roleGuard([RoleName.Admin]), authMiddleware, blogController.publishBlog);
+router.post('/publish', authMiddleware, roleGuard([RoleName.Admin]), blogController.publishBlog);
 
 
 /**
@@ -200,7 +200,7 @@ router.post('/publish', roleGuard([RoleName.Admin]), authMiddleware, blogControl
  *       200: { description: Blog đã được duyệt }
  *       400: { description: Thiếu blog_id }
  */
-router.post('/approve', roleGuard([RoleName.Admin]), authMiddleware, blogController.approveBlog);
+router.post('/approve', authMiddleware, roleGuard([RoleName.Admin]), blogController.approveBlog);
 
 
 /**
@@ -223,7 +223,7 @@ router.post('/approve', roleGuard([RoleName.Admin]), authMiddleware, blogControl
  *       200: { description: Blog đã bị từ chối }
  *       400: { description: Thiếu blog_id }
  */
-router.post('/reject', roleGuard([RoleName.Admin]), authMiddleware, blogController.rejectBlog);
+router.post('/reject', authMiddleware, roleGuard([RoleName.Admin]), blogController.rejectBlog);
 
 
 export default router;
