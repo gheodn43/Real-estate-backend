@@ -554,6 +554,585 @@ const sendAdminReplyUserNotify = async ({ userEmail, userName, comment }) => {
   });
 };
 
+const notifyJournalistNewBlog = async ({ journalistEmail, journalistName, blog }) => {
+  if (!journalistEmail) {
+    throw new Error('journalistEmail is required');
+  }
+  const blogData = {
+    id: blog?.id || 'N/A',
+    title: blog?.title || 'Untitled Blog',
+    description: blog?.description || 'No description provided',
+    short_link: blog?.short_link || 'No link provided',
+    created_at: blog?.created_at || new Date().toISOString(),
+    small_image: blog?.small_image || null,
+  };
+
+  console.log(`Preparing to send new blog notification to ${journalistEmail} for blog ID ${blogData.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin bài viết</h3>
+      <ul>
+        <li>Mã bài viết: ${blogData.id}</li>
+        <li>Tiêu đề: ${blogData.title}</li>
+        <li>Mô tả: ${blogData.description}</li>
+        <li>Link ngắn: <a href="${blogData.short_link}">${blogData.short_link}</a></li>
+        <li>Ngày tạo: ${new Date(blogData.created_at).toLocaleString('vi-VN')}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Bài viết của bạn đã được đăng công khai.</li>
+        <li>Bạn có thể kiểm tra và chỉnh sửa bài viết trên hệ thống.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Bài viết mới của bạn đã được đăng',
+    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
+    mainMessage: 'Chúc mừng bạn đã đăng một bài viết mới trên HomiHub! Bài viết đã được xuất bản thành công và hiện đang hiển thị công khai trên nền tảng của chúng tôi.',
+    infoSections
+  });
+
+  const attachments = [
+    {
+      filename: 'homihub.png',
+      path: imagePath,
+      cid: 'companylogo',
+    },
+  ];
+
+  // Kiểm tra small_image nếu là URL hợp lệ
+  if (blogData.small_image && blogData.small_image.startsWith('http')) {
+    try {
+      const response = await fetch(blogData.small_image, { method: 'HEAD' });
+      if (response.ok) {
+        attachments.push({
+          filename: 'blog_image.jpg',
+          path: blogData.small_image,
+          cid: 'blogimage',
+        });
+      } else {
+        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
+      }
+    } catch (err) {
+      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
+    }
+  }
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: journalistEmail,
+    subject: 'Bài viết mới của bạn đã được đăng',
+    html: htmlContent,
+    attachments,
+  });
+
+  console.log(`Email sent successfully to ${journalistEmail}`);
+};
+
+// Thông báo nhà báo khi lưu nháp blog
+const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog }) => {
+  if (!journalistEmail) {
+    throw new Error('journalistEmail is required');
+  }
+  const blogData = {
+    id: blog?.id || 'N/A',
+    title: blog?.title || 'Untitled Blog',
+    description: blog?.description || 'No description provided',
+    short_link: blog?.short_link || 'No link provided',
+    created_at: blog?.created_at || new Date().toISOString(),
+    small_image: blog?.small_image || null,
+  };
+
+  console.log(`Preparing to send draft blog notification to ${journalistEmail} for blog ID ${blogData.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin bài viết nháp</h3>
+      <ul>
+        <li>Mã bài viết: ${blogData.id}</li>
+        <li>Tiêu đề: ${blogData.title}</li>
+        <li>Mô tả: ${blogData.description}</li>
+        <li>Link ngắn: <a href="${blogData.short_link}">${blogData.short_link}</a></li>
+        <li>Ngày tạo: ${new Date(blogData.created_at).toLocaleString('vi-VN')}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Bài viết của bạn đã được lưu dưới dạng nháp.</li>
+        <li>Bạn có thể chỉnh sửa hoặc gửi bài viết để duyệt trên hệ thống.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Bài viết nháp của bạn đã được lưu',
+    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
+    mainMessage: 'Bài viết nháp của bạn đã được lưu thành công trên HomiHub. Bạn có thể tiếp tục chỉnh sửa hoặc gửi bài viết để duyệt bất kỳ lúc nào.',
+    infoSections
+  });
+
+  const attachments = [
+    {
+      filename: 'homihub.png',
+      path: imagePath,
+      cid: 'companylogo',
+    },
+  ];
+
+  if (blogData.small_image && blogData.small_image.startsWith('http')) {
+    try {
+      const response = await fetch(blogData.small_image, { method: 'HEAD' });
+      if (response.ok) {
+        attachments.push({
+          filename: 'blog_image.jpg',
+          path: blogData.small_image,
+          cid: 'blogimage',
+        });
+      } else {
+        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
+      }
+    } catch (err) {
+      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
+    }
+  }
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: journalistEmail,
+    subject: 'Bài viết nháp của bạn đã được lưu',
+    html: htmlContent,
+    attachments,
+  });
+
+  console.log(`Email sent successfully to ${journalistEmail}`);
+};
+
+// Thông báo admin khi blog được gửi duyệt
+const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalist }) => {
+  if (!adminEmail || !journalist?.id) {
+    throw new Error('adminEmail and journalist.id are required');
+  }
+  const blogData = {
+    id: blog?.id || 'N/A',
+    title: blog?.title || 'Untitled Blog',
+    description: blog?.description || 'No description provided',
+    short_link: blog?.short_link || 'No link provided',
+    created_at: blog?.created_at || new Date().toISOString(),
+    small_image: blog?.small_image || null,
+  };
+
+  console.log(`Preparing to send blog submission notification to ${adminEmail} for blog ID ${blogData.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin bài viết</h3>
+      <ul>
+        <li>Mã bài viết: ${blogData.id}</li>
+        <li>Tiêu đề: ${blogData.title}</li>
+        <li>Mô tả: ${blogData.description}</li>
+        <li>Link ngắn: <a href="${blogData.short_link}">${blogData.short_link}</a></li>
+        <li>Ngày tạo: ${new Date(blogData.created_at).toLocaleString('vi-VN')}</li>
+      </ul>
+    </div>
+    <div class="highlight-section">
+      <h3>Thông tin nhà báo</h3>
+      <ul>
+        <li>Mã nhà báo: ${journalist.id}</li>
+        <li>Tên: ${journalist.name || 'Chưa cung cấp'}</li>
+        <li>Email: ${journalist.email || 'Chưa cung cấp'}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Xem xét và duyệt bài viết trong vòng 24 giờ.</li>
+        <li>Cập nhật trạng thái bài viết trên hệ thống.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Bài viết mới được gửi duyệt',
+    greeting: adminName ? `Kính gửi ${adminName},` : 'Kính gửi Quản trị viên,',
+    mainMessage: 'Một bài viết mới vừa được gửi lên hệ thống HomiHub để duyệt. Vui lòng xem xét thông tin bài viết và thực hiện các bước duyệt hoặc từ chối trong thời gian sớm nhất.',
+    infoSections
+  });
+
+  const attachments = [
+    {
+      filename: 'homihub.png',
+      path: imagePath,
+      cid: 'companylogo',
+    },
+  ];
+
+  if (blogData.small_image && blogData.small_image.startsWith('http')) {
+    try {
+      const response = await fetch(blogData.small_image, { method: 'HEAD' });
+      if (response.ok) {
+        attachments.push({
+          filename: 'blog_image.jpg',
+          path: blogData.small_image,
+          cid: 'blogimage',
+        });
+      } else {
+        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
+      }
+    } catch (err) {
+      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
+    }
+  }
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: adminEmail,
+    subject: 'Bài viết mới được gửi duyệt',
+    html: htmlContent,
+    attachments,
+  });
+
+  console.log(`Email sent successfully to ${adminEmail}`);
+};
+
+// Thông báo nhà báo về bình luận mới
+const notifyJournalistNewReview = async ({ journalistEmail, journalistName, review, user, blog }) => {
+  if (!journalistEmail || !review?.id || !user?.id || !blog?.id) {
+    throw new Error('journalistEmail, review.id, user.id, and blog.id are required');
+  }
+
+  console.log(`Preparing to send review notification to ${journalistEmail} for review ID ${review.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin bình luận</h3>
+      <ul>
+        <li>Mã bình luận: ${review.id}</li>
+        <li>Nội dung: ${review.comment || 'No comment provided'}</li>
+        <li>Ngày tạo: ${new Date(review.created_at).toLocaleString('vi-VN')}</li>
+      </ul>
+    </div>
+    <div class="highlight-section">
+      <h3>Thông tin người bình luận</h3>
+      <ul>
+        <li>Mã người dùng: ${user.id}</li>
+        <li>Tên: ${user.name || 'Chưa cung cấp'}</li>
+        <li>Email: ${user.email || 'Chưa cung cấp'}</li>
+      </ul>
+    </div>
+    <div class="highlight-section">
+      <h3>Thông tin bài viết</h3>
+      <ul>
+        <li>Mã bài viết: ${blog.id}</li>
+        <li>Tiêu đề: ${blog.title || 'Untitled Blog'}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Kiểm tra bình luận trên hệ thống.</li>
+        <li>Phản hồi bình luận nếu cần.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Bài viết của bạn nhận được bình luận mới',
+    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
+    mainMessage: 'Bài viết của bạn trên HomiHub vừa nhận được một bình luận mới từ người dùng. Vui lòng kiểm tra chi tiết dưới đây.',
+    infoSections
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: journalistEmail,
+    subject: 'Bài viết của bạn nhận được bình luận mới',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+
+  console.log(`Email sent successfully to ${journalistEmail}`);
+};
+
+// Thông báo nhà báo về lượt thích mới
+const notifyJournalistNewReact = async ({ journalistEmail, journalistName, react, user, blog }) => {
+  if (!journalistEmail || !react?.id || !user?.id || !blog?.id) {
+    throw new Error('journalistEmail, react.id, user.id, and blog.id are required');
+  }
+
+  console.log(`Preparing to send react notification to ${journalistEmail} for react ID ${react.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin lượt thích</h3>
+      <ul>
+        <li>Mã lượt thích: ${react.id}</li>
+        <li>Ngày tạo: ${new Date(react.created_at).toLocaleString('vi-VN')}</li>
+      </ul>
+    </div>
+    <div class="highlight-section">
+      <h3>Thông tin người dùng</h3>
+      <ul>
+        <li>Mã người dùng: ${user.id}</li>
+        <li>Tên: ${user.name || 'Chưa cung cấp'}</li>
+        <li>Email: ${user.email || 'Chưa cung cấp'}</li>
+      </ul>
+    </div>
+    <div class="highlight-section">
+      <h3>Thông tin bài viết</h3>
+      <ul>
+        <li>Mã bài viết: ${blog.id}</li>
+        <li>Tiêu đề: ${blog.title || 'Untitled Blog'}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Kiểm tra lượt thích trên hệ thống.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Bài viết của bạn nhận được lượt thích mới',
+    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
+    mainMessage: 'Bài viết của bạn trên HomiHub vừa nhận được một lượt thích mới từ người dùng. Vui lòng kiểm tra chi tiết dưới đây.',
+    infoSections
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: journalistEmail,
+    subject: 'Bài viết của bạn nhận được lượt thích mới',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+
+  console.log(`Email sent successfully to ${journalistEmail}`);
+};
+
+// Gửi email chia sẻ blog
+const shareBlog = async ({ recipientEmail, blog, user }) => {
+  if (!recipientEmail || !blog?.id) {
+    throw new Error('recipientEmail and blog.id are required');
+  }
+  const blogData = {
+    id: blog?.id || 'N/A',
+    title: blog?.title || 'Untitled Blog',
+    description: blog?.description || 'No description provided',
+    short_link: blog?.short_link || 'No link provided',
+    small_image: blog?.small_image || null,
+  };
+
+  console.log(`Preparing to send share blog email to ${recipientEmail} for blog ID ${blogData.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin bài viết</h3>
+      <ul>
+        <li>Mã bài viết: ${blogData.id}</li>
+        <li>Tiêu đề: ${blogData.title}</li>
+        <li>Mô tả: ${blogData.description}</li>
+        <li>Link ngắn: <a href="${blogData.short_link}">${blogData.short_link}</a></li>
+      </ul>
+    </div>
+    <div class="highlight-section">
+      <h3>Thông tin người chia sẻ</h3>
+      <ul>
+        <li>Mã người dùng: ${user?.id || 'N/A'}</li>
+        <li>Tên: ${user?.name || 'Chưa cung cấp'}</li>
+        <li>Email: ${user?.email || 'Chưa cung cấp'}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Click vào link ngắn để xem bài viết chi tiết.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Một bài viết thú vị được chia sẻ với bạn',
+    greeting: 'Kính gửi Quý khách,',
+    mainMessage: `Người dùng <b>${user?.name || 'Không xác định'}</b> đã chia sẻ một bài viết từ HomiHub với bạn. Vui lòng xem chi tiết bài viết dưới đây.`,
+    infoSections
+  });
+
+  const attachments = [
+    {
+      filename: 'homihub.png',
+      path: imagePath,
+      cid: 'companylogo',
+    },
+  ];
+
+  if (blogData.small_image && blogData.small_image.startsWith('http')) {
+    try {
+      const response = await fetch(blogData.small_image, { method: 'HEAD' });
+      if (response.ok) {
+        attachments.push({
+          filename: 'blog_image.jpg',
+          path: blogData.small_image,
+          cid: 'blogimage',
+        });
+      } else {
+        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
+      }
+    } catch (err) {
+      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
+    }
+  }
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: recipientEmail,
+    subject: 'Một bài viết thú vị được chia sẻ với bạn',
+    html: htmlContent,
+    attachments,
+  });
+
+  console.log(`Email sent successfully to ${recipientEmail}`);
+};
+
+// Thông báo nhà báo khi blog được duyệt
+const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, blog }) => {
+  if (!journalistEmail) {
+    throw new Error('journalistEmail is required');
+  }
+  const blogData = {
+    id: blog?.id || 'N/A',
+    title: blog?.title || 'Untitled Blog',
+    status: blog?.status || 'published',
+    updated_at: blog?.updated_at || new Date().toISOString(),
+  };
+
+  console.log(`Preparing to send blog approval notification to ${journalistEmail} for blog ID ${blogData.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin bài viết</h3>
+      <ul>
+        <li>Mã bài viết: ${blogData.id}</li>
+        <li>Tiêu đề: ${blogData.title}</li>
+        <li>Trạng thái: ${blogData.status}</li>
+        <li>Ngày cập nhật: ${new Date(blogData.updated_at).toLocaleString('vi-VN')}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Bài viết của bạn đã được duyệt và đăng công khai.</li>
+        <li>Kiểm tra bài viết trên hệ thống hoặc qua link công khai.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Bài viết của bạn đã được duyệt',
+    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
+    mainMessage: 'Chúc mừng! Bài viết của bạn trên HomiHub đã được quản trị viên duyệt và hiện đang hiển thị công khai trên nền tảng của chúng tôi.',
+    infoSections
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: journalistEmail,
+    subject: 'Bài viết của bạn đã được duyệt',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+
+  console.log(`Email sent successfully to ${journalistEmail}`);
+};
+
+// Thông báo nhà báo khi blog bị từ chối
+const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, blog }) => {
+  if (!journalistEmail) {
+    throw new Error('journalistEmail is required');
+  }
+  const blogData = {
+    id: blog?.id || 'N/A',
+    title: blog?.title || 'Untitled Blog',
+    status: blog?.status || 'rejected',
+    updated_at: blog?.updated_at || new Date().toISOString(),
+  };
+
+  console.log(`Preparing to send blog rejection notification to ${journalistEmail} for blog ID ${blogData.id}`);
+
+  const infoSections = `
+    <div class="highlight-section">
+      <h3>Thông tin bài viết</h3>
+      <ul>
+        <li>Mã bài viết: ${blogData.id}</li>
+        <li>Tiêu đề: ${blogData.title}</li>
+        <li>Trạng thái: ${blogData.status}</li>
+        <li>Ngày cập nhật: ${new Date(blogData.updated_at).toLocaleString('vi-VN')}</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>Hành động tiếp theo</h3>
+      <ul>
+        <li>Bài viết của bạn đã bị từ chối. Vui lòng xem xét chỉnh sửa theo góp ý (nếu có).</li>
+        <li>Gửi lại bài viết sau khi chỉnh sửa.</li>
+        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+      </ul>
+    </div>
+  `;
+
+  const htmlContent = getEmailTemplate({
+    title: 'Bài viết của bạn bị từ chối',
+    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
+    mainMessage: 'Bài viết của bạn trên HomiHub đã bị từ chối bởi quản trị viên. Vui lòng kiểm tra chi tiết dưới đây và thực hiện chỉnh sửa nếu cần.',
+    infoSections
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: journalistEmail,
+    subject: 'Bài viết của bạn bị từ chối',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+
+  console.log(`Email sent successfully to ${journalistEmail}`);
+};
+
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
@@ -568,4 +1147,13 @@ export default {
   sendAgentReplyApproved,
   sendAgentReplyRejected,
   sendAdminReplyUserNotify,
+
+  notifyJournalistNewBlog,
+  notifyJournalistDraftBlog,
+  notifyAdminBlogSubmitted,
+  notifyJournalistNewReview,
+  notifyJournalistNewReact,
+  shareBlog,
+  notifyJournalistBlogApproved,
+  notifyJournalistBlogRejected
 };

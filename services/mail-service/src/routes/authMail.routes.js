@@ -259,4 +259,148 @@ router.post('/notifyUserAdminReply', async (req, res) => {
   }
 });
 
+router.post('/notifyJournalistNewBlog', async (req, res) => {
+  const { journalistEmail, journalistName, blog } = req.body;
+  try {
+    await authMailService.notifyJournalistNewBlog({ journalistEmail, journalistName, blog });
+    res.status(200).json({
+      data: {},
+      message: 'Journalist notified of new blog',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify journalist',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyJournalistDraftBlog', async (req, res) => {
+  const { journalistEmail, journalistName, blog } = req.body;
+  try {
+    await authMailService.notifyJournalistDraftBlog({ journalistEmail, journalistName, blog });
+    res.status(200).json({
+      data: {},
+      message: 'Journalist notified of draft blog',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify journalist',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyAdminBlogSubmitted', async (req, res) => {
+  const { adminEmail, adminName, blog, journalist } = req.body;
+  try {
+    await authMailService.notifyAdminBlogSubmitted({ adminEmail, adminName, blog, journalist });
+    res.status(200).json({
+      data: {},
+      message: 'Admin notified of blog submission',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify admin',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyJournalistNewReview', async (req, res) => {
+  const { journalistEmail, journalistName, review, user, blog } = req.body;
+  try {
+    await authMailService.notifyJournalistNewReview({ journalistEmail, journalistName, review, user, blog });
+    res.status(200).json({
+      data: {},
+      message: 'Journalist notified of new review',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify journalist',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyJournalistNewReact', async (req, res) => {
+  const { journalistEmail, journalistName, react, user, blog } = req.body;
+  try {
+    await authMailService.notifyJournalistNewReact({ journalistEmail, journalistName, react, user, blog });
+    res.status(200).json({
+      data: {},
+      message: 'Journalist notified of new react',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify journalist',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/shareBlog', async (req, res) => {
+  const { recipientEmail, blog, user } = req.body;
+  try {
+    await authMailService.shareBlog({ recipientEmail, blog, user });
+    res.status(200).json({
+      data: {},
+      message: 'Blog shared successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to share blog',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyJournalistBlogApproved', async (req, res) => {
+  const { journalistEmail, journalistName, blog } = req.body;
+  try {
+    await authMailService.notifyJournalistBlogApproved({ journalistEmail, journalistName, blog });
+    res.status(200).json({
+      data: {},
+      message: 'Journalist notified of blog approval',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify journalist',
+      error: [error.message],
+    });
+  }
+});
+
+router.post('/notifyJournalistBlogRejected', async (req, res) => {
+  const { journalistEmail, journalistName, blog } = req.body;
+  try {
+    await authMailService.notifyJournalistBlogRejected({ journalistEmail, journalistName, blog });
+    res.status(200).json({
+      data: {},
+      message: 'Journalist notified of blog rejection',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify journalist',
+      error: [error.message],
+    });
+  }
+});
+
 export default router;

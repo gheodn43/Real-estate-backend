@@ -47,7 +47,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistNewBlog',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+            { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
           console.error('Failed to send email notification:', emailErr.message);
