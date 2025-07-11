@@ -567,8 +567,6 @@ const notifyJournalistNewBlog = async ({ journalistEmail, journalistName, blog }
     small_image: blog?.small_image || null,
   };
 
-  console.log(`Preparing to send new blog notification to ${journalistEmail} for blog ID ${blogData.id}`);
-
   const infoSections = `
     <div class="highlight-section">
       <h3>Thông tin bài viết</h3>
@@ -605,24 +603,6 @@ const notifyJournalistNewBlog = async ({ journalistEmail, journalistName, blog }
     },
   ];
 
-  // Kiểm tra small_image nếu là URL hợp lệ
-  if (blogData.small_image && blogData.small_image.startsWith('http')) {
-    try {
-      const response = await fetch(blogData.small_image, { method: 'HEAD' });
-      if (response.ok) {
-        attachments.push({
-          filename: 'blog_image.jpg',
-          path: blogData.small_image,
-          cid: 'blogimage',
-        });
-      } else {
-        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
-      }
-    } catch (err) {
-      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
-    }
-  }
-
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: journalistEmail,
@@ -631,10 +611,8 @@ const notifyJournalistNewBlog = async ({ journalistEmail, journalistName, blog }
     attachments,
   });
 
-  console.log(`Email sent successfully to ${journalistEmail}`);
 };
 
-// Thông báo nhà báo khi lưu nháp blog
 const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog }) => {
   if (!journalistEmail) {
     throw new Error('journalistEmail is required');
@@ -647,8 +625,6 @@ const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog
     created_at: blog?.created_at || new Date().toISOString(),
     small_image: blog?.small_image || null,
   };
-
-  console.log(`Preparing to send draft blog notification to ${journalistEmail} for blog ID ${blogData.id}`);
 
   const infoSections = `
     <div class="highlight-section">
@@ -686,23 +662,6 @@ const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog
     },
   ];
 
-  if (blogData.small_image && blogData.small_image.startsWith('http')) {
-    try {
-      const response = await fetch(blogData.small_image, { method: 'HEAD' });
-      if (response.ok) {
-        attachments.push({
-          filename: 'blog_image.jpg',
-          path: blogData.small_image,
-          cid: 'blogimage',
-        });
-      } else {
-        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
-      }
-    } catch (err) {
-      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
-    }
-  }
-
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: journalistEmail,
@@ -711,10 +670,8 @@ const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog
     attachments,
   });
 
-  console.log(`Email sent successfully to ${journalistEmail}`);
 };
 
-// Thông báo admin khi blog được gửi duyệt
 const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalist }) => {
   if (!adminEmail || !journalist?.id) {
     throw new Error('adminEmail and journalist.id are required');
@@ -727,8 +684,6 @@ const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalis
     created_at: blog?.created_at || new Date().toISOString(),
     small_image: blog?.small_image || null,
   };
-
-  console.log(`Preparing to send blog submission notification to ${adminEmail} for blog ID ${blogData.id}`);
 
   const infoSections = `
     <div class="highlight-section">
@@ -774,23 +729,6 @@ const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalis
     },
   ];
 
-  if (blogData.small_image && blogData.small_image.startsWith('http')) {
-    try {
-      const response = await fetch(blogData.small_image, { method: 'HEAD' });
-      if (response.ok) {
-        attachments.push({
-          filename: 'blog_image.jpg',
-          path: blogData.small_image,
-          cid: 'blogimage',
-        });
-      } else {
-        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
-      }
-    } catch (err) {
-      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
-    }
-  }
-
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: adminEmail,
@@ -799,16 +737,12 @@ const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalis
     attachments,
   });
 
-  console.log(`Email sent successfully to ${adminEmail}`);
 };
 
-// Thông báo nhà báo về bình luận mới
 const notifyJournalistNewReview = async ({ journalistEmail, journalistName, review, user, blog }) => {
   if (!journalistEmail || !review?.id || !user?.id || !blog?.id) {
     throw new Error('journalistEmail, review.id, user.id, and blog.id are required');
   }
-
-  console.log(`Preparing to send review notification to ${journalistEmail} for review ID ${review.id}`);
 
   const infoSections = `
     <div class="highlight-section">
@@ -865,16 +799,12 @@ const notifyJournalistNewReview = async ({ journalistEmail, journalistName, revi
     ],
   });
 
-  console.log(`Email sent successfully to ${journalistEmail}`);
 };
 
-// Thông báo nhà báo về lượt thích mới
 const notifyJournalistNewReact = async ({ journalistEmail, journalistName, react, user, blog }) => {
   if (!journalistEmail || !react?.id || !user?.id || !blog?.id) {
     throw new Error('journalistEmail, react.id, user.id, and blog.id are required');
   }
-
-  console.log(`Preparing to send react notification to ${journalistEmail} for react ID ${react.id}`);
 
   const infoSections = `
     <div class="highlight-section">
@@ -929,10 +859,9 @@ const notifyJournalistNewReact = async ({ journalistEmail, journalistName, react
     ],
   });
 
-  console.log(`Email sent successfully to ${journalistEmail}`);
 };
 
-// Gửi email chia sẻ blog
+
 const shareBlog = async ({ recipientEmail, blog, user }) => {
   if (!recipientEmail || !blog?.id) {
     throw new Error('recipientEmail and blog.id are required');
@@ -944,8 +873,6 @@ const shareBlog = async ({ recipientEmail, blog, user }) => {
     short_link: blog?.short_link || 'No link provided',
     small_image: blog?.small_image || null,
   };
-
-  console.log(`Preparing to send share blog email to ${recipientEmail} for blog ID ${blogData.id}`);
 
   const infoSections = `
     <div class="highlight-section">
@@ -989,23 +916,6 @@ const shareBlog = async ({ recipientEmail, blog, user }) => {
     },
   ];
 
-  if (blogData.small_image && blogData.small_image.startsWith('http')) {
-    try {
-      const response = await fetch(blogData.small_image, { method: 'HEAD' });
-      if (response.ok) {
-        attachments.push({
-          filename: 'blog_image.jpg',
-          path: blogData.small_image,
-          cid: 'blogimage',
-        });
-      } else {
-        console.warn(`Skipping blog image attachment: Invalid URL ${blogData.small_image} (status ${response.status})`);
-      }
-    } catch (err) {
-      console.warn(`Skipping blog image attachment: Failed to fetch ${blogData.small_image} - ${err.message}`);
-    }
-  }
-
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: recipientEmail,
@@ -1014,10 +924,8 @@ const shareBlog = async ({ recipientEmail, blog, user }) => {
     attachments,
   });
 
-  console.log(`Email sent successfully to ${recipientEmail}`);
 };
 
-// Thông báo nhà báo khi blog được duyệt
 const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, blog }) => {
   if (!journalistEmail) {
     throw new Error('journalistEmail is required');
@@ -1029,7 +937,6 @@ const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, b
     updated_at: blog?.updated_at || new Date().toISOString(),
   };
 
-  console.log(`Preparing to send blog approval notification to ${journalistEmail} for blog ID ${blogData.id}`);
 
   const infoSections = `
     <div class="highlight-section">
@@ -1072,10 +979,8 @@ const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, b
     ],
   });
 
-  console.log(`Email sent successfully to ${journalistEmail}`);
 };
 
-// Thông báo nhà báo khi blog bị từ chối
 const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, blog }) => {
   if (!journalistEmail) {
     throw new Error('journalistEmail is required');
@@ -1087,7 +992,6 @@ const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, b
     updated_at: blog?.updated_at || new Date().toISOString(),
   };
 
-  console.log(`Preparing to send blog rejection notification to ${journalistEmail} for blog ID ${blogData.id}`);
 
   const infoSections = `
     <div class="highlight-section">
@@ -1130,7 +1034,6 @@ const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, b
     ],
   });
 
-  console.log(`Email sent successfully to ${journalistEmail}`);
 };
 
 export default {

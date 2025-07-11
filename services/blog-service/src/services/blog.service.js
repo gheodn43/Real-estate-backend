@@ -50,7 +50,6 @@ class BlogService {
             { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
-          console.error('Failed to send email notification:', emailErr.message);
         }
       }
 
@@ -95,10 +94,9 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistDraftBlog',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+            { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
-          console.error('Failed to send email notification:', emailErr.message);
         }
       }
 
@@ -148,10 +146,9 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyAdminBlogSubmitted',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+            { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
-          console.error('Failed to send email notification:', emailErr.message);
         }
       }
 
@@ -171,14 +168,14 @@ class BlogService {
           blog_id: Number(blog_id),
           user_id: Number(user_id),
           comment,
-          parent_id: 0, // Thêm parent_id vì schema yêu cầu
-          status: 'published', // Sửa thành 'published' để khớp với BlogReviewStatus
+          parent_id: 0, 
+          status: 'published', 
         },
       });
 
       const user = await getUserFromAuthService(user_id, token);
       const userData = user?.data?.user;
-      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); 
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name && userData?.name) {
@@ -204,10 +201,9 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistNewReview',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+            { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
-          console.error('Failed to send email notification:', emailErr.message);
         }
       }
 
@@ -236,7 +232,7 @@ class BlogService {
 
       const user = await getUserFromAuthService(user_id, token);
       const userData = user?.data?.user;
-      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); 
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name && userData?.name) {
@@ -261,13 +257,11 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistNewReact',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+            { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
-          console.error('Failed to send email notification:', emailErr.message);
         }
       }
-
       return react;
     } catch (err) {
       throw new Error(`Failed to create blog react: ${err.message}`);
@@ -301,10 +295,9 @@ class BlogService {
         await axios.post(
           'http://mail-service:4003/mail/auth/shareBlog',
           emailPayload,
-          { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+          { headers: { 'Content-Type': 'application/json' }}
         );
       } catch (emailErr) {
-        console.error('Failed to send share email:', emailErr.message);
       }
 
       return { message: 'Blog đã được chia sẻ qua email' };
@@ -340,7 +333,7 @@ class BlogService {
         data: { status: 'published', updated_at: new Date() },
       });
 
-      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); 
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name) {
@@ -358,10 +351,9 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistBlogApproved',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+            { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
-          console.error('Failed to send email notification:', emailErr.message);
         }
       }
 
@@ -381,7 +373,7 @@ class BlogService {
         data: { status: 'rejected', updated_at: new Date() },
       });
 
-      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); // Sửa journalist_id thành journalist_Id
+      const journalist = await getJournalistFromAuthService(blog.journalist_Id, token); 
       const journalistData = journalist?.data?.user;
 
       if (journalistData?.email && journalistData?.name) {
@@ -399,10 +391,9 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistBlogRejected',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+            { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
-          console.error('Failed to send email notification:', emailErr.message);
         }
       }
 
