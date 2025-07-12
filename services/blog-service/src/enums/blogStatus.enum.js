@@ -2,7 +2,7 @@ const BlogStatus = {
   DRAFT: 'draft',
   PENDING: 'pending',
   REJECTED: 'rejected',
-  SHOWING: 'showing',
+  PUBLISHED: 'published',
   HIDDEN: 'hidden',
 };
 
