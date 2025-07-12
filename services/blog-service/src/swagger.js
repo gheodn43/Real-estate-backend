@@ -4,14 +4,14 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Property Service API',
+      title: 'Blog Service API',
       version: '1.0.0',
-      description: 'APIs documentation for the Property Service',
+      description: 'APIs documentation for the Blog Service',
     },
     servers: [
       {
-        url: 'http://api.propintel.id.vn',
-        description: 'Property server',
+        url: 'http://localhost:4005',
+        description: 'Blog Review Service',
       },
     ],
   },
