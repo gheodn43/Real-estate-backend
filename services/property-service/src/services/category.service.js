@@ -13,10 +13,10 @@ const createCategory = async ({ type, parentCategoryId, name, isActive }) => {
 
   const category = await prisma.property_categories.create({
     data: {
-      type,
+      type: type,
       parent_category_id: parentCategoryId,
-      name,
-      slug,
+      name: name,
+      slug: slug,
       is_active: isActive ?? true,
     },
   });
@@ -24,24 +24,36 @@ const createCategory = async ({ type, parentCategoryId, name, isActive }) => {
 };
 
 const updateCategory = async (id, { parentCategoryId, name, isActive }) => {
-  const slug = slugify(name, { lower: true, strict: true });
-  const existing = await prisma.property_categories.findUnique({
-    where: { slug },
-  });
+  let category = null;
+  if (name && name.trim() !== '') {
+    const slug = slugify(name, { lower: true, strict: true });
+    const existing = await prisma.property_categories.findUnique({
+      where: { slug },
+    });
 
-  if (existing && existing.id !== id) {
-    throw new Error('This name is already taken');
+    if (existing && existing.id !== id) {
+      throw new Error('This name is already taken');
+    }
+
+    category = await prisma.property_categories.update({
+      where: { id },
+      data: {
+        parent_category_id: parentCategoryId,
+        name: name,
+        slug: slug,
+        is_active: isActive,
+      },
+    });
+  } else {
+    category = await prisma.property_categories.update({
+      where: { id },
+      data: {
+        parent_category_id: parentCategoryId,
+        is_active: isActive,
+      },
+    });
   }
 
-  const category = await prisma.property_categories.update({
-    where: { id },
-    data: {
-      parent_category_id: parentCategoryId,
-      name,
-      slug,
-      is_active: isActive,
-    },
-  });
   return category;
 };
 
