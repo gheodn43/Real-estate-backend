@@ -4,6 +4,7 @@ import RequestStatus from '../enums/requestStatus.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
+import { RoleName } from '../middleware/roleGuard.js';
 
 import slugify from 'slugify';
 import axios from 'axios';
@@ -47,21 +48,59 @@ const createPostProperty = async (data) => {
   return property;
 };
 const updatePostProperty = async (id, data) => {
-  const slug = slugify(data.title, { lower: true, strict: true });
+  let property = null;
+  if (data.title) {
+    const slug = slugify(data.title, { lower: true, strict: true });
+    const existing = await prisma.properties.findUnique({
+      where: { slug },
+    });
+
+    if (existing && existing.id !== id) {
+      throw new Error('This name is already taken');
+    }
+    property = await prisma.properties.update({
+      where: {
+        id: id,
+      },
+      data: {
+        title: data.title,
+        slug: slug,
+        description: data.description,
+        before_price_tag: data.beforePriceTag,
+        price: data.price,
+        after_price_tag: data.afterPriceTag,
+        assets_id: data.assetsId,
+        needs_id: data.needsId,
+        requestpost_status: data.requestPostStatus,
+      },
+    });
+  } else {
+    property = await prisma.properties.update({
+      where: {
+        id: id,
+      },
+      data: {
+        description: data.description,
+        before_price_tag: data.beforePriceTag,
+        price: data.price,
+        after_price_tag: data.afterPriceTag,
+        assets_id: data.assetsId,
+        needs_id: data.needsId,
+        requestpost_status: data.requestPostStatus,
+      },
+    });
+  }
+
+  return property;
+};
+
+const updateStatusOfPostProperty = async (id, requestPostStatus) => {
   const property = await prisma.properties.update({
     where: {
       id: id,
     },
     data: {
-      title: data.title,
-      slug: slug,
-      description: data.description,
-      before_price_tag: data.beforePriceTag,
-      price: data.price,
-      after_price_tag: data.afterPriceTag,
-      assets_id: data.assetsId,
-      needs_id: data.needsId,
-      requestpost_status: data.requestPostStatus,
+      requestpost_status: requestPostStatus,
     },
   });
   return property;
@@ -186,6 +225,19 @@ const getById = async (propertyId) => {
   return property;
 };
 
+const getBasicInfoById = async (propertyId) => {
+  const property = await prisma.properties.findUnique({
+    where: {
+      id: propertyId,
+    },
+    select: {
+      id: true,
+      requestpost_status: true,
+    },
+  });
+  return property;
+};
+
 const getBySlug = async (slug) => {
   const property = await prisma.properties.findUnique({
     where: {
@@ -254,6 +306,107 @@ const getDraftProperties = async (userId) => {
   return properties;
 };
 
+const getFilteredProperties = async (filters, pagination) => {
+  const { userId, userRole, requestPostStatus, search } = filters;
+  const { page, limit } = pagination;
+  const where = {};
+
+  if (requestPostStatus) {
+    where.requestpost_status = requestPostStatus;
+  }
+  if (userRole === RoleName.Agent) {
+    const propertyIdsOfAgent =
+      await agentHistoryService.getHistoryByAgentId(userId);
+    if (propertyIdsOfAgent.length === 0) {
+      return { properties: [], total: 0 };
+    }
+
+    where.id = {
+      in: propertyIdsOfAgent,
+    };
+  }
+
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+    ];
+  }
+  const [properties, total] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+    }),
+
+    prisma.properties.count({ where }),
+  ]);
+
+  return { properties, total };
+};
+
+const getPublicFilteredProperties = async (filters, pagination) => {
+  const { latitude, longitude, radius, assetsId, needsId, search } = filters;
+
+  const { page, limit } = pagination;
+
+  const where = {
+    requestpost_status: {
+      in: [RequestPostStatus.PUBLISHED, RequestPostStatus.SOLD],
+    },
+  };
+
+  // Bán kính địa lý ~ tính gần đúng bằng độ
+  if (latitude && longitude && radius) {
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    const radiusInDegree = radius / 111.32;
+
+    where.locations = {
+      latitude: {
+        gte: lat - radiusInDegree,
+        lte: lat + radiusInDegree,
+      },
+      longitude: {
+        gte: lng - radiusInDegree,
+        lte: lng + radiusInDegree,
+      },
+    };
+  }
+
+  if (assetsId) {
+    where.assets_id = Number(assetsId);
+  }
+
+  if (needsId) {
+    where.needs_id = Number(needsId);
+  }
+
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+    ];
+  }
+
+  const [properties, total] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+      include: {
+        media: true,
+        locations: true,
+      },
+    }),
+    prisma.properties.count({ where }),
+  ]);
+
+  return { properties, total };
+};
+
 export default {
   createRequestProperty,
   createPostProperty,
@@ -261,7 +414,11 @@ export default {
   notifyNewPropertySubmission,
   getBasicProperty,
   updatePostProperty,
+  updateStatusOfPostProperty,
   getById,
+  getBasicInfoById,
   getBySlug,
   getDraftProperties,
+  getFilteredProperties,
+  getPublicFilteredProperties,
 };

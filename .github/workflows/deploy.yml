@@ -40,6 +40,9 @@ jobs:
           if echo "$CHANGED_FILES" | grep -q "^services/agent-review-service/"; then
             SERVICES="$SERVICES agent-review-service"
           fi
+          if echo "$CHANGED_FILES" | grep -q "^services/blog-service/"; then
+            SERVICES="$SERVICES blog-service"
+          fi
           # Remove leading/trailing whitespace
           SERVICES=$(echo "$SERVICES" | xargs)
           if [ -z "$SERVICES" ]; then

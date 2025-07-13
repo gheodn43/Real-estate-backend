@@ -57,6 +57,17 @@ services:
       PORT: 4004
       DATABASE_URL: "mysql://root:sum2530623306@mysql:3306/agent_review_db"
     restart: always
+  
+  blog-service:
+    image: gheo43dn/blog-service:latest
+    ports:
+      - "4005:4005"
+    depends_on:
+      - mysql
+    environment:
+      PORT: 4005
+      DATABASE_URL: "mysql://root:sum2530623306@mysql:3306/blog_db"
+    restart: always
 
   mysql:
     image: mysql:8

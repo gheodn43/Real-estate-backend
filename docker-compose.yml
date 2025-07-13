@@ -64,6 +64,18 @@ services:
     environment:
       PORT: 4004
       DATABASE_URL: "mysql://root:sum2530623306@mysql:3306/agent_review_db"
+  
+  blog-service:
+    build:
+      context: ./services/blog-service
+    image: blog-service
+    ports:
+      - "4005:4005"
+    depends_on:
+      - mysql
+    environment:
+      PORT: 4005
+      DATABASE_URL: "mysql://root:sum2530623306@mysql:3306/blog_db"
 
   mysql:
     image: mysql:8

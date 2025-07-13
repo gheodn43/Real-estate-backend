@@ -9,7 +9,8 @@ import roleGuard, { RoleName } from '../middleware/roleGuard.js';
  * /prop/category:
  *   post:
  *     summary: Tạo mới category ['ADMIN']
- *     tags: [Property]
+ *     tags:
+ *       - Category
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -93,7 +94,8 @@ router
  * /prop/category/{id}:
  *   put:
  *     summary: Cập nhật category ['ADMIN']
- *     tags: [Property]
+ *     tags:
+ *       - Category
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -184,7 +186,8 @@ router
  * /prop/category/{id}:
  *   get:
  *     summary: Lấy thông tin của một category ['ADMIN']
- *     tags: [Property]
+ *     tags:
+ *       - Category
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -271,7 +274,8 @@ router.route('/:id').get(authMiddleware, async (req, res) => {
  * /prop/category/by-type/{type}:
  *   get:
  *     summary: Lấy danh sách category theo type ['ADMIN']
- *     tags: [Property]
+ *     tags:
+ *       - Category
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -363,7 +367,7 @@ router
  * /prop/category/active-by-type/{type}:
  *   get:
  *     summary: Lấy danh sách category đang active theo type [ALL ROLES]
- *     tags: [Property]
+ *     tags: [Category]
  *     parameters:
  *       - in: path
  *         name: type

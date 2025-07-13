@@ -14,6 +14,196 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
 /**
  * @swagger
+ * /prop/list-post:
+ *   get:
+ *     summary: Lấy danh sách bất động sản ở màn hình quản lý [ADMIN, AGENT]
+ *     description: Lọc theo trạng thái, phân trang, tìm kiếm...
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại (mặc định 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số phần tử mỗi trang (mặc định 10)
+ *       - in: query
+ *         name: requestPostStatus
+ *         schema:
+ *           type: string
+ *           enum: [draft, pending_approval, published, rejected, sold, hidden]
+ *         description: Trạng thái bài viết cần lọc
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Tìm theo tiêu đề hoặc mô tả
+ *     responses:
+ *       200:
+ *         description: Thành công
+ */
+router
+  .route('/list-post')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const user = req.user;
+
+        const { page = 1, limit = 10, requestPostStatus, search } = req.query;
+
+        const pagination = {
+          page: Number(page),
+          limit: Number(limit),
+        };
+
+        const filters = {
+          userId: user.userId,
+          userRole: user.userRole,
+          requestPostStatus,
+          search,
+        };
+
+        const { properties, total } =
+          await propertyService.getFilteredProperties(filters, pagination);
+
+        return res.status(200).json({
+          data: {
+            properties,
+            pagination: {
+              total,
+              page: pagination.page,
+              limit: pagination.limit,
+              totalPages: Math.ceil(total / pagination.limit),
+            },
+          },
+          message: 'Properties found',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
+
+/**
+ * @swagger
+ * /prop/public-list:
+ *   get:
+ *     summary: Lấy danh sách bất động sản công khai [GUEST]
+ *     description: Truy vấn bất động sản theo vị trí, loại, nhu cầu, tìm kiếm và phân trang.
+ *     tags:
+ *       - Property
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại (mặc định 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số phần tử mỗi trang (mặc định 10)
+ *       - in: query
+ *         name: latitude
+ *         schema:
+ *           type: number
+ *         description: Vĩ độ trung tâm để tìm trong bán kính
+ *       - in: query
+ *         name: longitude
+ *         schema:
+ *           type: number
+ *         description: Kinh độ trung tâm để tìm trong bán kính
+ *       - in: query
+ *         name: radius
+ *         schema:
+ *           type: number
+ *         description: Bán kính (km) để lọc theo vị trí (mặc định 5km)
+ *       - in: query
+ *         name: assetsId
+ *         schema:
+ *           type: integer
+ *         description: Lọc theo loại tài sản
+ *       - in: query
+ *         name: needsId
+ *         schema:
+ *           type: integer
+ *         description: Lọc theo nhu cầu
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Tìm kiếm theo tiêu đề hoặc mô tả
+ *     responses:
+ *       200:
+ *         description: Thành công
+ */
+router.get('/public-list', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      latitude,
+      longitude,
+      radius = 5,
+      assetsId,
+      needsId,
+      search,
+    } = req.query;
+
+    const pagination = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+
+    const filters = {
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      radius: Number(radius),
+      assetsId: Number(assetsId),
+      needsId: Number(needsId),
+      search,
+    };
+
+    const { properties, total } =
+      await propertyService.getPublicFilteredProperties(filters, pagination);
+
+    return res.status(200).json({
+      data: {
+        properties,
+        pagination: {
+          total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: Math.ceil(total / pagination.limit),
+        },
+      },
+      message: 'Public properties found',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
+
+/**
+ * @swagger
  * /prop/request:
  *   post:
  *     summary: Tạo mới một yêu cầu bất động sản [CUSTOMER]
@@ -847,9 +1037,9 @@ router
 
         const errors = [];
 
-        // AGENT: chỉ được sửa bài của mình + bài ở trạng thái DRAFT
+        // AGENT: chỉ được sửa bài của mình
         if (user.userRole === RoleName.Agent) {
-          const isAgentOwner = agentHistoryService.verifyOwnerPost(
+          const isAgentOwner = await agentHistoryService.verifyOwnerPost(
             user.userId,
             id
           );
@@ -861,15 +1051,15 @@ router
             });
           }
 
-          if (property.requestpost_status === RequestPostStatus.PUBLISHED) {
-            return res.status(400).json({
-              data: null,
-              message: '',
-              error: [
-                'Cannot update published posts, must have admin approval',
-              ],
-            });
-          }
+          // if (property.requestpost_status === RequestPostStatus.PUBLISHED) {
+          //   return res.status(400).json({
+          //     data: null,
+          //     message: '',
+          //     error: [
+          //       'Cannot update published posts, must have admin approval',
+          //     ],
+          //   });
+          // }
 
           if (
             requestPostStatus !== RequestPostStatus.DRAFT &&
@@ -1512,6 +1702,109 @@ router.route('/:slug').get(async (req, res) => {
     });
   }
 });
+
+// Cập nhật trạng thái của bài đăng
+/**
+ * @openapi
+ * /prop/post/{id}/status:
+ *   put:
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Cập nhật trạng thái của bài đăng tại màn hình danh sách[Admin, Agent]
+ *     description: Chỉ Admin và Agent mới có quyền cập nhật trạng thái của bài đăng
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài đăng
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               requestPostStatus:
+ *                 type: string
+ *                 example: published
+ *     responses:
+ *       200:
+ *         description: Trạng thái của bài đăng đã được cập nhật
+ */
+router.put(
+  '/post/:id/status',
+  authMiddleware,
+  roleGuard([RoleName.Admin, RoleName.Agent]),
+  async (req, res) => {
+    try {
+      const { requestPostStatus } = req.body;
+      const { id } = req.params;
+      const user = req.user;
+
+      if (!requestPostStatus) {
+        return res.status(400).json({
+          data: null,
+          message: '',
+          error: ['Missing requestPostStatus'],
+        });
+      }
+
+      const property = await propertyService.getBasicInfoById(id);
+      if (!property) {
+        return res.status(404).json({
+          data: null,
+          message: '',
+          error: ['Property not founddd'],
+        });
+      }
+
+      // Nếu là Agent, kiểm tra quyền sở hữu và trạng thái hợp lệ
+      if (user.userRole === RoleName.Agent) {
+        const isOwner = await agentHistoryService.verifyOwnerPost(
+          user.userId,
+          id
+        );
+        if (!isOwner) {
+          return res.status(403).json({
+            data: null,
+            message: '',
+            error: ['You are not allowed to update this property'],
+          });
+        }
+        if (requestPostStatus === RequestPostStatus.PUBLISHED) {
+          return res.status(403).json({
+            data: null,
+            message: '',
+            error: ['Agents cannot publish posts directly'],
+          });
+        }
+      }
+
+      // Cập nhật trạng thái
+      const updatedProperty = await propertyService.updateStatusOfPostProperty(
+        property.id,
+        requestPostStatus
+      );
+
+      return res.status(200).json({
+        data: updatedProperty,
+        message: 'Post status updated',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  }
+);
+
 // Lấy danh sách sơ lược của bđs theo toạ độ user với tham số là bán kính
 // Lấy danh sách sơ lược của bđs theo category
 
