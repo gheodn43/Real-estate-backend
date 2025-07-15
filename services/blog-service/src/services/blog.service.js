@@ -10,77 +10,77 @@ const prisma = new PrismaClient();
 
 class BlogService {
   async createBlog(journalist_id, title, description, content, small_image, short_link, token) {
-  try {
+    try {
 
-    const existingBlog = await prisma.blogs.findFirst({
-      where: { title, journalist_Id: Number(journalist_id), status: { not: 'rejected' } },
-    });
-    if (existingBlog) {
-      throw new Error('Blog with this title already exists for this journalist');
-    }
-
-    let finalShortLink = short_link || slugify(title, { lower: true, strict: true });
-    
-    let counter = 1;
-    let tempShortLink = finalShortLink;
-    while (await prisma.blogs.findFirst({ where: { short_link: tempShortLink } })) {
-      tempShortLink = `${finalShortLink}-${counter}`;
-      counter++;
-    }
-    finalShortLink = tempShortLink;
-
-    const defaultImage = 'https://example.com/default-image.jpg';
-    const finalSmallImage = small_image || defaultImage;
-
-    const journalist = await getJournalistFromAuthService(journalist_id, token);
-    const journalistData = journalist?.data?.user;
-   
-    const status = BlogStatus.PUBLISHED;
-
-    const blog = await prisma.blogs.create({
-      data: {
-        journalist_Id: Number(journalist_id),
-        title,
-        description,
-        content,
-        small_image: finalSmallImage,
-        short_link: finalShortLink,
-        status,
-      },
-    });
-
-  
-    if (journalistData?.email && journalistData?.name) {
-      const emailPayload = {
-        journalistEmail: journalistData.email,
-        journalistName: journalistData.name,
-        blog: {
-          id: blog.id,
-          title: blog.title,
-          description: blog.description,
-          content: blog.content,
-          small_image: blog.small_image,
-          short_link: blog.short_link,
-          created_at: blog.created_at.toISOString(),
-          status: blog.status,
-        },
-      };
-
-      try {
-        const emailResponse = await axios.post(
-          'http://mail-service:4003/mail/auth/notifyJournalistNewBlog',
-          emailPayload,
-          { headers: { 'Content-Type': 'application/json' }}
-        );
-        
-      } catch (emailErr) {
+      const existingBlog = await prisma.blogs.findFirst({
+        where: { title, journalist_Id: Number(journalist_id), status: { not: 'rejected' } },
+      });
+      if (existingBlog) {
+        throw new Error('Blog with this title already exists for this journalist');
       }
+
+      let finalShortLink = short_link || slugify(title, { lower: true, strict: true });
+
+      let counter = 1;
+      let tempShortLink = finalShortLink;
+      while (await prisma.blogs.findFirst({ where: { short_link: tempShortLink } })) {
+        tempShortLink = `${finalShortLink}-${counter}`;
+        counter++;
+      }
+      finalShortLink = tempShortLink;
+
+      const defaultImage = 'https://example.com/default-image.jpg';
+      const finalSmallImage = small_image || defaultImage;
+
+      const journalist = await getJournalistFromAuthService(journalist_id, token);
+      const journalistData = journalist?.data?.user;
+
+      const status = BlogStatus.PUBLISHED;
+
+      const blog = await prisma.blogs.create({
+        data: {
+          journalist_Id: Number(journalist_id),
+          title,
+          description,
+          content,
+          small_image: finalSmallImage,
+          short_link: finalShortLink,
+          status,
+        },
+      });
+
+
+      if (journalistData?.email && journalistData?.name) {
+        const emailPayload = {
+          journalistEmail: journalistData.email,
+          journalistName: journalistData.name,
+          blog: {
+            id: blog.id,
+            title: blog.title,
+            description: blog.description,
+            content: blog.content,
+            small_image: blog.small_image,
+            short_link: blog.short_link,
+            created_at: blog.created_at.toISOString(),
+            status: blog.status,
+          },
+        };
+
+        try {
+          const emailResponse = await axios.post(
+            'http://mail-service:4003/mail/auth/notifyJournalistNewBlog',
+            emailPayload,
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+
+        } catch (emailErr) {
+        }
+      }
+      return blog;
+    } catch (err) {
+      throw new Error(`Failed to create blog: ${err.message}`);
     }
-    return blog;
-  } catch (err) {
-    throw new Error(`Failed to create blog: ${err.message}`);
   }
-}
 
   async updateBlog(blog_id, journalist_id, title, description, content, token) {
     try {
@@ -106,7 +106,6 @@ class BlogService {
         }
       }
 
-      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
       let finalShortLink = blog.short_link;
       if (title && title !== blog.title) {
         finalShortLink = slugify(title, { lower: true, strict: true });
@@ -166,10 +165,9 @@ class BlogService {
           await axios.post(
             `http://mail-service:4003/mail/auth/notifyJournalist${status === BlogStatus.PUBLISHED ? 'BlogPublished' : 'BlogUpdated'}`,
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' } }
           );
         } catch (emailErr) {
-          console.error(`[BlogService.updateBlog] Email error: ${emailErr.message}`);
         }
       }
 
@@ -181,26 +179,26 @@ class BlogService {
 
   async deleteBlog(blog_id, user_id, token) {
     try {
-      
+
       const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) {
         throw new Error('Blog not found');
-      }      
+      }
       const user = await getJournalistFromAuthService(user_id, token);
       const userData = user?.data?.user;
       const role = userData?.role?.rolename || 'Journalist';
 
-      
+
       if (role !== 'Admin' && blog.journalist_Id !== Number(user_id)) {
         throw new Error('User not authorized to delete this blog');
       }
 
-      
+
       await prisma.blogs.delete({
         where: { id: Number(blog_id) },
       });
 
-    
+
       const journalist = await getJournalistFromAuthService(blog.journalist_Id, token);
       const journalistData = journalist?.data?.user;
 
@@ -217,7 +215,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistBlogDeleted',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' } }
           );
         } catch (emailErr) {
         }
@@ -279,112 +277,108 @@ class BlogService {
   }
 
   async getBlogByShortLink(short_link, user_id, commentPage = 1, commentLimit = 10) {
-  try {
-    // Kiểm tra đầu vào
-    if (!short_link || typeof short_link !== 'string') {
-      throw new Error('Invalid or missing short_link');
-    }
-    if (!Number.isInteger(Number(user_id))) {
-      throw new Error('Invalid user_id');
-    }
-    if (!Number.isInteger(commentPage) || commentPage < 1) {
-      throw new Error('Invalid commentPage, must be a positive integer');
-    }
-    if (!Number.isInteger(commentLimit) || commentLimit < 1 || commentLimit > 100) {
-      throw new Error('Invalid commentLimit, must be between 1 and 100');
-    }
+    try {
+      if (!short_link || typeof short_link !== 'string') {
+        throw new Error('Invalid or missing short_link');
+      }
+      if (!Number.isInteger(Number(user_id))) {
+        throw new Error('Invalid user_id');
+      }
+      if (!Number.isInteger(commentPage) || commentPage < 1) {
+        throw new Error('Invalid commentPage, must be a positive integer');
+      }
+      if (!Number.isInteger(commentLimit) || commentLimit < 1 || commentLimit > 100) {
+        throw new Error('Invalid commentLimit, must be between 1 and 100');
+      }
 
-    const blog = await prisma.blogs.findFirst({
-      where: { short_link, status: 'published' },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        content: true,
-        small_image: true,
-        short_link: true,
-        reacts: {
-          select: {
-            user_id: true,
-          },
-        },
-        reviews: {
-          select: {
-            id: true,
-            comment: true,
-            user_id: true,
-            created_at: true,
-          },
-          where: { status: 'published' },
-          skip: (commentPage - 1) * commentLimit,
-          take: commentLimit,
-          orderBy: { created_at: 'desc' },
-        },
-      },
-    });
-
-    if (!blog) {
-      throw new Error('Blog not found');
-    }
-
-    // Lấy danh sách user_id từ reviews
-    const userIds = [...new Set(blog.reviews.map(review => review.user_id))];
-    let users = [];
-    if (userIds.length > 0) {
-      users = await prisma.users.findMany({
-        where: {
-          id: { in: userIds },
-        },
+      const blog = await prisma.blogs.findFirst({
+        where: { short_link, status: 'published' },
         select: {
           id: true,
-          name: true,
+          title: true,
+          description: true,
+          content: true,
+          small_image: true,
+          short_link: true,
+          reacts: {
+            select: {
+              user_id: true,
+            },
+          },
+          reviews: {
+            select: {
+              id: true,
+              comment: true,
+              user_id: true,
+              created_at: true,
+            },
+            where: { status: 'published' },
+            skip: (commentPage - 1) * commentLimit,
+            take: commentLimit,
+            orderBy: { created_at: 'desc' },
+          },
         },
       });
+
+      if (!blog) {
+        throw new Error('Blog not found');
+      }
+
+      const userIds = [...new Set(blog.reviews.map(review => review.user_id))];
+      let users = [];
+      if (userIds.length > 0) {
+        users = await prisma.users.findMany({
+          where: {
+            id: { in: userIds },
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+      }
+
+      const userMap = new Map(users.map(user => [user.id, user.name]));
+      const comments = blog.reviews.map(review => ({
+        id: review.id,
+        comment: review.comment,
+        user_id: review.user_id,
+        user_name: userMap.get(review.user_id) || 'Unknown User',
+        created_at: review.created_at.toISOString(),
+      }));
+
+      const totalComments = await prisma.blog_reviews.count({
+        where: { blog_id: blog.id, status: 'published' },
+      });
+      const totalCommentPages = Math.ceil(totalComments / commentLimit);
+
+      return {
+        blog: {
+          id: blog.id,
+          title: blog.title,
+          description: blog.description,
+          content: blog.content,
+          small_image: blog.small_image,
+          short_link: blog.short_link,
+          hasReacted: blog.reacts.some(react => react.user_id === Number(user_id)),
+          reactCount: blog.reacts.length,
+          comments,
+        },
+        commentPagination: {
+          currentPage: commentPage,
+          totalPages: totalCommentPages,
+          totalItems: totalComments,
+          itemsPerPage: commentLimit,
+        },
+      };
+    } catch (err) {
+      throw new Error(`Failed to get blog: ${err.message}`);
     }
-
-    // Map users để lấy user_name cho mỗi review
-    const userMap = new Map(users.map(user => [user.id, user.name]));
-    const comments = blog.reviews.map(review => ({
-      id: review.id,
-      comment: review.comment,
-      user_id: review.user_id,
-      user_name: userMap.get(review.user_id) || 'Unknown User',
-      created_at: review.created_at.toISOString(),
-    }));
-
-    const totalComments = await prisma.blog_reviews.count({
-      where: { blog_id: blog.id, status: 'published' },
-    });
-    const totalCommentPages = Math.ceil(totalComments / commentLimit);
-
-    return {
-      blog: {
-        id: blog.id,
-        title: blog.title,
-        description: blog.description,
-        content: blog.content,
-        small_image: blog.small_image,
-        short_link: blog.short_link,
-        hasReacted: blog.reacts.some(react => react.user_id === Number(user_id)),
-        reactCount: blog.reacts.length,
-        comments,
-      },
-      commentPagination: {
-        currentPage: commentPage,
-        totalPages: totalCommentPages,
-        totalItems: totalComments,
-        itemsPerPage: commentLimit,
-      },
-    };
-  } catch (err) {
-    console.error(`[BlogService.getBlogByShortLink] Error: ${err.message}`);
-    throw new Error(`Failed to get blog: ${err.message}`);
   }
-}
 
   async saveDraftBlog(journalist_id, title, description, content, small_image, short_link, token) {
     try {
-      
+
       const existingBlog = await prisma.blogs.findFirst({
         where: { title, journalist_Id: Number(journalist_id), status: { not: BlogStatus.REJECTED } },
       });
@@ -392,9 +386,9 @@ class BlogService {
         throw new Error('Blog with this title already exists for this journalist');
       }
 
-      
+
       let finalShortLink = short_link || slugify(title, { lower: true, strict: true });
-      
+
       let counter = 1;
       let tempShortLink = finalShortLink;
       while (await prisma.blogs.findFirst({ where: { short_link: tempShortLink } })) {
@@ -403,7 +397,7 @@ class BlogService {
       }
       finalShortLink = tempShortLink;
 
-      
+
       const defaultImage = 'https://example.com/default-image.jpg';
       const finalSmallImage = small_image || defaultImage;
 
@@ -440,7 +434,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistDraftBlog',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' } }
           );
         } catch (emailErr) {
         }
@@ -454,15 +448,15 @@ class BlogService {
 
   async submitBlogForReview(journalist_id, title, description, content, small_image, short_link, token) {
     try {
-      
+
       const existingBlog = await prisma.blogs.findFirst({
         where: { title, journalist_Id: Number(journalist_id), status: { not: BlogStatus.REJECTED } },
       });
       if (existingBlog) {
         throw new Error('Blog with this title already exists for this journalist');
-      }      
+      }
       let finalShortLink = short_link || slugify(title, { lower: true, strict: true });
-      
+
       let counter = 1;
       let tempShortLink = finalShortLink;
       while (await prisma.blogs.findFirst({ where: { short_link: tempShortLink } })) {
@@ -471,7 +465,7 @@ class BlogService {
       }
       finalShortLink = tempShortLink;
 
-      
+
       const defaultImage = 'https://example.com/default-image.jpg';
       const finalSmallImage = small_image || defaultImage;
 
@@ -513,7 +507,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyAdminBlogSubmitted',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' } }
           );
         } catch (emailErr) {
         }
@@ -568,7 +562,7 @@ class BlogService {
           await axios.post(
             'http://mail-service:4003/mail/auth/notifyJournalistNewReview',
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' } }
           );
         } catch (emailErr) {
         }
@@ -639,7 +633,7 @@ class BlogService {
           await axios.post(
             `http://mail-service:4003/mail/auth/${emailEndpoint}`,
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' } }
           );
         } catch (emailErr) {
         }
@@ -678,7 +672,7 @@ class BlogService {
         await axios.post(
           'http://mail-service:4003/mail/auth/shareBlog',
           emailPayload,
-          { headers: { 'Content-Type': 'application/json' }}
+          { headers: { 'Content-Type': 'application/json' } }
         );
       } catch (emailErr) {
       }
@@ -720,7 +714,7 @@ class BlogService {
           await axios.post(
             `http://mail-service:4003/mail/auth/notifyJournalistBlog${action === 'approve' ? 'Approved' : 'Rejected'}`,
             emailPayload,
-            { headers: { 'Content-Type': 'application/json' }}
+            { headers: { 'Content-Type': 'application/json' } }
           );
         } catch (emailErr) {
         }
@@ -732,7 +726,7 @@ class BlogService {
     }
   }
 
-  async updateBlogContent(blog_id, journalist_id, title, description, content,  userRole) {
+  async updateBlogContent(blog_id, journalist_id, title, description, content, userRole) {
     try {
       const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) {
@@ -740,15 +734,15 @@ class BlogService {
       }
       if (userRole === RoleName.Journalist) {
         if (blog.journalist_Id !== Number(journalist_id)) {
-        throw new Error('User not authorized to update this blog');
+          throw new Error('User not authorized to update this blog');
+        }
+
+        if (blog.status === BlogStatus.PUBLISHED) {
+          throw new Error('User not authorized to update this blog');
+        }
+
       }
 
-      if ( blog.status === BlogStatus.PUBLISHED) {
-        throw new Error('User not authorized to update this blog');
-      }
-
-      }
-      
 
       if (title && title !== blog.title) {
         const existingBlog = await prisma.blogs.findFirst({
@@ -764,7 +758,6 @@ class BlogService {
         }
       }
 
-      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
       let finalShortLink = blog.short_link;
       if (title && title !== blog.title) {
         finalShortLink = slugify(title, { lower: true, strict: true });
@@ -803,7 +796,7 @@ class BlogService {
       if (!blog) {
         throw new Error('Blog not found');
       }
-      
+
       if (title && title !== blog.title) {
         const existingBlog = await prisma.blogs.findFirst({
           where: {
@@ -815,7 +808,6 @@ class BlogService {
         }
       }
 
-      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
       let finalShortLink = blog.short_link;
       if (title && title !== blog.title) {
         finalShortLink = slugify(title, { lower: true, strict: true });
@@ -848,14 +840,14 @@ class BlogService {
       throw new Error(`Failed to update blog: ${err.message}`);
     }
   }
-  
+
   async publishedBlog(blog_id, title, description, content) {
     try {
       const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) {
         throw new Error('Blog not found');
       }
-      
+
       if (title && title !== blog.title) {
         const existingBlog = await prisma.blogs.findFirst({
           where: {
@@ -867,7 +859,6 @@ class BlogService {
         }
       }
 
-      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
       let finalShortLink = blog.short_link;
       if (title && title !== blog.title) {
         finalShortLink = slugify(title, { lower: true, strict: true });
