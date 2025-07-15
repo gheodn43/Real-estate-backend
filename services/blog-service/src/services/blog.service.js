@@ -4,6 +4,7 @@ import slugify from 'slugify';
 import { getJournalistFromAuthService, getUserFromAuthService } from '../helpers/authClient.js';
 import BlogStatus from '../enums/blogStatus.enum.js';
 import BlogReviewStatus from '../enums/blogReviewStatus.enum.js';
+import { RoleName } from '../middleware/roleGuard.js';
 
 const prisma = new PrismaClient();
 
@@ -34,7 +35,7 @@ class BlogService {
     const journalist = await getJournalistFromAuthService(journalist_id, token);
     const journalistData = journalist?.data?.user;
    
-    const status = 'published';
+    const status = BlogStatus.PUBLISHED;
 
     const blog = await prisma.blogs.create({
       data: {
@@ -81,9 +82,8 @@ class BlogService {
   }
 }
 
-  async updateBlog(blog_id, journalist_id, title, description, content, small_image, short_link, token) {
+  async updateBlog(blog_id, journalist_id, title, description, content, token) {
     try {
-      
       const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
       if (!blog) {
         throw new Error('Blog not found');
@@ -92,7 +92,6 @@ class BlogService {
         throw new Error('User not authorized to update this blog');
       }
 
-      
       if (title && title !== blog.title) {
         const existingBlog = await prisma.blogs.findFirst({
           where: {
@@ -107,35 +106,32 @@ class BlogService {
         }
       }
 
-      
-      let finalShortLink = short_link || (title ? slugify(title, { lower: true, strict: true }) : blog.short_link);
-      
-      let counter = 1;
-      let tempShortLink = finalShortLink;
-      while (
-        await prisma.blogs.findFirst({
-          where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
-        })
-      ) {
-        tempShortLink = `${finalShortLink}-${counter}`;
-        counter++;
+      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
+      let finalShortLink = blog.short_link;
+      if (title && title !== blog.title) {
+        finalShortLink = slugify(title, { lower: true, strict: true });
+        let counter = 1;
+        let tempShortLink = finalShortLink;
+        while (
+          await prisma.blogs.findFirst({
+            where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
+          })
+        ) {
+          tempShortLink = `${finalShortLink}-${counter}`;
+          counter++;
+        }
+        finalShortLink = tempShortLink;
       }
-      finalShortLink = tempShortLink;
 
-      
-      const defaultImage = 'https://example.com/default-image.jpg';
-      const finalSmallImage = small_image || blog.small_image || defaultImage;
-
-      
       const journalist = await getJournalistFromAuthService(journalist_id, token);
       const journalistData = journalist?.data?.user;
       const role = journalistData?.role?.rolename || 'Journalist';
 
       let status = blog.status;
       if (blog.status === BlogStatus.PUBLISHED && role !== 'Admin') {
-        status = BlogStatus.PENDING; 
+        status = BlogStatus.PENDING;
       } else if ([BlogStatus.DRAFT, BlogStatus.PENDING, BlogStatus.REJECTED, BlogStatus.HIDDEN].includes(blog.status)) {
-        status = blog.status; 
+        status = blog.status;
       }
 
       const updatedBlog = await prisma.blogs.update({
@@ -144,7 +140,6 @@ class BlogService {
           title: title || blog.title,
           description: description || blog.description,
           content: content || blog.content,
-          small_image: finalSmallImage,
           short_link: finalShortLink,
           status,
           updated_at: new Date(),
@@ -174,75 +169,13 @@ class BlogService {
             { headers: { 'Content-Type': 'application/json' }}
           );
         } catch (emailErr) {
+          console.error(`[BlogService.updateBlog] Email error: ${emailErr.message}`);
         }
       }
 
       return updatedBlog;
     } catch (err) {
       throw new Error(`Failed to update blog: ${err.message}`);
-    }
-  }
-
-  async resubmitBlog(blog_id, journalist_id, token) {
-    try {
-      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
-      if (!blog) {
-        throw new Error('Blog not found');
-      }
-      if (blog.journalist_Id !== Number(journalist_id)) {
-        const journalist = await getJournalistFromAuthService(journalist_id, token);
-        const journalistData = journalist?.data?.user;
-        const role = journalistData?.role?.rolename || 'Journalist';
-        if (role !== 'Admin') {
-          throw new Error('User not authorized to resubmit this blog');
-        }
-      }
-      if (blog.status !== BlogStatus.REJECTED) {
-        throw new Error('Blog must be in rejected status to resubmit');
-      }
-
-      const updatedBlog = await prisma.blogs.update({
-        where: { id: Number(blog_id) },
-        data: { status: BlogStatus.PENDING, updated_at: new Date() },
-      });
-
-      const journalist = await getJournalistFromAuthService(journalist_id, token);
-      const journalistData = journalist?.data?.user;
-
-      if (journalistData?.email && journalistData?.name) {
-        const emailPayload = {
-          adminEmail: 'kietnguyen23012002@gmail.com',
-          adminName: 'Admin',
-          blog: {
-            id: updatedBlog.id,
-            title: updatedBlog.title,
-            description: updatedBlog.description,
-            content: updatedBlog.content,
-            small_image: updatedBlog.small_image,
-            short_link: updatedBlog.short_link,
-            created_at: updatedBlog.created_at.toISOString(),
-            updated_at: updatedBlog.updated_at.toISOString(),
-            status: updatedBlog.status,
-          },
-          journalist: {
-            id: journalist_id,
-            name: journalistData.name,
-            email: journalistData.email,
-          },
-        };
-        try {
-          await axios.post(
-            'http://mail-service:4003/mail/auth/notifyAdminBlogSubmitted',
-            emailPayload,
-            { headers: { 'Content-Type': 'application/json' } }
-          );
-        } catch (emailErr) {
-        }
-      }
-
-      return updatedBlog;
-    } catch (err) {
-      throw new Error(`Failed to resubmit blog: ${err.message}`);
     }
   }
 
@@ -756,23 +689,6 @@ class BlogService {
     }
   }
 
-  async publishBlog(blog_id) {
-    try {
-      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
-      if (!blog) throw new Error('Blog not found');
-      if (blog.status === BlogStatus.PUBLISHED) throw new Error('Blog already published');
-
-      const updatedBlog = await prisma.blogs.update({
-        where: { id: Number(blog_id) },
-        data: { status: BlogStatus.PUBLISHED, updated_at: new Date() },
-      });
-
-      return updatedBlog;
-    } catch (err) {
-      throw new Error(`Failed to publish blog: ${err.message}`);
-    }
-  }
-
   async moderateBlog(blog_id, token, action) {
     try {
       const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
@@ -813,6 +729,175 @@ class BlogService {
       return updatedBlog;
     } catch (err) {
       throw new Error(`Failed to ${action} blog: ${err.message}`);
+    }
+  }
+
+  async updateBlogContent(blog_id, journalist_id, title, description, content,  userRole) {
+    try {
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
+      if (!blog) {
+        throw new Error('Blog not found');
+      }
+      if (userRole === RoleName.Journalist) {
+        if (blog.journalist_Id !== Number(journalist_id)) {
+        throw new Error('User not authorized to update this blog');
+      }
+
+      if ( blog.status === BlogStatus.PUBLISHED) {
+        throw new Error('User not authorized to update this blog');
+      }
+
+      }
+      
+
+      if (title && title !== blog.title) {
+        const existingBlog = await prisma.blogs.findFirst({
+          where: {
+            title,
+            journalist_Id: Number(journalist_id),
+            status: { not: BlogStatus.REJECTED },
+            id: { not: Number(blog_id) },
+          },
+        });
+        if (existingBlog) {
+          throw new Error('Blog with this title already exists for this journalist');
+        }
+      }
+
+      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
+      let finalShortLink = blog.short_link;
+      if (title && title !== blog.title) {
+        finalShortLink = slugify(title, { lower: true, strict: true });
+        let counter = 1;
+        let tempShortLink = finalShortLink;
+        while (
+          await prisma.blogs.findFirst({
+            where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
+          })
+        ) {
+          tempShortLink = `${finalShortLink}-${counter}`;
+          counter++;
+        }
+        finalShortLink = tempShortLink;
+      }
+
+      const updatedBlog = await prisma.blogs.update({
+        where: { id: Number(blog_id) },
+        data: {
+          title: title || blog.title,
+          description: description || blog.description,
+          content: content || blog.content,
+          short_link: finalShortLink,
+          updated_at: new Date(),
+        },
+      });
+      return updatedBlog;
+    } catch (err) {
+      throw new Error(`Failed to update blog: ${err.message}`);
+    }
+  }
+
+  async resubmitBlog(blog_id, title, description, content) {
+    try {
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
+      if (!blog) {
+        throw new Error('Blog not found');
+      }
+      
+      if (title && title !== blog.title) {
+        const existingBlog = await prisma.blogs.findFirst({
+          where: {
+            title
+          },
+        });
+        if (existingBlog) {
+          throw new Error('Blog with this title already exists for this journalist');
+        }
+      }
+
+      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
+      let finalShortLink = blog.short_link;
+      if (title && title !== blog.title) {
+        finalShortLink = slugify(title, { lower: true, strict: true });
+        let counter = 1;
+        let tempShortLink = finalShortLink;
+        while (
+          await prisma.blogs.findFirst({
+            where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
+          })
+        ) {
+          tempShortLink = `${finalShortLink}-${counter}`;
+          counter++;
+        }
+        finalShortLink = tempShortLink;
+      }
+
+      const updatedBlog = await prisma.blogs.update({
+        where: { id: Number(blog_id) },
+        data: {
+          title: title || blog.title,
+          description: description || blog.description,
+          content: content || blog.content,
+          short_link: finalShortLink,
+          updated_at: new Date(),
+          status: BlogStatus.PENDING,
+        },
+      });
+      return updatedBlog;
+    } catch (err) {
+      throw new Error(`Failed to update blog: ${err.message}`);
+    }
+  }
+  
+  async publishedBlog(blog_id, title, description, content) {
+    try {
+      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
+      if (!blog) {
+        throw new Error('Blog not found');
+      }
+      
+      if (title && title !== blog.title) {
+        const existingBlog = await prisma.blogs.findFirst({
+          where: {
+            title
+          },
+        });
+        if (existingBlog) {
+          throw new Error('Blog with this title already exists for this journalist');
+        }
+      }
+
+      // Tạo short_link từ title mới (nếu có), hoặc giữ nguyên
+      let finalShortLink = blog.short_link;
+      if (title && title !== blog.title) {
+        finalShortLink = slugify(title, { lower: true, strict: true });
+        let counter = 1;
+        let tempShortLink = finalShortLink;
+        while (
+          await prisma.blogs.findFirst({
+            where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
+          })
+        ) {
+          tempShortLink = `${finalShortLink}-${counter}`;
+          counter++;
+        }
+        finalShortLink = tempShortLink;
+      }
+
+      const updatedBlog = await prisma.blogs.update({
+        where: { id: Number(blog_id) },
+        data: {
+          title: title || blog.title,
+          description: description || blog.description,
+          content: content || blog.content,
+          short_link: finalShortLink,
+          updated_at: new Date(),
+          status: BlogStatus.PUBLISHED,
+        },
+      });
+      return updatedBlog;
+    } catch (err) {
+      throw new Error(`Failed to update blog: ${err.message}`);
     }
   }
 }

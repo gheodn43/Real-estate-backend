@@ -1,4 +1,6 @@
 import blogService from '../services/blog.service.js';
+import { RoleName } from '../middleware/roleGuard.js';
+
 
 class BlogController {
   constructor() {
@@ -8,9 +10,9 @@ class BlogController {
     this.createBlogReview = this.createBlogReview.bind(this);
     this.createBlogReact = this.createBlogReact.bind(this);
     this.shareBlog = this.shareBlog.bind(this);
-    this.publishBlog = this.publishBlog.bind(this);
+    this.publishedBlog = this.publishedBlog.bind(this);
     this.moderateBlog = this.moderateBlog.bind(this);
-    this.updateBlog = this.updateBlog.bind(this);
+    this.updateBlogContent = this.updateBlogContent.bind(this);
     this.getBlogs = this.getBlogs.bind(this);
     this.getBlogByShortLink = this.getBlogByShortLink.bind(this);
     this.resubmitBlog = this.resubmitBlog.bind(this);
@@ -52,47 +54,65 @@ class BlogController {
   }
 }
 
-  async updateBlog(req, res) {
-    try {
-      const { blog_id, title, description, content, small_image, short_link } = req.body;
-      const journalist_id = Number(req.user.userId);
-      const token = req.token;
-      if (!blog_id) {
-        return res.status(400).json({
-          data: null,
-          message: 'Thiếu blog_id',
-          errors: [],
-        });
-      }
-      const blog = await blogService.updateBlog(
-        blog_id,
-        journalist_id,
-        title,
-        description,
-        content,
-        small_image,
-        short_link,
-        token
-      );
-      res.status(200).json({
-        data: { blog },
-        message: blog.status === 'published' ? 'Blog đã được cập nhật và giữ trạng thái published' : 'Blog đã được cập nhật',
+  async updateBlogContent(req, res) {
+  try {
+    const { blog_id } = req.params;
+    const { title, description, content } = req.body;
+    const journalist_id = Number(req.user.userId);
+
+    console.log(`[BlogController.updateBlog] req.body: ${JSON.stringify(req.body, null, 2)}`);
+
+    if (!blog_id) {
+      return res.status(400).json({
+        data: null,
+        message: 'Thiếu blog_id',
         errors: [],
       });
-    } catch (err) {
-      console.error(`[BlogController.updateBlog] Error: ${err.message}`);
-      res.status(500).json({
+    }
+
+    const blog = await blogService.updateBlogContent(
+
+      Number(blog_id),
+      journalist_id,
+      title,
+      description,
+      content,
+      req.user.userRole,
+    );
+
+    res.status(200).json({
+      data: blog,
+      message: blog.status === 'published' ? 'Blog đã được cập nhật và giữ trạng thái published' : 'Blog đã được cập nhật',
+      errors: [],
+    });
+  } catch (err) {
+    console.error(`[BlogController.updateBlog] Error: ${err.message}`);
+    if (err.message === 'Blog not found') {
+      return res.status(404).json({
         data: null,
-        message: 'Lỗi server',
+        message: 'Blog không tồn tại',
         errors: [err.message],
       });
     }
+    if (err.message === 'User not authorized to update this blog' || err.message === 'Blog with this title already exists for this journalist') {
+      return res.status(403).json({
+        data: null,
+        message: 'Không có quyền cập nhật blog',
+        errors: [err.message],
+      });
+    }
+    res.status(500).json({
+      data: null,
+      message: 'Lỗi server',
+      errors: [err.message],
+    });
   }
+}
 
   async resubmitBlog(req, res) {
   try {
-    const { blog_id } = req.body;
-    const journalist_id = Number(req.user.userId);
+    const {title, description, content } = req.body;
+    const blog_id = req.params.blog_id;
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({
@@ -108,7 +128,14 @@ class BlogController {
         errors: ['Thiếu blog_id'],
       });
     }
-    const blog = await blogService.resubmitBlog(blog_id, journalist_id, token);
+    if(req.user.userRole !== RoleName.Journalist ) {
+      return res.status(403).json({
+        data: null,
+        message: 'Không có quyền gửi lại blog',
+        errors: ['Không có quyền gửi lại blog'],
+      });
+    }
+    const blog = await blogService.resubmitBlog(blog_id, title, description, content);
     res.status(200).json({
       data: { blog },
       message: 'Blog đã được gửi lại để duyệt',
@@ -392,32 +419,47 @@ class BlogController {
     }
   }
 
-  async publishBlog(req, res) {
-    try {
-      const { blog_id } = req.body;
-      if (!blog_id) {
-        return res.status(400).json({
-          data: null,
-          message: 'Thiếu blog_id',
-          errors: [],
-        });
-      }
-      const blog = await blogService.publishBlog(blog_id);
-      res.status(200).json({
-        data: { blog },
-        message: 'Blog đã được đăng',
-        errors: [],
-      });
-    } catch (err) {
-      console.error(`[BlogController.publishBlog] Error: ${err.message}`);
-      res.status(500).json({
+  async publishedBlog(req, res) {
+  try {
+    const {title, description, content } = req.body;
+    const blog_id = req.params.blog_id;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({
         data: null,
-        message: 'Lỗi server',
-        errors: [err.message],
+        message: 'Missing authorization token',
+        errors: ['Missing authorization token'],
       });
     }
+    if (!blog_id) {
+      return res.status(400).json({
+        data: null,
+        message: 'Thiếu blog_id',
+        errors: ['Thiếu blog_id'],
+      });
+    }
+    if(req.user.userRole !== RoleName.Admin ) {
+      return res.status(403).json({
+        data: null,
+        message: 'Không có quyền gửi lại blog',
+        errors: ['Không có quyền gửi lại blog'],
+      });
+    }
+    const blog = await blogService.publishedBlog(blog_id, title, description, content);
+    res.status(200).json({
+      data: { blog },
+      message: 'Blog đã được gửi lại để duyệt',
+      errors: [],
+    });
+  } catch (err) {
+    console.error(`[BlogController.resubmitBlog] Error: ${err.message}`);
+    res.status(err.message.includes('not found') ? 404 : 400).json({
+      data: null,
+      message: err.message,
+      errors: [err.message],
+    });
   }
-
+}
   async moderateBlog(req, res) {
     try {
       const { blog_id, action } = req.body;

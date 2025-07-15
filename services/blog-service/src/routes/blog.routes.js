@@ -9,7 +9,8 @@ const router = express.Router();
  * @swagger
  * /blogs/create:
  *   post:
- *     summary: Đăng blog mới [Admin]
+ *     summary: Đăng blog mới tại màn hình thêm mới bấm nút xuất bản [Admin]
+ *     description: Chỉ Admin có thể tạo blog với trạng thái published. Journalist không được phép sử dụng endpoint này.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -43,7 +44,7 @@ const router = express.Router();
  *               - content
  *     responses:
  *       201:
- *         description: Blog đã được đăng hoặc gửi duyệt
+ *         description: Blog đã được đăng
  *         content:
  *           application/json:
  *             schema:
@@ -62,10 +63,10 @@ const router = express.Router();
  *                         content: { type: string }
  *                         small_image: { type: string }
  *                         short_link: { type: string }
- *                         status: { type: string }
+ *                         status: { type: string, example: published }
  *                 message:
  *                   type: string
- *                   example: Blog đã được đăng
+ *                   example: Bài viết đã được đăng
  *                 errors:
  *                   type: array
  *                   items:
@@ -79,6 +80,16 @@ const router = express.Router();
  *               properties:
  *                 data: { type: null }
  *                 message: { type: string, example: Thiếu thông tin blog }
+ *                 errors: { type: array, items: { type: string } }
+ *       403:
+ *         description: Không có quyền (chỉ Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Only Admin can create published blogs }
  *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
@@ -100,22 +111,27 @@ router.post(
 
 /**
  * @swagger
- * /blogs/update:
+ * /blogs/save/{blog_id}:
  *   put:
- *     summary: Cập nhật blog
+ *     summary: Cập nhật blog tại màn hình cập nhật bấm nút LƯU [Admin, Journalist]
+ *     description: Journalist chỉ có thể cập nhật blog ở trạng thái draft, pending, rejected; Admin có thể cập nhật mọi trạng thái. Không cho phép Journalist cập nhật blog published.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: blog_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của blog cần cập nhật
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
  *             type: object
  *             properties:
- *               blog_id:
- *                 type: integer
- *                 description: ID của blog cần cập nhật
  *               title:
  *                 type: string
  *                 description: Tiêu đề mới của blog (tùy chọn)
@@ -125,16 +141,6 @@ router.post(
  *               content:
  *                 type: string
  *                 description: Nội dung chi tiết mới của blog (tùy chọn)
- *               small_image:
- *                 type: string
- *                 nullable: true
- *                 description: URL hình ảnh đại diện mới (tùy chọn)
- *               short_link:
- *                 type: string
- *                 nullable: true
- *                 description: Đường dẫn ngắn mới của blog (tùy chọn)
- *             required:
- *               - blog_id
  *     responses:
  *       200:
  *         description: Blog đã được cập nhật
@@ -146,17 +152,16 @@ router.post(
  *                 data:
  *                   type: object
  *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string }
+ *                     id: { type: integer }
+ *                     journalist_Id: { type: integer }
+ *                     title: { type: string }
+ *                     description: { type: string }
+ *                     content: { type: string }
+ *                     small_image: { type: string }
+ *                     short_link: { type: string }
+ *                     status: { type: string }
+ *                     created_at: { type: string, format: date-time }
+ *                     updated_at: { type: string, format: date-time }
  *                 message:
  *                   type: string
  *                   example: Blog đã được cập nhật
@@ -174,83 +179,15 @@ router.post(
  *                 data: { type: null }
  *                 message: { type: string, example: Thiếu blog_id }
  *                 errors: { type: array, items: { type: string } }
- *       500:
- *         description: Lỗi server
+ *       403:
+ *         description: Không có quyền cập nhật blog (Journalist không được cập nhật blog published)
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
- */
-router.put(
-  '/update',
-  authMiddleware,
-  roleGuard([RoleName.Journalist, RoleName.Admin]),
-  blogController.updateBlog
-);
-
-/**
- * @swagger
- * /blogs/resubmit:
- *   post:
- *     summary: Gửi lại blog bị từ chối để duyệt [Journalist, Admin]
- *     description: Chuyển trạng thái blog từ rejected sang pending để duyệt lại. Chỉ journalist sở hữu blog hoặc admin có thể thực hiện.
- *     tags: [Blogs]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               blog_id:
- *                 type: integer
- *                 description: ID của blog cần gửi lại
- *             required:
- *               - blog_id
- *     responses:
- *       200:
- *         description: Blog đã được gửi lại để duyệt
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string }
- *                 message:
- *                   type: string
- *                   example: Blog đã được gửi lại để duyệt
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *       400:
- *         description: Thiếu blog_id, blog không ở trạng thái rejected, hoặc user không có quyền
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog phải ở trạng thái rejected để gửi lại }
+ *                 message: { type: string, example: Không có quyền cập nhật blog }
  *                 errors: { type: array, items: { type: string } }
  *       404:
  *         description: Blog không tồn tại
@@ -273,8 +210,117 @@ router.put(
  *                 message: { type: string, example: Lỗi server }
  *                 errors: { type: array, items: { type: string } }
  */
-router.post(
-  '/resubmit',
+router.put(
+  '/save/:blog_id',
+  authMiddleware,
+  roleGuard([RoleName.Journalist, RoleName.Admin]),
+  blogController.updateBlogContent
+);
+
+/**
+ * @swagger
+ * /blogs/resubmit/{blog_id}:
+ *   put:
+ *     summary: Gửi lại blog bị từ chối để duyệt [Journalist, Admin]
+ *     description: Chuyển trạng thái blog từ rejected sang pending để duyệt lại. Chỉ Journalist sở hữu blog hoặc Admin có thể thực hiện.
+ *     tags: [Blogs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: blog_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của blog cần gửi lại
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Tiêu đề mới của blog (tùy chọn)
+ *               description:
+ *                 type: string
+ *                 description: Mô tả ngắn mới của blog (tùy chọn)
+ *               content:
+ *                 type: string
+ *                 description: Nội dung chi tiết mới của blog (tùy chọn)
+ *     responses:
+ *       200:
+ *         description: Blog đã được gửi lại để duyệt
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     blog:
+ *                       type: object
+ *                       properties:
+ *                         id: { type: integer }
+ *                         journalist_Id: { type: integer }
+ *                         title: { type: string }
+ *                         description: { type: string }
+ *                         content: { type: string }
+ *                         small_image: { type: string }
+ *                         short_link: { type: string }
+ *                         status: { type: string, example: pending }
+ *                 message:
+ *                   type: string
+ *                   example: Blog đã được gửi lại để duyệt
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Thiếu blog_id hoặc blog không ở trạng thái rejected
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Blog phải ở trạng thái rejected để gửi lại }
+ *                 errors: { type: array, items: { type: string } }
+ *       403:
+ *         description: Không có quyền gửi lại blog
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Không có quyền gửi lại blog }
+ *                 errors: { type: array, items: { type: string } }
+ *       404:
+ *         description: Blog không tồn tại
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Blog không tồn tại }
+ *                 errors: { type: array, items: { type: string } }
+ *       500:
+ *         description: Lỗi server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Lỗi server }
+ *                 errors: { type: array, items: { type: string } }
+ */
+router.put(
+  '/resubmit/:blog_id',
   authMiddleware,
   roleGuard([RoleName.Journalist, RoleName.Admin]),
   blogController.resubmitBlog
@@ -285,6 +331,7 @@ router.post(
  * /blogs/{blog_id}:
  *   delete:
  *     summary: Xóa blog
+ *     description: Chỉ Journalist sở hữu blog hoặc Admin có thể xóa. Gửi email thông báo khi xóa thành công.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -370,6 +417,7 @@ router.delete(
  * /blogs/list:
  *   get:
  *     summary: Lấy danh sách blog
+ *     description: Lấy danh sách các blog có trạng thái published với phân trang.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -441,6 +489,7 @@ router.get('/list', authMiddleware, blogController.getBlogs);
  * /blogs/{short_link}:
  *   get:
  *     summary: Lấy chi tiết blog theo short_link
+ *     description: Lấy chi tiết blog có trạng thái published cùng với bình luận và phản ứng của người dùng.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -536,7 +585,8 @@ router.get('/:short_link', authMiddleware, blogController.getBlogByShortLink);
  * @swagger
  * /blogs/draft:
  *   post:
- *     summary: Lưu nháp blog
+ *     summary: Lưu nháp blog tại màn hình thêm mới bấm nút LƯU NHÁP [Journalist, Admin]
+ *     description: Tạo blog mới với trạng thái draft.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -589,7 +639,7 @@ router.get('/:short_link', authMiddleware, blogController.getBlogByShortLink);
  *                         content: { type: string }
  *                         small_image: { type: string }
  *                         short_link: { type: string }
- *                         status: { type: string }
+ *                         status: { type: string, example: draft }
  *                 message:
  *                   type: string
  *                   example: Blog đã được lưu nháp
@@ -629,7 +679,8 @@ router.post(
  * @swagger
  * /blogs/submit:
  *   post:
- *     summary: Gửi blog để duyệt
+ *     summary: Gửi blog để duyệt tại màn hình thêm mới bấm nút GỬI DUYỆT [Journalist]
+ *     description: Tạo blog mới với trạng thái pending và gửi thông báo cho Admin.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -682,7 +733,7 @@ router.post(
  *                         content: { type: string }
  *                         small_image: { type: string }
  *                         short_link: { type: string }
- *                         status: { type: string }
+ *                         status: { type: string, example: pending }
  *                 message:
  *                   type: string
  *                   example: Blog đã được gửi duyệt
@@ -723,6 +774,7 @@ router.post(
  * /blogs/review:
  *   post:
  *     summary: Thêm bình luận cho blog
+ *     description: Thêm bình luận cho blog với trạng thái published ngay lập tức.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -761,7 +813,7 @@ router.post(
  *                         user_id: { type: integer }
  *                         comment: { type: string }
  *                         parent_id: { type: integer }
- *                         status: { type: string }
+ *                         status: { type: string, example: published }
  *                 message:
  *                   type: string
  *                   example: Bình luận đã được thêm
@@ -797,6 +849,7 @@ router.post('/review', authMiddleware, blogController.createBlogReview);
  * /blogs/react:
  *   post:
  *     summary: Like hoặc bỏ like blog
+ *     description: Thêm hoặc xóa lượt like của người dùng cho blog.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -886,6 +939,7 @@ router.post('/react', authMiddleware, blogController.createBlogReact);
  * /blogs/share:
  *   post:
  *     summary: Chia sẻ blog qua email
+ *     description: Gửi email chứa thông tin blog đến người nhận.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -952,24 +1006,36 @@ router.post('/share', authMiddleware, blogController.shareBlog);
 
 /**
  * @swagger
- * /blogs/publish:
- *   post:
- *     summary: Đăng blog (admin)
+ * /blogs/publish/{blog_id}:
+ *   put:
+ *     summary: Đăng blog (Admin)
+ *     description: Chuyển trạng thái blog từ draft hoặc rejected sang published. Chỉ Admin có thể thực hiện.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: blog_id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID của blog cần đăng
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
  *             type: object
  *             properties:
- *               blog_id:
- *                 type: integer
- *                 description: ID của blog
- *             required:
- *               - blog_id
+ *               title:
+ *                 type: string
+ *                 description: Tiêu đề mới của blog (tùy chọn)
+ *               description:
+ *                 type: string
+ *                 description: Mô tả ngắn mới của blog (tùy chọn)
+ *               content:
+ *                 type: string
+ *                 description: Nội dung chi tiết mới của blog (tùy chọn)
  *     responses:
  *       200:
  *         description: Blog đã được đăng
@@ -991,7 +1057,7 @@ router.post('/share', authMiddleware, blogController.shareBlog);
  *                         content: { type: string }
  *                         small_image: { type: string }
  *                         short_link: { type: string }
- *                         status: { type: string }
+ *                         status: { type: string, example: published }
  *                 message:
  *                   type: string
  *                   example: Blog đã được đăng
@@ -1000,14 +1066,34 @@ router.post('/share', authMiddleware, blogController.shareBlog);
  *                   items:
  *                     type: string
  *       400:
- *         description: Thiếu blog_id
+ *         description: Thiếu blog_id hoặc blog không ở trạng thái draft/rejected
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 data: { type: null }
- *                 message: { type: string, example: Thiếu blog_id }
+ *                 message: { type: string, example: Blog must be in draft or rejected status to publish }
+ *                 errors: { type: array, items: { type: string } }
+ *       403:
+ *         description: Không có quyền (chỉ Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Chỉ Admin có quyền đăng blog }
+ *                 errors: { type: array, items: { type: string } }
+ *       404:
+ *         description: Blog không tồn tại
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Blog không tồn tại }
  *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
@@ -1020,18 +1106,19 @@ router.post('/share', authMiddleware, blogController.shareBlog);
  *                 message: { type: string, example: Lỗi server }
  *                 errors: { type: array, items: { type: string } }
  */
-router.post(
-  '/publish',
+router.put(
+  '/publish/:blog_id',
   authMiddleware,
   roleGuard([RoleName.Admin]),
-  blogController.publishBlog
+  blogController.publishedBlog
 );
 
 /**
  * @swagger
  * /blogs/moderate:
  *   post:
- *     summary: Duyệt hoặc từ chối blog (admin)
+ *     summary: Duyệt hoặc từ chối blog (Admin)
+ *     description: Chuyển trạng thái blog từ pending sang published (approve) hoặc rejected (reject). Chỉ Admin có thể thực hiện.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -1073,7 +1160,7 @@ router.post(
  *                         content: { type: string }
  *                         small_image: { type: string }
  *                         short_link: { type: string }
- *                         status: { type: string }
+ *                         status: { type: string, example: published hoặc rejected }
  *                 message:
  *                   type: string
  *                   example: Blog đã được duyệt
