@@ -9,12 +9,7 @@ const app = express();
 
 app.get('/swagger.json', async (req, res) => {
   try {
-    const [
-      auth,
-      property,
-      agentReview,
-      blog
-    ] = await Promise.all([
+    const [auth, property, agentReview, blog] = await Promise.all([
       axios.get('http://auth-service:4001/swagger.json'),
       axios.get('http://property-service:4002/swagger.json'),
       axios.get('http://agent-review-service:4004/swagger.json'),
@@ -24,7 +19,7 @@ app.get('/swagger.json', async (req, res) => {
       auth.data,
       property.data,
       agentReview.data,
-      blog.data
+      blog.data,
     ]);
     mergedSpec.info = {
       title: 'Merged API Documentation',

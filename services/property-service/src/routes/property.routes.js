@@ -16,7 +16,7 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
  * @swagger
  * /prop/list-post:
  *   get:
- *     summary: Lấy danh sách bất động sản [ADMIN, AGENT]
+ *     summary: Lấy danh sách bất động sản ở màn hình quản lý [ADMIN, AGENT]
  *     description: Lọc theo trạng thái, phân trang, tìm kiếm...
  *     tags:
  *       - Property
