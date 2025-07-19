@@ -247,18 +247,13 @@ const getBySlug = async (slug) => {
       locations: true,
       media: true,
       details: {
-        include: {
+        select: {
+          value: true,
           category_detail: {
             select: {
               id: true,
               field_name: true,
-              field_type: true,
-              field_placeholder: true,
               icon: true,
-              option: true,
-              is_active: true,
-              is_require: true,
-              is_showing: true,
             },
           },
         },
@@ -397,8 +392,29 @@ const getPublicFilteredProperties = async (filters, pagination) => {
       take: limit,
       orderBy: { updated_at: 'desc' },
       include: {
-        media: true,
+        media: {
+          where: {
+            type: 'image',
+          },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            order: true,
+          },
+        },
         locations: true,
+        details: {
+          select: {
+            value: true,
+            category_detail: {
+              select: {
+                field_name: true,
+                icon: true,
+              },
+            },
+          },
+        },
       },
     }),
     prisma.properties.count({ where }),

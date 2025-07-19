@@ -1,0 +1,40 @@
+import dotenv from 'dotenv';
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swagger.js';
+
+import chatRoutes from './routes/chat.js';
+import googleMapRoutes from './routes/googleMap.js';
+
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+app.use('/agent-chat/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+app.use('/agent-chat', chatRoutes);
+app.use('/agent-chat/map', googleMapRoutes);
+
+const MONGO_URL = process.env.DATABASE_URL;
+
+mongoose
+  .connect(MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT);
