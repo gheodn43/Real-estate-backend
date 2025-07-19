@@ -411,6 +411,7 @@ const getPublicFilteredProperties = async (filters, pagination) => {
               select: {
                 field_name: true,
                 icon: true,
+                is_showing: true,
               },
             },
           },
