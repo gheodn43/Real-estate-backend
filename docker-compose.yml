@@ -76,6 +76,18 @@ services:
     environment:
       PORT: 4005
       DATABASE_URL: "mysql://root:sum2530623306@mysql:3306/blog_db"
+  
+  agent-chat-service:
+    build:
+      context: ./mcp-server/chatbot-ai
+    image: agent-chat-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    environment:
+      PORT: 3000
+      DATABASE_URL: "mongodb://mongodb:27017/mcp-memory-chat"
 
   mysql:
     image: mysql:8

@@ -4,8 +4,38 @@ import { getGrokResponse } from '../modules/brain.js';
 
 const router = express.Router();
 
-router.post('/test', async (req, res) => {
-  const { userId, message } = req.body;
+/**
+ * @openapi
+ * /agent-chat/test/{userId}:
+ *   post:
+ *     summary: Test chatbot
+ *     description: Test chatbot
+ *     tags:
+ *       - Chatbot
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 description: User message
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.post('/test/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { message } = req.body;
 
   if (!userId || !message) {
     return res.status(400).json({ error: 'Missing userId or message' });
