@@ -43,7 +43,7 @@ jobs:
           if echo "$CHANGED_FILES" | grep -q "^services/blog-service/"; then
             SERVICES="$SERVICES blog-service"
           fi
-          if echo "$CHANGED_FILES" | grep -q "^services/agent-chat-service/"; then
+          if echo "$CHANGED_FILES" | grep -q "^mcp-server/chatbot-ai/"; then
             SERVICES="$SERVICES agent-chat-service"
           fi
           # Remove leading/trailing whitespace
