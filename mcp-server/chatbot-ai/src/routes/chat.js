@@ -40,7 +40,6 @@ router.post('/test/:userId', async (req, res) => {
   if (!userId || !message) {
     return res.status(400).json({ error: 'Missing userId or message' });
   }
-
   try {
     let chat = await ChatMemory.findOne({ userId });
 
@@ -55,6 +54,7 @@ router.post('/test/:userId', async (req, res) => {
       message,
       currentContext
     );
+    //update chat memory
     chat.memory.push({
       human: message,
       agent: reply,
