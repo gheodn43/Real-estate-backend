@@ -12,7 +12,6 @@ router.post('/test', async (req, res) => {
   }
 
   try {
-    // Tìm cuộc hội thoại của người dùng
     let chat = await ChatMemory.findOne({ userId });
 
     if (!chat) {
@@ -21,11 +20,7 @@ router.post('/test', async (req, res) => {
         context: 'Cuộc trò chuyện mới bắt đầu.',
       });
     }
-
-    // Lấy ngữ cảnh hiện tại
     const currentContext = chat.context;
-
-    // Gửi tin nhắn, ngữ cảnh, và lịch sử (nếu cần) đến API của xAI với mô hình grok-3-mini
     const { reply, updatedContext } = await getGrokResponse(
       message,
       currentContext
@@ -38,6 +33,7 @@ router.post('/test', async (req, res) => {
       status: 'completed',
       timestamp: new Date(),
     });
+
     chat.context = updatedContext;
     if (chat.memory.length > 100) {
       chat.memory = chat.memory.slice(chat.memory.length - 100);
@@ -46,10 +42,22 @@ router.post('/test', async (req, res) => {
     chat.lastInteraction = new Date();
     await chat.save();
 
-    res.json({ reply, context: updatedContext });
+    res.json({
+      data: {
+        reply: reply,
+        updatedContext: updatedContext,
+        properties: [],
+      },
+      message: 'success',
+      error: [],
+    });
   } catch (err) {
     console.error('Chat error:', err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      data: null,
+      message: '',
+      error: [err.message],
+    });
   }
 });
 

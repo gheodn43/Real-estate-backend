@@ -88,25 +88,3 @@ export async function searchByAddress(address, keyword, radius = RADIUS) {
     return [];
   }
 }
-
-export async function searchByTextQuery(query) {
-  try {
-    const res = await axios.get(
-      'https://maps.googleapis.com/maps/api/place/textsearch/json',
-      {
-        params: {
-          query,
-          key: API_KEY,
-        },
-      }
-    );
-
-    return (res.data.results || [])
-      .map((p) => p.geometry?.location)
-      .filter((loc) => loc?.lat && loc?.lng)
-      .map((loc) => ({ lat: loc.lat, lng: loc.lng }));
-  } catch (e) {
-    console.error(`[TextSearch] Lỗi:`, e.message);
-    return [];
-  }
-}
