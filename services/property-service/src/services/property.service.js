@@ -238,6 +238,50 @@ const getBasicInfoById = async (propertyId) => {
   return property;
 };
 
+const getRelateProperties = async (currentPropertyId, assetsId, count) => {
+  const propertyId = Number(currentPropertyId);
+  const properties = await prisma.properties.findMany({
+    where: {
+      id: {
+        not: propertyId,
+      },
+      assets_id: assetsId,
+      requestpost_status: {
+        in: [RequestPostStatus.PUBLISHED, RequestPostStatus.SOLD],
+      },
+    },
+    orderBy: { updated_at: 'desc' },
+    include: {
+      media: {
+        where: {
+          type: 'image',
+        },
+        select: {
+          id: true,
+          type: true,
+          url: true,
+          order: true,
+        },
+      },
+      locations: true,
+      details: {
+        select: {
+          value: true,
+          category_detail: {
+            select: {
+              field_name: true,
+              icon: true,
+              is_showing: true,
+            },
+          },
+        },
+      },
+    },
+    take: count,
+  });
+  return properties;
+};
+
 const getBySlug = async (slug) => {
   const property = await prisma.properties.findUnique({
     where: {
@@ -481,4 +525,5 @@ export default {
   getFilteredProperties,
   getPublicFilteredProperties,
   getRequestPostByCustomerId,
+  getRelateProperties,
 };
