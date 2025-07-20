@@ -11,8 +11,6 @@ import amenityService from '../services/amentity.service.js';
 import agentHistoryService from '../services/propertyAgentHistory.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
-
-// lấy 2 bất động sản liên quan cùng danh mục relate to
 /**
  * @openapi
  * /prop/{id}/relate:
