@@ -12,6 +12,187 @@ import agentHistoryService from '../services/propertyAgentHistory.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
+// customer lấy danh sách yêu cầu ký gửi
+/**
+ * @openapi
+ * /prop/request/get-all:
+ *   get:
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại (mặc định 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số phần tử mỗi trang (mặc định 10)
+ *     summary: Lấy danh sách yêu cầu ký gửi
+ *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
+ *     responses:
+ *       200:
+ *         description: Danh sách yêu cầu ký gửi
+ */
+
+//xử lý phân trang
+router.get(
+  '/request/get-all',
+  authMiddleware,
+  roleGuard([RoleName.Customer]),
+  async (req, res) => {
+    try {
+      const userData = req.user;
+      const { page = 1, limit = 10 } = req.query;
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const { requests, total } =
+        await propertyService.getRequestPostByCustomerId(
+          userData.userId,
+          pagination
+        );
+
+      return res.status(200).json({
+        data: {
+          requests,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+          },
+        },
+        message: 'Request post found',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /prop/assign-agent:
+ *   post:
+ *     summary: Gán bất động sản cho các agent [CUSTOMER, ADMIN]
+ *     description: API cho phép khách hàng hoặc admin gán một bất động sản cụ thể cho các agent
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - propertyId
+ *               - agents
+ *             properties:
+ *               propertyId:
+ *                 type: integer
+ *                 example: 14
+ *               agents:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *     responses:
+ *       200:
+ *         description: Gán agent thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     history:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                 message:
+ *                   type: string
+ *                   example: Property assigned
+ *                 error:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: []
+ *       404:
+ *         description: Bất động sản không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
+router
+  .route('/assign-agent')
+  .post(
+    authMiddleware,
+    roleGuard([RoleName.Customer, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const { propertyId, agents } = req.body;
+        const userRole = req.user.userRole;
+        const token = req.token;
+        const basicPropertyInfo =
+          await propertyService.getBasicProperty(propertyId);
+        if (!basicPropertyInfo) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Property not found'],
+          });
+        }
+        let customerProfile = null;
+        if (userRole === RoleName.Admin && basicPropertyInfo.sender_id) {
+          customerProfile = await getCustomerProfile(
+            basicPropertyInfo.sender_id,
+            token
+          );
+        } else {
+          customerProfile = await getProfile(token);
+        }
+        const agentsData = await Promise.all(
+          agents.map(async (agentId) => {
+            const agent = await getCustomerProfile(agentId, token);
+            return agent.data.user;
+          })
+        );
+
+        console.log('agentsData', agentsData);
+        const propertyAgentHistories =
+          await propertyService.assignAgentToRequest(
+            basicPropertyInfo,
+            agentsData,
+            customerProfile
+          );
+
+        return res.status(200).json({
+          data: { history: propertyAgentHistories },
+          message: 'Property assigned',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
 /**
  * @swagger
  * /prop/list-post:
@@ -437,126 +618,6 @@ router
       });
     }
   });
-
-/**
- * @swagger
- * /prop/assign-agent:
- *   post:
- *     summary: Gán bất động sản cho các agent [CUSTOMER, ADMIN]
- *     description: API cho phép khách hàng hoặc admin gán một bất động sản cụ thể cho các agent
- *     tags:
- *       - Property
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - propertyId
- *               - agents
- *             properties:
- *               propertyId:
- *                 type: integer
- *                 example: 14
- *               agents:
- *                 type: array
- *                 items:
- *                   type: object
- *                   required:
- *                     - id
- *                     - gmail
- *                     - name
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 3
- *                     gmail:
- *                       type: string
- *                       format: email
- *                       example: agent@gmail.com
- *                     name:
- *                       type: string
- *                       example: agent name
- *     responses:
- *       200:
- *         description: Gán agent thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     history:
- *                       type: array
- *                       items:
- *                         type: object
- *                 message:
- *                   type: string
- *                   example: Property assigned
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
- *       404:
- *         description: Bất động sản không tồn tại
- *       500:
- *         description: Lỗi server
- */
-router
-  .route('/assign-agent')
-  .post(
-    authMiddleware,
-    roleGuard([RoleName.Customer, RoleName.Admin]),
-    async (req, res) => {
-      try {
-        const { propertyId, agents } = req.body;
-        const userRole = req.user.userRole;
-        const token = req.token;
-        const basicPropertyInfo =
-          await propertyService.getBasicProperty(propertyId);
-        if (!basicPropertyInfo) {
-          return res.status(404).json({
-            data: null,
-            message: '',
-            error: ['Property not found'],
-          });
-        }
-        let customerProfile = null;
-        if (userRole === RoleName.Admin && basicPropertyInfo.sender_id) {
-          customerProfile = await getCustomerProfile(
-            basicPropertyInfo.sender_id,
-            token
-          );
-        } else {
-          customerProfile = await getProfile(token);
-        }
-        const propertyAgentHistories =
-          await propertyService.assignAgentToRequest(
-            basicPropertyInfo,
-            agents,
-            customerProfile
-          );
-
-        return res.status(200).json({
-          data: { history: propertyAgentHistories },
-          message: 'Property assigned',
-          error: [],
-        });
-      } catch (error) {
-        return res.status(500).json({
-          data: null,
-          message: '',
-          error: [error.message],
-        });
-      }
-    }
-  );
 
 /**
  * @swagger
