@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  searchByGrid,
+  searchByKeywordInArea,
   searchByAddress,
   searchByTextQuery,
 } from '../modules/googleMap.js';
@@ -15,7 +15,7 @@ router.get('/test/grid', async (req, res) => {
   }
 
   try {
-    const result = await searchByGrid(
+    const result = await searchByKeywordInArea(
       { lat: parseFloat(lat), lng: parseFloat(lng) },
       keyword
     );

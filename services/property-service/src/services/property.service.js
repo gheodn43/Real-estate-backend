@@ -423,6 +423,48 @@ const getPublicFilteredProperties = async (filters, pagination) => {
 
   return { properties, total };
 };
+const getRequestPostByCustomerId = async (customerId, pagination) => {
+  const { page, limit } = pagination;
+  const where = {
+    sender_id: customerId,
+  };
+  const [requests, total] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+      include: {
+        media: {
+          where: {
+            type: 'image',
+          },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            order: true,
+          },
+        },
+        locations: true,
+        details: {
+          select: {
+            value: true,
+            category_detail: {
+              select: {
+                field_name: true,
+                icon: true,
+                is_showing: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.properties.count({ where }),
+  ]);
+  return { requests, total };
+};
 
 export default {
   createRequestProperty,
@@ -438,4 +480,5 @@ export default {
   getDraftProperties,
   getFilteredProperties,
   getPublicFilteredProperties,
+  getRequestPostByCustomerId,
 };
