@@ -23,6 +23,7 @@ app.get('/swagger.json', async (req, res) => {
       blog.data,
       agentChat.data,
     ]);
+
     mergedSpec.info = {
       title: 'Merged API Documentation',
       version: '1.0.0',
