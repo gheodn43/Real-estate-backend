@@ -69,6 +69,17 @@ services:
       DATABASE_URL: "mysql://root:sum2530623306@mysql:3306/blog_db"
     restart: always
 
+  agent-chat-service:
+    image: gheo43dn/agent-chat-service:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    environment:
+      PORT: 3000
+      DATABASE_URL: "mongodb://mongodb:27017/mcp-memory-chat"
+    restart: always
+
   mysql:
     image: mysql:8
     ports:
@@ -78,6 +89,16 @@ services:
       MYSQL_DATABASE: mysql_db
     volumes:
       - mysql-data:/var/lib/mysql
+    restart: always
+  
+  mongodb:
+    image: mongo:6
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: mcp-memory-chat
+    volumes:
+      - mongodb-data:/data/db
     restart: always
   
   nginx:
@@ -101,3 +122,4 @@ services:
 
 volumes:
   mysql-data:
+  mongodb-data:

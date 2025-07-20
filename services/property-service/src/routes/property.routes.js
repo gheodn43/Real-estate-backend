@@ -12,6 +12,58 @@ import agentHistoryService from '../services/propertyAgentHistory.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
+// lấy 2 bất động sản liên quan cùng danh mục relate to
+/**
+ * @openapi
+ * /prop/{id}/relate:
+ *   get:
+ *     tags:
+ *       - Property
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         description: ID của bất động sản
+ *     summary: Lấy 2 bất động sản liên quan cùng danh mục [ALL ROLE]
+ *     description: Chỉ customer mới có quyền lấy 2 bất động sản liên quan cùng danh mục
+ *     responses:
+ *       200:
+ *         description: Danh sách 2 bất động sản liên quan cùng danh mục
+ */
+router.get('/:id/relate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const property = await propertyService.getBasicInfoById(id);
+    const count = 2;
+    if (!property) {
+      return res.status(404).json({
+        data: null,
+        message: '',
+        error: ['Property not found'],
+      });
+    }
+    const relateProperties = await propertyService.getRelateProperties(
+      id,
+      property.category_id,
+      count
+    );
+    return res.status(200).json({
+      data: {
+        relateProperties,
+      },
+      message: 'Relate properties found',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
+
 // customer lấy danh sách yêu cầu ký gửi
 /**
  * @openapi
