@@ -55,8 +55,6 @@ router.post('/test/:userId', async (req, res) => {
       message,
       currentContext
     );
-
-    // Lưu tin nhắn và phản hồi vào MongoDB
     chat.memory.push({
       human: message,
       agent: reply,
