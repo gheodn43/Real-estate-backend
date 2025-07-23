@@ -7,6 +7,61 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /blogs/draft:
+ *   get:
+ *     summary: Lấy tất cả blog draft (Admin, Journalist)
+ *     description: Lấy tất cả blog draft (Admin, Journalist)
+ *     tags: [Blogs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lấy blog draft thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     blogs:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id: { type: integer }
+ *                           journalist_Id: { type: integer }
+ *                           title: { type: string }
+ *                           description: { type: string }
+ *                           content: { type: string }
+ *                           small_image: { type: string }
+ *                           short_link: { type: string }
+ *                           status: { type: string, example: draft }
+ *                 message:
+ *                   type: string
+ *                   example: Lấy blog draft thành công
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       500:
+ *         description: Lỗi server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { type: null }
+ *                 message: { type: string, example: Lỗi server }
+ *                 errors: { type: array, items: { type: string } }
+ * 
+ */
+router.route('/draft')
+  .get(authMiddleware, roleGuard([RoleName.Admin, RoleName.Journalist]), blogController.getBlogDraft);
+
+/**
+ * @swagger
  * /blogs/create:
  *   post:
  *     summary: Đăng blog mới tại màn hình thêm mới bấm nút xuất bản [Admin]
