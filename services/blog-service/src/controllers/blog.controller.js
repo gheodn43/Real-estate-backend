@@ -16,6 +16,26 @@ class BlogController {
     this.getBlogs = this.getBlogs.bind(this);
     this.getBlogByShortLink = this.getBlogByShortLink.bind(this);
     this.resubmitBlog = this.resubmitBlog.bind(this);
+    this.getBlogDraft = this.getBlogDraft.bind(this);
+  }
+
+  async getBlogDraft(req, res) {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const user_id = Number(req.user.userId);
+      const result = await blogService.getBlogDraft(user_id, Number(page), Number(limit));
+      res.status(200).json({
+        data: result,
+        message: 'Danh sách blog draft đã được lấy thành công',
+        errors: [],
+      });
+    } catch (err) {
+      res.status(500).json({
+        data: null,
+        message: 'Lỗi server',
+        errors: [err.message],
+      });
+    }
   }
 
   async createBlog(req, res) {
@@ -471,6 +491,8 @@ class BlogController {
       });
     }
   }
+
+  
 }
 
 export default new BlogController();
