@@ -385,7 +385,7 @@ router.put(
  * @swagger
  * /blogs/{blog_id}:
  *   delete:
- *     summary: Xóa blog
+ *     summary: Xóa blog [Journalist, Admin]
  *     description: Chỉ Journalist sở hữu blog hoặc Admin có thể xóa. Gửi email thông báo khi xóa thành công.
  *     tags: [Blogs]
  *     security:
@@ -471,11 +471,9 @@ router.delete(
  * @swagger
  * /blogs/list:
  *   get:
- *     summary: Lấy danh sách blog
+ *     summary: Lấy danh sách blog [All Role]
  *     description: Lấy danh sách các blog có trạng thái published với phân trang.
  *     tags: [Blogs]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -537,17 +535,15 @@ router.delete(
  *                 message: { type: string, example: Lỗi server }
  *                 errors: { type: array, items: { type: string } }
  */
-router.get('/list', authMiddleware, blogController.getBlogs);
+router.get('/list',blogController.getBlogs);
 
 /**
  * @swagger
  * /blogs/{short_link}:
  *   get:
- *     summary: Lấy chi tiết blog theo short_link
+ *     summary: Lấy chi tiết blog theo short_link [All Role]
  *     description: Lấy chi tiết blog có trạng thái published cùng với bình luận và phản ứng của người dùng.
  *     tags: [Blogs]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: short_link
@@ -634,7 +630,7 @@ router.get('/list', authMiddleware, blogController.getBlogs);
  *                 message: { type: string, example: Lỗi server }
  *                 errors: { type: array, items: { type: string } }
  */
-router.get('/:short_link', authMiddleware, blogController.getBlogByShortLink);
+router.get('/:short_link', blogController.getBlogByShortLink);
 
 /**
  * @swagger
@@ -828,7 +824,7 @@ router.post(
  * @swagger
  * /blogs/review:
  *   post:
- *     summary: Thêm bình luận cho blog
+ *     summary: Thêm bình luận cho blog [All Role]
  *     description: Thêm bình luận cho blog với trạng thái published ngay lập tức.
  *     tags: [Blogs]
  *     security:
@@ -903,7 +899,7 @@ router.post('/review', authMiddleware, blogController.createBlogReview);
  * @swagger
  * /blogs/react:
  *   post:
- *     summary: Like hoặc bỏ like blog
+ *     summary: Like hoặc bỏ like blog [All Role]
  *     description: Thêm hoặc xóa lượt like của người dùng cho blog.
  *     tags: [Blogs]
  *     security:
@@ -993,7 +989,7 @@ router.post('/react', authMiddleware, blogController.createBlogReact);
  * @swagger
  * /blogs/share:
  *   post:
- *     summary: Chia sẻ blog qua email
+ *     summary: Chia sẻ blog qua email [All Role]
  *     description: Gửi email chứa thông tin blog đến người nhận.
  *     tags: [Blogs]
  *     security:

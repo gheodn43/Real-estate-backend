@@ -51,7 +51,7 @@ class BlogService {
 
   async createBlog(journalist_id, title, description, content, small_image, short_link, token) {
   try {
-    // Kiểm tra small_image bắt buộc
+    
     if (!small_image) {
       throw new Error('Small image is required');
     }
@@ -113,7 +113,6 @@ class BlogService {
           { headers: { 'Content-Type': 'application/json' } }
         );
       } catch (emailErr) {
-        console.error('Failed to send email notification:', emailErr.message); // Log lỗi email
       }
     }
 
@@ -256,7 +255,6 @@ class BlogService {
           { headers: { 'Content-Type': 'application/json' } }
         );
       } catch (emailErr) {
-        console.error('Failed to send email notification:', emailErr.message); // Log lỗi email
       }
     }
 
@@ -487,7 +485,7 @@ class BlogService {
 
   async submitBlogForReview(journalist_id, title, description, content, small_image, short_link, token) {
   try {
-    // Kiểm tra small_image bắt buộc và định dạng
+  
     if (!small_image) {
       throw new Error('Small image is required');
     }
@@ -550,13 +548,12 @@ class BlogService {
           { headers: { 'Content-Type': 'application/json' } }
         );
       } catch (emailErr) {
-        console.error('Failed to send email notification:', emailErr.message); // Log lỗi email
       }
     }
 
     return blog;
   } catch (err) {
-    console.error('Error in submitBlogForReview:', err.message); // Log lỗi
+    
     throw new Error(`Failed to submit blog for review: ${err.message}`);
   }
 }
