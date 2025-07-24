@@ -196,7 +196,7 @@ class BlogController {
   async getBlogs(req, res) {
     try {
       const { page = 1, limit = 10 } = req.query;
-      const user_id = Number(req.user.userId);
+      const user_id = req.user ? Number(req.user.userId) : null;
       const result = await blogService.getBlogs(user_id, Number(page), Number(limit));
       res.status(200).json({
         data: result,
@@ -216,9 +216,9 @@ class BlogController {
     try {
       const { short_link } = req.params;
       const { commentPage = 1, commentLimit = 10 } = req.query;
-      const user_id = Number(req.user.userId);
+      const user_id = req.user ? Number(req.user.userId) : null;
 
-      // Kiểm tra đầu vào
+      
       if (!short_link) {
         return res.status(400).json({
           data: null,
@@ -228,28 +228,6 @@ class BlogController {
       }
       const page = Number(commentPage);
       const limit = Number(commentLimit);
-      if (!Number.isInteger(page) || page < 1) {
-        return res.status(400).json({
-          data: null,
-          message: 'Số trang bình luận không hợp lệ',
-          errors: ['commentPage must be a positive integer'],
-        });
-      }
-      if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-        return res.status(400).json({
-          data: null,
-          message: 'Giới hạn bình luận không hợp lệ',
-          errors: ['commentLimit must be between 1 and 100'],
-        });
-      }
-      if (!Number.isInteger(user_id)) {
-        return res.status(400).json({
-          data: null,
-          message: 'ID người dùng không hợp lệ',
-          errors: ['Invalid user_id'],
-        });
-      }
-
       const result = await blogService.getBlogByShortLink(short_link, user_id, page, limit);
       res.status(200).json({
         data: result,
