@@ -4,13 +4,18 @@ const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
 const GROK_API_KEY =
   'xai-vbgZWSiiVfp1ALBig76ky4OLhb0zuOBVx4bqDisXus4wAuifwEzOD9M21YCHfzvPKf9yYT6RE2p9qegb';
 import { classifyPrompt, classifyAction } from '../promts/classifyPrompt.js';
+// import { searchByKeywordInArea } from '../modules/googleMap.js';
 import {
   consultPrompt,
   consultAction,
   googleMapFilterType,
 } from '../promts/consultPrompt.js';
 
-export async function getGrokResponse(message, context) {
+export async function getGrokResponse(
+  message,
+  context
+  // { lat, lng }
+) {
   try {
     const response = {
       reply: '',
@@ -22,7 +27,6 @@ export async function getGrokResponse(message, context) {
 
     if (classifyResult.action === classifyAction.consult) {
       const consultResult = await consultRequest(classifyResult.query, context);
-      console.log('consultResult', consultResult);
 
       if (consultResult.action === consultAction.reply) {
         response.reply = consultResult.response;
@@ -33,6 +37,7 @@ export async function getGrokResponse(message, context) {
         ) {
           response.reply =
             'filter google map và DB theo xung quanh vị trí hiện tại';
+          // const coordinate = await searchByKeywordInArea({ lat: parseFloat(lat), lng: parseFloat(lng) }, consultResult.location);
         } else if (
           consultResult.googleMapFilterType ===
           googleMapFilterType.findAroundLocation

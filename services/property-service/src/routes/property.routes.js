@@ -433,12 +433,67 @@ router.get('/public-list', async (req, res) => {
   }
 });
 
+router.get('/filter-prop', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      latitude,
+      longitude,
+      radius = 5,
+      assetsId,
+      needsId,
+      search,
+    } = req.query;
+
+    const pagination = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+
+    const filters = {
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      radius: Number(radius),
+      assetsId: Number(assetsId),
+      needsId: Number(needsId),
+      search,
+    };
+
+    const { properties, total } =
+      await propertyService.getFilteredPropertiesForPrivate(
+        filters,
+        pagination
+      );
+
+    return res.status(200).json({
+      data: {
+        properties,
+        pagination: {
+          total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: Math.ceil(total / pagination.limit),
+        },
+      },
+      message: 'Public properties found',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
+
 /**
  * @swagger
  * /prop/request:
  *   post:
  *     summary: Tạo mới một yêu cầu bất động sản [CUSTOMER]
- *     description: API cho phép khách hàng tạo mới một yêu cầu bất động sản
+ *     description: API cho phép khách hàng tạo mới một yêu cầu bất động sản tai màn hình thêm mới. Customer bâm nút Gửi
  *     tags:
  *       - Property
  *     security:
@@ -457,7 +512,6 @@ router.get('/public-list', async (req, res) => {
  *               - afterPriceTag
  *               - assetsId
  *               - needsId
- *               - stage
  *             properties:
  *               title:
  *                 type: string
@@ -481,9 +535,6 @@ router.get('/public-list', async (req, res) => {
  *               needsId:
  *                 type: integer
  *                 example: 4
- *               stage:
- *                 type: string
- *                 example: request
  *               location:
  *                 type: object
  *                 properties:
@@ -585,7 +636,6 @@ router
         afterPriceTag,
         assetsId,
         needsId,
-        stage,
         location,
         media,
         details,
@@ -602,7 +652,7 @@ router
         afterPriceTag,
         assetsId,
         needsId,
-        stage,
+        stage: 'request',
       });
 
       if (!property) {
@@ -673,8 +723,8 @@ router
  * @swagger
  * /prop/post:
  *   post:
- *     summary: Tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval [ADMIN, AGENT]
- *     description: API cho phép agent/admin tạo mới hoặc cập nhật bất động sản với stage là post và RequestPostStatus là pending_approval
+ *     summary: Tạo mới hoặc cập nhật bất động sản [ADMIN, AGENT]
+ *     description: API cho phép agent/admin tạo mới hoặc cập nhật bất động sản. [Màn hình thêm mới] gồm các nút Lưu nháp (Agent/Admin) requestPostStatus = draft, nút Xuất bản (Admin) requestPostStatus = published, nút Gửi duyệt (Agent) requestPostStatus = pending_approval. [Màn hình cập nhật] gồm các nút Lưu (Agent/Admin) giữ nguyên trạng thái của requestPostStatus, nút Gửi duyệt (Agent) requestPostStatus = pending_approval, nút Xuất bản (Admin) requestPostStatus = published.
  *     tags:
  *       - Property
  *     security:
@@ -1916,7 +1966,41 @@ router.put(
   }
 );
 
-// Lấy danh sách sơ lược của bđs theo toạ độ user với tham số là bán kính
-// Lấy danh sách sơ lược của bđs theo category
+//api xác thực agent có phải là ngừoi đảm nhiệm bất động sản không
+router.get(
+  '/post/:id/verify-agent',
+  authMiddleware,
+  roleGuard([RoleName.Agent]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user;
+
+      const isOwner = await agentHistoryService.verifyOwnerPost(
+        user.userId,
+        id
+      );
+      if (!isOwner) {
+        return res.status(403).json({
+          data: null,
+          message: '',
+          error: ['You are not allowed to update this property'],
+        });
+      }
+
+      return res.status(200).json({
+        data: null,
+        message: 'Agent is verified as owner of the post',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  }
+);
 
 export default router;

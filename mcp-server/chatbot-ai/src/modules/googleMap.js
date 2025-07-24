@@ -1,5 +1,5 @@
-import axios from 'axios';
 const API_KEY = 'AIzaSyBEKDomqoh74x6sz5zGYYS7GU2hY84dvFk';
+import axios from 'axios';
 const RADIUS = 2000; // metter
 
 export async function searchByKeywordInArea(

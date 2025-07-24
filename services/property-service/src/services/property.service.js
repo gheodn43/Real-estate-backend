@@ -467,6 +467,111 @@ const getPublicFilteredProperties = async (filters, pagination) => {
 
   return { properties, total };
 };
+
+const getFilteredPropertiesForPrivate = async (filters, pagination) => {
+  const { latitude, longitude, radius, assetsId, needsId, search } = filters;
+
+  const { page, limit } = pagination;
+
+  const where = {
+    requestpost_status: {
+      in: [RequestPostStatus.PUBLISHED, RequestPostStatus.SOLD],
+    },
+  };
+
+  // Bán kính địa lý ~ tính gần đúng bằng độ
+  if (latitude && longitude && radius) {
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    const radiusInDegree = radius / 111.32;
+
+    where.locations = {
+      latitude: {
+        gte: lat - radiusInDegree,
+        lte: lat + radiusInDegree,
+      },
+      longitude: {
+        gte: lng - radiusInDegree,
+        lte: lng + radiusInDegree,
+      },
+    };
+  }
+
+  if (assetsId) {
+    where.assets_id = Number(assetsId);
+  }
+
+  if (needsId) {
+    where.needs_id = Number(needsId);
+  }
+
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+    ];
+  }
+
+  const [properties, total] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+      include: {
+        media: {
+          where: {
+            type: 'image',
+          },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            order: true,
+          },
+        },
+        locations: true,
+        details: {
+          select: {
+            value: true,
+            category_detail: {
+              select: {
+                field_name: true,
+                icon: true,
+                is_showing: true,
+              },
+            },
+          },
+        },
+        amenities: {
+          include: {
+            amenity: {
+              select: {
+                name: true,
+                is_active: true,
+              },
+            },
+          },
+        },
+        assets: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        needs: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+    prisma.properties.count({ where }),
+  ]);
+
+  return { properties, total };
+};
 const getRequestPostByCustomerId = async (customerId, pagination) => {
   const { page, limit } = pagination;
   const where = {
@@ -526,4 +631,5 @@ export default {
   getPublicFilteredProperties,
   getRequestPostByCustomerId,
   getRelateProperties,
+  getFilteredPropertiesForPrivate,
 };
