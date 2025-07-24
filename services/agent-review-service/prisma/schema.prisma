@@ -19,6 +19,17 @@ enum ReviewStatus {
   pending
 }
 
+enum ScheduleType{
+  directly
+  video_chat
+}
+
+enum ScheduleStatus{
+  not_responded
+  responded
+  hidden
+}
+
 model agent_reviews {
   id         Int          @id @default(autoincrement())
   agent_id   Int
@@ -35,4 +46,20 @@ model agent_reviews {
   parent     agent_reviews? @relation("ReviewParent", fields: [parent_id], references: [id])
   replies    agent_reviews[] @relation("ReviewParent")
 
+}
+
+model appointment_schedule {
+  id         Int          @id @default(autoincrement())
+  property_id Int
+  date       DateTime
+  time       String
+  name       String
+  email      String
+  number_phone String
+  message    String?
+  response   String?
+  type       ScheduleType @default(directly)
+  status     ScheduleStatus @default(not_responded)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
 }
