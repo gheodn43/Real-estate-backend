@@ -3,12 +3,15 @@ const router = express.Router();
 import authMiddleware from '../middleware/authMiddleware.js';
 import roleGuard, { RoleName } from '../middleware/roleGuard.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
+import CommissionType from '../enums/commissionType.enum.js';
+
 import propertyService from '../services/property.service.js';
 import locationService from '../services/location.service.js';
 import mediaService from '../services/media.service.js';
 import detailPropertyService from '../services/category.detail.service.js';
 import amenityService from '../services/amentity.service.js';
 import agentHistoryService from '../services/propertyAgentHistory.service.js';
+import commissionService from '../services/commission.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 /**
@@ -741,6 +744,7 @@ router
  *               - beforePriceTag
  *               - price
  *               - afterPriceTag
+ *               - commissionType
  *               - assetsId
  *               - needsId
  *               - requestPostStatus
@@ -821,39 +825,16 @@ router
  *                 items:
  *                   type: integer
  *                 example: [1, 2]
+ *               commissionType:
+ *                 type: string
+ *                 example: buying
+ *               commission:
+ *                 type: number
+ *                 format: double
+ *                 example: 2
  *     responses:
  *       200:
  *         description: Tạo mới hoặc cập nhật bất động sản thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     property:
- *                       type: object
- *                     location:
- *                       type: object
- *                     media:
- *                       type: array
- *                       items:
- *                         type: object
- *                     amenities:
- *                       type: array
- *                       items:
- *                         type: integer
- *                     details:
- *                       type: array
- *                 message:
- *                   type: string
- *                   example: Property created
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       400:
  *         description: Tạo mới hoặc cập nhật bất động sản không thành công
  *       500:
@@ -879,6 +860,8 @@ router
           media,
           details,
           amenities,
+          commissionType,
+          commission,
         } = req.body;
 
         const user = req.user;
@@ -889,6 +872,7 @@ router
         let mediaSaved = null;
         let detailsSaved = null;
         let amenitiesSaved = null;
+        const maxCommissionForSelling = 10;
 
         const errors = [];
 
@@ -904,6 +888,25 @@ router
               error: ['You do not have permission to set this status.'],
             });
           }
+        }
+        if (commissionType == CommissionType.BUYING && !commission) {
+          return res.status(400).json({
+            data: null,
+            message: '',
+            error: ['You must set commission for buying property.'],
+          });
+        }
+        if (
+          commissionType == CommissionType.BUYING &&
+          commission > maxCommissionForSelling
+        ) {
+          return res.status(400).json({
+            data: null,
+            message: '',
+            error: [
+              `Commission must be less than or equal to ${maxCommissionForSelling} for buying property.`,
+            ],
+          });
         }
 
         // Tạo property
@@ -1002,6 +1005,19 @@ router
         //     errors.push('Failed to send notification: ' + err.message);
         //   }
         // }
+
+        // Tạo commission
+        if (commissionType) {
+          try {
+            await commissionService.initCommission({
+              property_id: propertyId,
+              type: commissionType,
+              commission,
+            });
+          } catch (err) {
+            errors.push('Failed to create commission: ' + err.message);
+          }
+        }
 
         return res.status(201).json({
           data: {
