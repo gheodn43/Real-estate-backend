@@ -177,6 +177,8 @@ enum RequestStatus {
   negotiating
   published
   rejected
+  completed
+  hidden
 }
 
 enum RequestPostStatus {
