@@ -72,6 +72,7 @@ const updatePostProperty = async (id, data) => {
         assets_id: data.assetsId,
         needs_id: data.needsId,
         requestpost_status: data.requestPostStatus,
+        request_status: data.requestStatus,
       },
     });
   } else {
@@ -87,6 +88,7 @@ const updatePostProperty = async (id, data) => {
         assets_id: data.assetsId,
         needs_id: data.needsId,
         requestpost_status: data.requestPostStatus,
+        request_status: data.requestStatus,
       },
     });
   }
@@ -94,13 +96,18 @@ const updatePostProperty = async (id, data) => {
   return property;
 };
 
-const updateStatusOfPostProperty = async (id, requestPostStatus) => {
+const updateStatusOfPostProperty = async (
+  id,
+  requestPostStatus,
+  requestStatus
+) => {
   const property = await prisma.properties.update({
     where: {
       id: id,
     },
     data: {
       requestpost_status: requestPostStatus,
+      request_status: requestStatus,
     },
   });
   return property;
@@ -232,6 +239,7 @@ const getBasicInfoById = async (propertyId) => {
     },
     select: {
       id: true,
+      request_status: true,
       requestpost_status: true,
     },
   });
@@ -615,6 +623,71 @@ const getRequestPostByCustomerId = async (customerId, pagination) => {
   return { requests, total };
 };
 
+const getAllRequestPost = async (pagination) => {
+  const { page, limit } = pagination;
+  const where = {
+    request_status: {
+      not: null,
+    },
+  };
+  const [requests, total] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+      include: {
+        media: {
+          where: {
+            type: 'image',
+          },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            order: true,
+          },
+        },
+        locations: true,
+        details: {
+          select: {
+            value: true,
+            category_detail: {
+              select: {
+                field_name: true,
+                icon: true,
+                is_showing: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.properties.count({ where }),
+  ]);
+  console.log('total', total);
+  return { requests, total };
+};
+
+const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
+  switch (requestPostStatus) {
+    case RequestPostStatus.PUBLISHED:
+      return RequestStatus.PUBLISHED;
+    case RequestPostStatus.SOLD:
+      return RequestStatus.COMPLETED;
+    case RequestPostStatus.EXPIRED:
+      return RequestStatus.COMPLETED;
+    case RequestPostStatus.REJECTED:
+      return RequestStatus.PENDING;
+    case RequestPostStatus.PENDING_APPROVAL:
+      return RequestStatus.PENDING;
+    case RequestPostStatus.HIDDEN:
+      return RequestStatus.HIDDEN;
+    default:
+      return RequestStatus.PENDING;
+  }
+};
+
 export default {
   createRequestProperty,
   createPostProperty,
@@ -632,4 +705,6 @@ export default {
   getRequestPostByCustomerId,
   getRelateProperties,
   getFilteredPropertiesForPrivate,
+  getRequestStatusFromRequestPostStatus,
+  getAllRequestPost,
 };

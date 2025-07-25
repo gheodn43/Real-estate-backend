@@ -96,20 +96,30 @@ router.get('/:id/relate', async (req, res) => {
 router.get(
   '/request/get-all',
   authMiddleware,
-  roleGuard([RoleName.Customer]),
+  roleGuard([RoleName.Customer, RoleName.Agent, RoleName.Admin]),
   async (req, res) => {
     try {
       const userData = req.user;
+      console.log('userData', userData);
       const { page = 1, limit = 10 } = req.query;
       const pagination = {
         page: Number(page),
         limit: Number(limit),
       };
-      const { requests, total } =
-        await propertyService.getRequestPostByCustomerId(
+      let requests = [];
+      let total = 0;
+      if (userData.userRole === RoleName.Customer) {
+        ({ requests, total } = await propertyService.getRequestPostByCustomerId(
           userData.userId,
           pagination
-        );
+        ));
+      } else if (userData.userRole === RoleName.Agent) {
+        ({ requests, total } =
+          await propertyService.getAllRequestPost(pagination));
+      } else if (userData.userRole === RoleName.Admin) {
+        ({ requests, total } =
+          await propertyService.getAllRequestPost(pagination));
+      }
 
       return res.status(200).json({
         data: {
@@ -1251,6 +1261,13 @@ router
         }
 
         // Cập nhật property
+        let requestStatus = property.request_status;
+        if (requestPostStatus) {
+          requestStatus =
+            propertyService.getRequestStatusFromRequestPostStatus(
+              requestPostStatus
+            );
+        }
         property = await propertyService.updatePostProperty(id, {
           title,
           description,
@@ -1260,6 +1277,7 @@ router
           assetsId,
           needsId,
           requestPostStatus,
+          requestStatus,
         });
 
         if (!property) {
@@ -1962,9 +1980,17 @@ router.put(
       }
 
       // Cập nhật trạng thái
+      let requestStatus = property.request_status;
+      if (requestPostStatus) {
+        requestStatus =
+          propertyService.getRequestStatusFromRequestPostStatus(
+            requestPostStatus
+          );
+      }
       const updatedProperty = await propertyService.updateStatusOfPostProperty(
         property.id,
-        requestPostStatus
+        requestPostStatus,
+        requestStatus
       );
 
       return res.status(200).json({

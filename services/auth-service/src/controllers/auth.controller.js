@@ -188,7 +188,16 @@ exports.login = async (req, res) => {
     });
   }
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        role: {
+          select: {
+            rolename: true,
+          },
+        },
+      },
+    });
     if (!user || !user.password) {
       return res.status(400).json({
         data: null,
@@ -212,7 +221,12 @@ exports.login = async (req, res) => {
       { expiresIn }
     );
     res.json({
-      data: { token: { expiresIn, accessToken: token } },
+      data: {
+        token: { expiresIn, accessToken: token },
+        user: {
+          roleName: user.role.rolename,
+        },
+      },
       message: 'Successfully',
       errors: [],
     });
