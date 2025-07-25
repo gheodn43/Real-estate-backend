@@ -426,6 +426,7 @@ router
 router.route('/active-by-type/:type').get(async (req, res) => {
   try {
     const { type } = req.params;
+    let categories = [];
     if (!['assets', 'needs'].includes(type)) {
       return res.status(400).json({
         data: null,
@@ -433,7 +434,11 @@ router.route('/active-by-type/:type').get(async (req, res) => {
         error: ['Invalid category type'],
       });
     }
-    const categories = await categoryService.getCategoryActiveByType(type);
+    if (type === 'assets') {
+      categories = await categoryService.getCategoryAssetsIncludeCount(type);
+    } else {
+      categories = await categoryService.getCategoryNeeds();
+    }
     return res.status(200).json({
       data: { categories },
       message: 'Get categories successfully',

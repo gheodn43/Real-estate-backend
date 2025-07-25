@@ -89,6 +89,7 @@ model property_category_detail {
   field_placeholder String?
   icon              String?
   option            Json?
+  unit              String?
   is_active         Boolean?
   is_require        Boolean?
   is_showing        Boolean?
@@ -142,6 +143,29 @@ model property_agent_history {
 
   property     properties @relation(fields: [property_id], references: [id])
 } 
+
+model commissions {
+  id           Int        @id @default(autoincrement())
+  property_id  Int
+  status       CommissionStatus @default(processing)
+  type         CommissionType @default(buying)
+  commission   Decimal    @db.Decimal(15, 2)
+  latest_price Decimal?   @db.Decimal(15, 2)
+  contract_url String?
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @default(now())
+}
+
+enum CommissionStatus {
+  processing
+  completed
+  failed
+}
+
+enum CommissionType {
+  buying
+  rental
+}
 
 enum Stage {
   request

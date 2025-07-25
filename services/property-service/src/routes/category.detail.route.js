@@ -39,6 +39,8 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                 type: string
  *               option:
  *                 type: string
+ *               unit:
+ *                 type: string
  *               isActive:
  *                 type: boolean
  *               isRequire:
@@ -75,6 +77,8 @@ import categoryDetailService from '../services/category.detail.service.js';
  *                             type: string
  *                           option:
  *                             type: string
+ *                           unit:
+ *                             type: string
  *                           isActive:
  *                             type: boolean
  *                           isRequire:
@@ -106,6 +110,7 @@ router
         fieldType,
         fieldPlaceholder,
         option,
+        unit,
         isActive,
         isRequire,
         isShowing,
@@ -133,6 +138,7 @@ router
             fieldType,
             fieldPlaceholder,
             option,
+            unit,
             isActive,
             isRequire,
             isShowing,
@@ -363,6 +369,8 @@ router
  *                 type: string
  *               option:
  *                 type: string
+ *               unit:
+ *                 type: string
  *               isActive:
  *                 type: boolean
  *               isRequire:
@@ -397,6 +405,8 @@ router
  *                           type: string
  *                         option:
  *                           type: string
+ *                         unit:
+ *                           type: string
  *                         isActive:
  *                           type: boolean
  *                         isRequire:
@@ -430,17 +440,11 @@ router
         fieldType,
         fieldPlaceholder,
         option,
+        unit,
         isActive,
         isRequire,
         isShowing,
       } = req.body;
-      if (!categoryId || !fieldName || !fieldType) {
-        return res.status(400).json({
-          data: null,
-          message: '',
-          error: ['Missing required fields'],
-        });
-      }
       const categoryDetail = await categoryDetailService.updateDetail(id, {
         categoryId,
         fieldName,
@@ -448,6 +452,7 @@ router
         fieldPlaceholder,
         icon,
         option,
+        unit,
         isActive,
         isRequire,
         isShowing,

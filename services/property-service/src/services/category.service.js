@@ -1,3 +1,4 @@
+import { CategoryType, RequestPostStatus } from '@prisma/client';
 import prisma from '../middleware/prismaClient.js';
 import slugify from 'slugify';
 
@@ -75,14 +76,47 @@ const getCategoryByType = async (type) => {
   return category;
 };
 
-const getCategoryActiveByType = async (type) => {
+const getCategoryNeeds = async () => {
+  const category = await prisma.property_categories.findMany({
+    where: {
+      type: CategoryType.needs,
+      is_active: true,
+    },
+  });
+  return category;
+};
+
+const getCategoryAssetsIncludeCount = async (type) => {
   const category = await prisma.property_categories.findMany({
     where: {
       type,
       is_active: true,
     },
+    include: {
+      _count: {
+        select: {
+          asAsset: type === CategoryType.assets && {
+            where: {
+              requestpost_status: RequestPostStatus.published,
+            },
+          },
+        },
+      },
+    },
   });
-  return category;
+
+  return category.map((cat) => ({
+    id: cat.id,
+    type: cat.type,
+    parent_category_id: cat.parent_category_id,
+    name: cat.name,
+    slug: cat.slug,
+    is_active: cat.is_active,
+    property_count:
+      type === CategoryType.assets ? cat._count.asAsset : undefined,
+    created_at: cat.created_at,
+    updated_at: cat.updated_at,
+  }));
 };
 
 export default {
@@ -90,5 +124,6 @@ export default {
   updateCategory,
   getCategoryById,
   getCategoryByType,
-  getCategoryActiveByType,
+  getCategoryNeeds,
+  getCategoryAssetsIncludeCount,
 };
