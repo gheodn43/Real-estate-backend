@@ -11,7 +11,7 @@ const options = {
     servers: [
       {
         url: 'https://api.propintel.id.vn',
-        description: 'Property server',
+        description: 'Mail server',
       },
     ],
   },
