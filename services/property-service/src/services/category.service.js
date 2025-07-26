@@ -5,7 +5,10 @@ import slugify from 'slugify';
 const createCategory = async ({ type, parentCategoryId, name, isActive }) => {
   const slug = slugify(name, { lower: true, strict: true });
   const existing = await prisma.property_categories.findUnique({
-    where: { slug },
+    where: {
+      slug,
+      deleted_at: null,
+    },
   });
 
   if (existing) {
@@ -29,7 +32,10 @@ const updateCategory = async (id, { parentCategoryId, name, isActive }) => {
   if (name && name.trim() !== '') {
     const slug = slugify(name, { lower: true, strict: true });
     const existing = await prisma.property_categories.findUnique({
-      where: { slug },
+      where: {
+        slug,
+        deleted_at: null,
+      },
     });
 
     if (existing && existing.id !== id) {
@@ -71,6 +77,7 @@ const getCategoryByType = async (type) => {
   const category = await prisma.property_categories.findMany({
     where: {
       type,
+      deleted_at: null,
     },
   });
   return category;
@@ -118,6 +125,16 @@ const getCategoryAssetsIncludeCount = async (type) => {
     updated_at: cat.updated_at,
   }));
 };
+const softDeleteCategory = async (id) => {
+  const category = await prisma.property_categories.update({
+    where: { id },
+    data: {
+      is_active: false,
+      deleted_at: new Date(),
+    },
+  });
+  return category;
+};
 
 export default {
   createCategory,
@@ -126,4 +143,5 @@ export default {
   getCategoryByType,
   getCategoryNeeds,
   getCategoryAssetsIncludeCount,
+  softDeleteCategory,
 };

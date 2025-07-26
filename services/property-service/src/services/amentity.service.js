@@ -43,7 +43,22 @@ const getAmenityById = async (id) => {
   return amenity;
 };
 
-const getAmenitiesByParentId = async (parentId) => {
+const getAmenitiesByParentId = async (parentId, pagination, filters) => {
+  const { page, limit } = pagination;
+  const { search, status } = filters;
+  const skip = (page - 1) * limit;
+  let where = {
+    deleted_at: null,
+    parent_amentity_id: parentId,
+  };
+  if (search) {
+    where.name = {
+      contains: search,
+    };
+  }
+  if (status.length > 0) {
+    where.is_active = status[0];
+  }
   const parentAmenity = await prisma.amenities.findUnique({
     where: { id: parentId },
     include: {
@@ -54,10 +69,12 @@ const getAmenitiesByParentId = async (parentId) => {
       },
     },
   });
+
   const children = await prisma.amenities.findMany({
-    where: {
-      parent_amentity_id: parentId,
-    },
+    where,
+    skip,
+    take: limit,
+    orderBy: { updated_at: 'desc' },
   });
   return {
     parent: parentAmenity,
@@ -114,6 +131,60 @@ const deleteByPropertyId = async (propertyId) => {
   });
   return amenityProperties;
 };
+
+const softDeleteAmenity = async (id) => {
+  const amenity = await prisma.amenities.update({
+    where: {
+      id: id,
+    },
+    data: {
+      deleted_at: new Date(),
+      is_active: false,
+    },
+  });
+  return amenity;
+};
+
+const getAllAmenities = async (filters, pagination) => {
+  const { search, status } = filters;
+  const { page, limit } = pagination;
+  const skip = (page - 1) * limit;
+  let where = {
+    deleted_at: null,
+  };
+  let include = {
+    _count: {
+      select: {
+        children: true,
+      },
+    },
+    parent: true,
+  };
+  if (!search) {
+    where.parent_amentity_id = null;
+  }
+  if (status.length > 0) {
+    where.is_active = status[0];
+  }
+  if (search) {
+    where.name = { contains: search };
+  }
+
+  const [amenities, total] = await Promise.all([
+    prisma.amenities.findMany({
+      where,
+      include,
+      skip,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+    }),
+    prisma.amenities.count({ where }),
+  ]);
+  return {
+    amenities,
+    total,
+  };
+};
 export default {
   createAmenity,
   getAmenityById,
@@ -123,4 +194,6 @@ export default {
   createAmenityProperty,
   createMultipleAmenities,
   deleteByPropertyId,
+  softDeleteAmenity,
+  getAllAmenities,
 };

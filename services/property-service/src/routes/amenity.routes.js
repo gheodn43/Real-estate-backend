@@ -332,6 +332,22 @@ router
  *         required: true
  *         schema:
  *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: active
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Amenities retrieved successfully
@@ -357,9 +373,26 @@ router
 router
   .route('/of-parent/:id')
   .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { search, active, page = 1, limit = 10 } = req.query;
+    const pagination = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+    const filters = {
+      search,
+      status: [],
+    };
+    if (active) {
+      filters.status.push(active === 'true');
+    }
+
     try {
       const { id } = req.params;
-      const amenities = await amentityService.getAmenitiesByParentId(id);
+      const amenities = await amentityService.getAmenitiesByParentId(
+        id,
+        pagination,
+        filters
+      );
       if (!amenities.parent) {
         return res.status(404).json({
           data: null,
@@ -480,6 +513,130 @@ router
       return res.status(200).json({
         data: { amenity: amenity },
         message: 'Amenity updated successfully',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  });
+
+/**
+ * @swagger
+ * /prop/amenity/soft-delete/{id}:
+ *   put:
+ *     summary: Xóa mềm 1 amenity theo id [ADMIN]
+ *     tags: [Amenities]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Amenity deleted successfully
+ *       404:
+ *         description: Amenity not found
+ *       500:
+ *         description: Internal server error
+ */
+
+router
+  .route('/soft-delete/:id')
+  .put(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const amenity = await amentityService.softDeleteAmenity(id);
+      if (!amenity) {
+        return res.status(404).json({
+          data: null,
+          message: 'Amenity not found',
+          error: [],
+        });
+      }
+      return res.status(200).json({
+        data: null,
+        message: 'Amenity deleted successfully',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  });
+
+// get all by admin
+// query: search by name, filter by is_active (default get all); page, limit
+
+/**
+ * @swagger
+ * /prop/amenity:
+ *   get:
+ *     summary: Lấy danh sách tất cả các amenity cấp 1 [ADMIN]
+ *     description: Khi search thì trả về parent kèm theo. ở chế độ search thì count luôn = 0
+ *     tags: [Amenities]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: active
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Amenities retrieved successfully
+ *       500:
+ *         description: Internal server error
+ */
+router
+  .route('/')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { search, active, page = 1, limit = 10 } = req.query;
+    const pagination = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+    const filters = {
+      search,
+      status: [],
+    };
+    if (active) {
+      filters.status.push(active === 'true');
+    }
+    try {
+      const { amenities, total } = await amentityService.getAllAmenities(
+        filters,
+        pagination
+      );
+      return res.status(200).json({
+        data: {
+          amenities: amenities,
+          total: total,
+          page: pagination.page,
+          limit: pagination.limit,
+        },
+        message: 'Amenities retrieved successfully',
         error: [],
       });
     } catch (error) {

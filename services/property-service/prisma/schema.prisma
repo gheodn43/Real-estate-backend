@@ -33,6 +33,7 @@ model properties {
   details             property_detail[]
   amenities           property_amenities[]
   agentHistory        property_agent_history[]
+  commissions         commissions[]
 }
 
 model property_location {
@@ -72,6 +73,7 @@ model property_categories {
   is_active           Boolean?
   created_at          DateTime                   @default(now())
   updated_at          DateTime                   @default(now())
+  deleted_at          DateTime?
 
   parent              property_categories?       @relation("CategoryParent", fields: [parent_category_id], references: [id])
   children            property_categories[]      @relation("CategoryParent")
@@ -95,6 +97,7 @@ model property_category_detail {
   is_showing        Boolean?
   created_at        DateTime          @default(now())
   updated_at        DateTime          @default(now())
+  deleted_at        DateTime?
 
   category          property_categories @relation(fields: [category_id], references: [id])
   propertyDetails   property_detail[]        @relation("DetailToCategoryDetail")
@@ -119,6 +122,7 @@ model amenities {
   is_active          Boolean?
   created_at         DateTime     @default(now())
   updated_at         DateTime     @default(now())
+  deleted_at         DateTime?
 
   parent             amenities?   @relation("AmenityParent", fields: [parent_amentity_id], references: [id])
   children           amenities[]  @relation("AmenityParent")
@@ -154,6 +158,8 @@ model commissions {
   contract_url String?
   created_at   DateTime   @default(now())
   updated_at   DateTime   @default(now())
+
+  property     properties @relation(fields: [property_id], references: [id])
 }
 
 enum CommissionStatus {

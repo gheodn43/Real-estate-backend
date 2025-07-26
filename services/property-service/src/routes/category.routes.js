@@ -453,4 +453,48 @@ router.route('/active-by-type/:type').get(async (req, res) => {
   }
 });
 
+// delete soft
+/**
+ * @swagger
+ * /prop/category/soft-delete/{id}:
+ *   put:
+ *     summary: Xóa mềm category [ADMIN]
+ *     tags: [Category]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của category
+ *     responses:
+ *       200:
+ *         description: Xóa mềm category thành công
+ *       401:
+ *         description: Không có quyền truy cập
+ *       500:
+ *         description: Lỗi server
+ */
+router
+  .route('/soft-delete/:id')
+  .put(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const category = await categoryService.softDeleteCategory(id);
+      return res.status(200).json({
+        data: { category },
+        message: 'Delete category successfully',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  });
+
 export default router;

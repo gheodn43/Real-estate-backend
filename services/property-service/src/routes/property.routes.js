@@ -14,6 +14,29 @@ import agentHistoryService from '../services/propertyAgentHistory.service.js';
 import commissionService from '../services/commission.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
+
+// Lấy danh sách propertyIds từ agentId
+// hint: sử dụng getHistoryByAgentId
+router
+  .route('/post/assigned-of-agent/:agentId')
+  .get(authMiddleware, roleGuard([RoleName.Agent]), async (req, res) => {
+    try {
+      const { agentId } = req.params;
+      const propertyIds =
+        await agentHistoryService.getHistoryByAgentId(agentId);
+      return res.status(200).json({
+        data: propertyIds,
+        message: 'Property ids retrieved',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  });
 /**
  * @openapi
  * /prop/{id}/relate:
@@ -1150,39 +1173,20 @@ router
  *                 items:
  *                   type: integer
  *                 example: [1, 2]
+ *               commission:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   type:
+ *                     type: string
+ *                   commission:
+ *                     type: number
+ *                     format: double
+ *                     example: 1.5
  *     responses:
  *       200:
  *         description: Cập nhật bất động sản thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     property:
- *                       type: object
- *                     location:
- *                       type: object
- *                     media:
- *                       type: array
- *                       items:
- *                         type: object
- *                     amenities:
- *                       type: array
- *                       items:
- *                         type: integer
- *                     details:
- *                       type: array
- *                 message:
- *                   type: string
- *                   example: Property updated
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       400:
  *         description: Cập nhật bất động sản không thành công
  *       500:
@@ -1208,6 +1212,7 @@ router
           media,
           details,
           amenities,
+          commission,
         } = req.body;
 
         const { id } = req.params;
@@ -1221,8 +1226,17 @@ router
             error: ['Property not found'],
           });
         }
-
         const errors = [];
+        if (
+          commission.type == CommissionType.BUYING &&
+          !commission.commission
+        ) {
+          return res.status(400).json({
+            data: null,
+            message: '',
+            error: ['Commission value is required with buying type'],
+          });
+        }
 
         // AGENT: chỉ được sửa bài của mình
         if (user.userRole === RoleName.Agent) {
@@ -1279,7 +1293,7 @@ router
           requestPostStatus,
           requestStatus,
         });
-
+        console.log(property);
         if (!property) {
           return res.status(400).json({
             data: null,
@@ -1349,6 +1363,15 @@ router
             );
           } catch (err) {
             errors.push('Failed to update amenities: ' + err.message);
+          }
+        }
+
+        // Update commission
+        if (commission) {
+          try {
+            await commissionService.updateCommission(commission);
+          } catch (err) {
+            errors.push('Failed to update commission: ' + err.message);
           }
         }
 
