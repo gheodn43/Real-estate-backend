@@ -24,6 +24,21 @@ const initCommission = async ({ property_id, type, commission }) => {
   });
 };
 
+const updateCommission = async (data) => {
+  return await prisma.commissions.update({
+    where: {
+      id: data.id,
+    },
+    data: {
+      status: data.status,
+      type: data.type,
+      commission: data.commission,
+      latest_price: data.latestPrice,
+      contract_url: data.contractUrl,
+    },
+  });
+};
 export default {
   initCommission,
+  updateCommission,
 };

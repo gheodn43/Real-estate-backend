@@ -1,6 +1,7 @@
 import prisma from '../middleware/prismaClient.js';
 import Stage from '../enums/stage.enum.js';
 import RequestStatus from '../enums/requestStatus.enum.js';
+import CommissionStatus from '../enums/commissionStatus.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
@@ -227,9 +228,28 @@ const getById = async (propertyId) => {
           type: true,
         },
       },
+      commissions: {
+        where: {
+          status: CommissionStatus.PROCESSING,
+        },
+        select: {
+          id: true,
+          type: true,
+          commission: true,
+        },
+      },
     },
   });
-  return property;
+
+  return {
+    ...property,
+    commission: {
+      id: property.commissions[0].id,
+      type: property.commissions[0].type,
+      commission: Number(property.commissions[0].commission),
+    },
+    commissions: undefined,
+  };
 };
 
 const getBasicInfoById = async (propertyId) => {
@@ -335,9 +355,27 @@ const getBySlug = async (slug) => {
           type: true,
         },
       },
+      commissions: {
+        where: {
+          status: CommissionStatus.PROCESSING,
+        },
+        select: {
+          type: true,
+        },
+      },
     },
   });
-  return property;
+  let customerNeeds = 'Chưa xác định';
+  if (property?.commissions?.length) {
+    const type = property.commissions[0].type;
+    if (type === 'buying') customerNeeds = 'Cần bán';
+    if (type === 'rental') customerNeeds = 'Cho thuê';
+  }
+  return {
+    ...property,
+    customer_needs: customerNeeds,
+    commissions: undefined,
+  };
 };
 
 const getDraftProperties = async (userId) => {
@@ -400,7 +438,11 @@ const getPublicFilteredProperties = async (filters, pagination) => {
 
   const where = {
     requestpost_status: {
-      in: [RequestPostStatus.PUBLISHED, RequestPostStatus.SOLD],
+      in: [
+        RequestPostStatus.PUBLISHED,
+        RequestPostStatus.SOLD,
+        RequestPostStatus.EXPIRED,
+      ],
     },
   };
 
@@ -468,12 +510,33 @@ const getPublicFilteredProperties = async (filters, pagination) => {
             },
           },
         },
+        commissions: {
+          where: {
+            status: CommissionStatus.PROCESSING,
+          },
+          select: {
+            type: true,
+          },
+        },
       },
     }),
     prisma.properties.count({ where }),
   ]);
 
-  return { properties, total };
+  const propertiesWithCustomerNeeds = properties.map((property) => {
+    let customerNeeds = 'Chưa xác định';
+    if (property?.commissions?.length) {
+      const type = property.commissions[0].type;
+      if (type === 'buying') customerNeeds = 'Cần bán';
+      if (type === 'rental') customerNeeds = 'Cho thuê';
+    }
+    return {
+      ...property,
+      customer_needs: customerNeeds,
+      commissions: undefined,
+    };
+  });
+  return { properties: propertiesWithCustomerNeeds, total };
 };
 
 const getFilteredPropertiesForPrivate = async (filters, pagination) => {

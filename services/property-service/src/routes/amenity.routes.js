@@ -581,7 +581,7 @@ router
  * @swagger
  * /prop/amenity:
  *   get:
- *     summary: Lấy danh sách tất cả các amenity [ADMIN]
+ *     summary: Lấy danh sách tất cả các amenity cấp 1 [ADMIN]
  *     description: Khi search thì trả về parent kèm theo. ở chế độ search thì count luôn = 0
  *     tags: [Amenities]
  *     security:

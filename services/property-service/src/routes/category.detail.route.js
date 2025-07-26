@@ -473,8 +473,8 @@ router
 
 /**
  * @swagger
- * /prop/category/detail/{id}:
- *   delete:
+ * /prop/category/detail/soft-delete/{id}:
+ *   put:
  *     summary: Xóa thông tin của một trường chi tiết theo id [ADMIN]
  *     tags: [CategoryDetail]
  *     security:
@@ -533,11 +533,11 @@ router
  *         description: Internal server error
  */
 router
-  .route('/:id')
-  .delete(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+  .route('/soft-delete/:id')
+  .put(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
-      const categoryDetail = await categoryDetailService.deleteDetail(id);
+      const categoryDetail = await categoryDetailService.softDeleteDetail(id);
       return res.status(200).json({
         data: { categoryDetail: categoryDetail },
         message: 'Category detail deleted successfully',
