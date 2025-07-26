@@ -14,6 +14,29 @@ import agentHistoryService from '../services/propertyAgentHistory.service.js';
 import commissionService from '../services/commission.service.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
+
+// Lấy danh sách propertyIds từ agentId
+// hint: sử dụng getHistoryByAgentId
+router
+  .route('/post/assigned-of-agent/:agentId')
+  .get(authMiddleware, roleGuard([RoleName.Agent]), async (req, res) => {
+    try {
+      const { agentId } = req.params;
+      const propertyIds =
+        await agentHistoryService.getHistoryByAgentId(agentId);
+      return res.status(200).json({
+        data: propertyIds,
+        message: 'Property ids retrieved',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  });
 /**
  * @openapi
  * /prop/{id}/relate:
