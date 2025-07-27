@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import agentReviewRoutes from './routes/agentReview.routes.js';
+import scheduleRoutes from './routes/schedule.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
 
@@ -16,6 +17,7 @@ app.get('/swagger.json', (req, res) => {
 });
 
 app.use('/review/agent-reviews', agentReviewRoutes);
+app.use('/review/schedule', scheduleRoutes);
 
 const PORT = process.env.PORT || 4004;
 app.listen(PORT, () => {

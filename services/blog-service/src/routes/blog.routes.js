@@ -17,45 +17,8 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Lấy blog draft thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blogs:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id: { type: integer }
- *                           journalist_Id: { type: integer }
- *                           title: { type: string }
- *                           description: { type: string }
- *                           content: { type: string }
- *                           small_image: { type: string }
- *                           short_link: { type: string }
- *                           status: { type: string, example: draft }
- *                 message:
- *                   type: string
- *                   example: Lấy blog draft thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
- * 
  */
 router.route('/draft')
   .get(authMiddleware, roleGuard([RoleName.Admin, RoleName.Journalist]), blogController.getBlogDraft);
@@ -100,62 +63,12 @@ router.route('/draft')
  *     responses:
  *       201:
  *         description: Blog đã được đăng
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string, example: published }
- *                 message:
- *                   type: string
- *                   example: Bài viết đã được đăng
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu thông tin bắt buộc (title, description, content)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu thông tin blog }
- *                 errors: { type: array, items: { type: string } }
  *       403:
  *         description: Không có quyền (chỉ Admin)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Only Admin can create published blogs }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.post(
   '/create',
@@ -199,71 +112,14 @@ router.post(
  *     responses:
  *       200:
  *         description: Blog đã được cập nhật
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     id: { type: integer }
- *                     journalist_Id: { type: integer }
- *                     title: { type: string }
- *                     description: { type: string }
- *                     content: { type: string }
- *                     small_image: { type: string }
- *                     short_link: { type: string }
- *                     status: { type: string }
- *                     created_at: { type: string, format: date-time }
- *                     updated_at: { type: string, format: date-time }
- *                 message:
- *                   type: string
- *                   example: Blog đã được cập nhật
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu blog_id
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu blog_id }
- *                 errors: { type: array, items: { type: string } }
  *       403:
  *         description: Không có quyền cập nhật blog (Journalist không được cập nhật blog published)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Không có quyền cập nhật blog }
- *                 errors: { type: array, items: { type: string } }
  *       404:
  *         description: Blog không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog không tồn tại }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.put(
   '/save/:blog_id',
@@ -307,72 +163,16 @@ router.put(
  *     responses:
  *       200:
  *         description: Blog đã được gửi lại để duyệt
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string, example: pending }
- *                 message:
- *                   type: string
- *                   example: Blog đã được gửi lại để duyệt
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu blog_id hoặc blog không ở trạng thái rejected
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog phải ở trạng thái rejected để gửi lại }
- *                 errors: { type: array, items: { type: string } }
  *       403:
  *         description: Không có quyền gửi lại blog
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Không có quyền gửi lại blog }
- *                 errors: { type: array, items: { type: string } }
  *       404:
  *         description: Blog không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog không tồn tại }
- *                 errors: { type: array, items: { type: string } }
+ *       405:
+ *         description: Blog đã được duyệt
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.put(
   '/resubmit/:blog_id',
@@ -400,65 +200,14 @@ router.put(
  *     responses:
  *       200:
  *         description: Blog đã được xóa
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     result:
- *                       type: object
- *                       properties:
- *                         message: { type: string, example: Blog deleted successfully }
- *                 message:
- *                   type: string
- *                   example: Blog đã được xóa
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu blog_id
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu blog_id }
- *                 errors: { type: array, items: { type: string } }
  *       403:
  *         description: Không có quyền xóa blog
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Không có quyền xóa blog }
- *                 errors: { type: array, items: { type: string } }
  *       404:
  *         description: Blog không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog không tồn tại }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.delete(
   '/:blog_id',
@@ -490,50 +239,8 @@ router.delete(
  *     responses:
  *       200:
  *         description: Danh sách blog
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blogs:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id: { type: integer }
- *                           title: { type: string }
- *                           description: { type: string }
- *                           small_image: { type: string }
- *                           short_link: { type: string }
- *                           hasReacted: { type: boolean }
- *                           reactCount: { type: integer }
- *                     pagination:
- *                       type: object
- *                       properties:
- *                         currentPage: { type: integer }
- *                         totalPages: { type: integer }
- *                         totalItems: { type: integer }
- *                         itemsPerPage: { type: integer }
- *                 message:
- *                   type: string
- *                   example: Danh sách blog đã được lấy thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.get('/list',blogController.getBlogs);
 
@@ -566,69 +273,10 @@ router.get('/list',blogController.getBlogs);
  *     responses:
  *       200:
  *         description: Chi tiết blog
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         hasReacted: { type: boolean }
- *                         reactCount: { type: integer }
- *                         comments:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               id: { type: integer }
- *                               comment: { type: string }
- *                               user_id: { type: integer }
- *                               user_name: { type: string }
- *                               created_at: { type: string }
- *                     commentPagination:
- *                       type: object
- *                       properties:
- *                         currentPage: { type: integer }
- *                         totalPages: { type: integer }
- *                         totalItems: { type: integer }
- *                         itemsPerPage: { type: integer }
- *                 message:
- *                   type: string
- *                   example: Chi tiết blog đã được lấy thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       404:
  *         description: Blog không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog không tồn tại }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.get('/:short_link', blogController.getBlogByShortLink);
 
@@ -672,52 +320,10 @@ router.get('/:short_link', blogController.getBlogByShortLink);
  *     responses:
  *       201:
  *         description: Blog đã được lưu nháp
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string, example: draft }
- *                 message:
- *                   type: string
- *                   example: Blog đã được lưu nháp
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu thông tin bắt buộc (title, description, content)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu thông tin blog }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.post(
   '/draft',
@@ -766,52 +372,10 @@ router.post(
  *     responses:
  *       201:
  *         description: Blog đã được gửi duyệt
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string, example: pending }
- *                 message:
- *                   type: string
- *                   example: Blog đã được gửi duyệt
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu thông tin bắt buộc (title, description, content)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu thông tin blog }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.post(
   '/submit',
@@ -848,50 +412,10 @@ router.post(
  *     responses:
  *       201:
  *         description: Bình luận đã được thêm
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     review:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         blog_id: { type: integer }
- *                         user_id: { type: integer }
- *                         comment: { type: string }
- *                         parent_id: { type: integer }
- *                         status: { type: string, example: published }
- *                 message:
- *                   type: string
- *                   example: Bình luận đã được thêm
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu thông tin bình luận
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu thông tin bình luận }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.post('/review', authMiddleware, blogController.createBlogReview);
 
@@ -919,69 +443,12 @@ router.post('/review', authMiddleware, blogController.createBlogReview);
  *     responses:
  *       201:
  *         description: Đã like blog
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     result:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         blog_id: { type: integer }
- *                         user_id: { type: integer }
- *                         created_at: { type: string }
- *                 message:
- *                   type: string
- *                   example: Đã like blog
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       200:
  *         description: Đã bỏ like blog
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     result:
- *                       type: object
- *                       properties:
- *                         message: { type: string, example: React removed successfully }
- *                 message:
- *                   type: string
- *                   example: Đã bỏ like blog
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu blog_id
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu blog_id }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.post('/react', authMiddleware, blogController.createBlogReact);
 
@@ -1013,45 +480,10 @@ router.post('/react', authMiddleware, blogController.createBlogReact);
  *     responses:
  *       200:
  *         description: Blog đã được chia sẻ
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     result:
- *                       type: object
- *                       properties:
- *                         message: { type: string, example: Blog đã được chia sẻ qua email }
- *                 message:
- *                   type: string
- *                   example: Blog đã được chia sẻ qua email
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu blog_id hoặc email
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu blog_id hoặc email }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.post('/share', authMiddleware, blogController.shareBlog);
 
@@ -1090,72 +522,14 @@ router.post('/share', authMiddleware, blogController.shareBlog);
  *     responses:
  *       200:
  *         description: Blog đã được đăng
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string, example: published }
- *                 message:
- *                   type: string
- *                   example: Blog đã được đăng
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu blog_id hoặc blog không ở trạng thái draft/rejected
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog must be in draft or rejected status to publish }
- *                 errors: { type: array, items: { type: string } }
  *       403:
  *         description: Không có quyền (chỉ Admin)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Chỉ Admin có quyền đăng blog }
- *                 errors: { type: array, items: { type: string } }
  *       404:
- *         description: Blog không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Blog không tồn tại }
- *                 errors: { type: array, items: { type: string } }
+ *         description: Blog không tồn tại     
  *       500:
- *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
+ *         description: Lỗi server    
  */
 router.put(
   '/publish/:blog_id',
@@ -1193,52 +567,10 @@ router.put(
  *     responses:
  *       200:
  *         description: Blog đã được duyệt hoặc từ chối
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     blog:
- *                       type: object
- *                       properties:
- *                         id: { type: integer }
- *                         journalist_Id: { type: integer }
- *                         title: { type: string }
- *                         description: { type: string }
- *                         content: { type: string }
- *                         small_image: { type: string }
- *                         short_link: { type: string }
- *                         status: { type: string, example: published hoặc rejected }
- *                 message:
- *                   type: string
- *                   example: Blog đã được duyệt
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Thiếu blog_id hoặc action không hợp lệ
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Thiếu blog_id hoặc action không hợp lệ }
- *                 errors: { type: array, items: { type: string } }
  *       500:
  *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data: { type: null }
- *                 message: { type: string, example: Lỗi server }
- *                 errors: { type: array, items: { type: string } }
  */
 router.post(
   '/moderate',

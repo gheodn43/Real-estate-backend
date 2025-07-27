@@ -292,7 +292,7 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
  *         schema:
  *           type: integer
  *       - in: query
- *         name: pageSize
+ *         name: limit
  *         schema:
  *           type: integer
  *     responses:
@@ -645,7 +645,7 @@ router.post(
  *         schema:
  *           type: integer
  *       - in: query
- *         name: pageSize
+ *         name: limit
  *         schema:
  *           type: integer
  *     responses:
@@ -694,7 +694,7 @@ router.get(
  *         schema:
  *           type: integer
  *       - in: query
- *         name: pageSize
+ *         name: limit
  *         schema:
  *           type: integer
  *     responses:
