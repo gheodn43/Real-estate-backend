@@ -412,7 +412,7 @@ async approveReply(review_id, token) {
     return reply;
   }
 
-  async getAgentReviews(agent_id, page = 1, pageSize = 10) {
+  async getAgentReviews(agent_id, page = 1, limit = 10) {
     try {
       return prisma.agent_reviews.findMany({
         where: {
@@ -421,8 +421,8 @@ async approveReply(review_id, token) {
           status: 'showing',
         },
         orderBy: { created_at: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * limit,
+        take: limit,
         include: { replies: { where: { status: 'showing' } } },
       });
     } catch (err) {
@@ -464,7 +464,7 @@ async approveReply(review_id, token) {
     }
   }
 
-  async getPendingReplies(page = 1, pageSize = 10) {
+  async getPendingReplies(page = 1, limit = 10) {
   try {
     return await prisma.agent_reviews.findMany({
       where: {
@@ -472,8 +472,8 @@ async approveReply(review_id, token) {
         status: 'pending',
       },
       orderBy: { created_at: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (page - 1) * limit,
+      take: limit,
       include: {
         parent: { select: { id: true, comment: true, rating: true, user_id: true } },
       },
@@ -483,7 +483,7 @@ async approveReply(review_id, token) {
   }
 }
 
-async getMyReplies(agent_id, status = null, page = 1, pageSize = 10) {
+async getMyReplies(agent_id, status = null, page = 1, limit = 10) {
   try {
     const where = {
       agent_id: Number(agent_id),
@@ -495,8 +495,8 @@ async getMyReplies(agent_id, status = null, page = 1, pageSize = 10) {
     return await prisma.agent_reviews.findMany({
       where,
       orderBy: { created_at: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (page - 1) * limit,
+      take: limit,
       include: {
         parent: { select: { id: true, comment: true, rating: true, user_id: true } },
       },

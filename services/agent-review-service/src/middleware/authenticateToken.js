@@ -29,7 +29,7 @@ export const authenticateToken = async (req, res, next) => {
       userEmail: data.userEmail,
       userName: data.userName,
     };
-    console.log('req.user:', req.user); 
+    // console.log('req.user:', req.user); 
     req.token = token;
     next();
   } catch (error) {
