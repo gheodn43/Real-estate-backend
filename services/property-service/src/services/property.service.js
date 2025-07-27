@@ -304,10 +304,32 @@ const getRelateProperties = async (currentPropertyId, assetsId, count) => {
           },
         },
       },
+      commissions: {
+        where: {
+          status: CommissionStatus.PROCESSING,
+        },
+        select: {
+          type: true,
+        },
+      },
     },
     take: count,
   });
-  return properties;
+
+  const propertiesWithCustomerNeeds = properties.map((property) => {
+    let customerNeeds = 'Chưa xác định';
+    if (property?.commissions?.length) {
+      const type = property.commissions[0].type;
+      if (type === 'buying') customerNeeds = 'Cần bán';
+      if (type === 'rental') customerNeeds = 'Cho thuê';
+    }
+    return {
+      ...property,
+      customer_needs: customerNeeds,
+      commissions: undefined,
+    };
+  });
+  return propertiesWithCustomerNeeds;
 };
 
 const getBySlug = async (slug) => {
