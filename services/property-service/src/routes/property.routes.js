@@ -19,24 +19,28 @@ import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 // hint: sử dụng getHistoryByAgentId
 router
   .route('/post/assigned-of-agent/:agentId')
-  .get(authMiddleware, roleGuard([RoleName.Agent]), async (req, res) => {
-    try {
-      const { agentId } = req.params;
-      const propertyIds =
-        await agentHistoryService.getHistoryByAgentId(agentId);
-      return res.status(200).json({
-        data: propertyIds,
-        message: 'Property ids retrieved',
-        error: [],
-      });
-    } catch (err) {
-      return res.status(500).json({
-        data: null,
-        message: '',
-        error: [err.message],
-      });
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      try {
+        const { agentId } = req.params;
+        const propertyIds =
+          await agentHistoryService.getHistoryByAgentId(agentId);
+        return res.status(200).json({
+          data: propertyIds,
+          message: 'Property ids retrieved',
+          error: [],
+        });
+      } catch (err) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [err.message],
+        });
+      }
     }
-  });
+  );
 /**
  * @openapi
  * /prop/{id}/relate:
@@ -1409,74 +1413,7 @@ router
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lấy danh sách bất động sản thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     properties:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                             example: 18
- *                           sender_id:
- *                             type: integer
- *                             nullable: true
- *                             example: null
- *                           title:
- *                             type: string
- *                             example: Bán nhà phố trung tâm Quận 2
- *                           description:
- *                             type: string
- *                             example: Nhà phố sang trọng, tiện nghi đầy đủ, gần trung tâm thương mại.
- *                           before_price_tag:
- *                             type: string
- *                             example: Giá chỉ từ
- *                           price:
- *                             type: string
- *                             example: "50000000000.99"
- *                           after_price_tag:
- *                             type: string
- *                             example: VNĐ
- *                           assets_id:
- *                             type: integer
- *                             example: 2
- *                           needs_id:
- *                             type: integer
- *                             example: 4
- *                           stage:
- *                             type: string
- *                             example: post
- *                           request_status:
- *                             type: string
- *                             nullable: true
- *                             example: null
- *                           requestpost_status:
- *                             type: string
- *                             example: draft
- *                           created_at:
- *                             type: string
- *                             format: date-time
- *                             example: 2025-06-21T07:50:59.989Z
- *                           updated_at:
- *                             type: string
- *                             format: date-time
- *                             example: 2025-06-21T07:50:59.989Z
- *                 message:
- *                   type: string
- *                   example: Properties found
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
+ *         description: Danh sách bất động sản được lấy ra thành công
  *       404:
  *         description: Không tìm thấy bất động sản
  *       500:
@@ -1537,145 +1474,6 @@ router
  *     responses:
  *       200:
  *         description: Thông tin bất động sản được tìm thấy
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Property found
- *                 error:
- *                   type: array
- *                   items: {}
- *                   example: []
- *                 data:
- *                   type: object
- *                   properties:
- *                     property:
- *                       type: object
- *                       properties:
- *                         id:
- *                           type: integer
- *                           example: 17
- *                         sender_id:
- *                           type: integer
- *                           nullable: true
- *                         title:
- *                           type: string
- *                           example: Bán nhà phố trung tâm Quận 1 upate
- *                         description:
- *                           type: string
- *                           example: Nhà phố sang trọng, tiện nghi đầy đủ, gần trung tâm thương mại.
- *                         before_price_tag:
- *                           type: string
- *                           example: Giá chỉ từ
- *                         price:
- *                           type: string
- *                           example: "50000000000.99"
- *                         after_price_tag:
- *                           type: string
- *                           example: VNĐ
- *                         stage:
- *                           type: string
- *                           example: post
- *                         request_status:
- *                           type: string
- *                           nullable: true
- *                         requestpost_status:
- *                           type: string
- *                           example: published
- *                         created_at:
- *                           type: string
- *                           format: date-time
- *                           example: 2025-06-21T07:43:46.769Z
- *                         updated_at:
- *                           type: string
- *                           format: date-time
- *                           example: 2025-06-21T08:20:58.307Z
- *                         locations:
- *                           type: object
- *                           properties:
- *                             addr_city:
- *                               type: string
- *                               example: Hồ Chí Minh
- *                             addr_district:
- *                               type: string
- *                               example: Quận 1
- *                             addr_street:
- *                               type: string
- *                               example: Nguyễn Huệ
- *                             addr_details:
- *                               type: string
- *                               example: Sát phố đi bộ
- *                             latitude:
- *                               type: number
- *                               format: float
- *                               example: 10.7769
- *                             longitude:
- *                               type: number
- *                               format: float
- *                               example: 106.7009
- *                         media:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               type:
- *                                 type: string
- *                                 example: image
- *                               url:
- *                                 type: string
- *                                 example: https://example.com/image1.jpg
- *                               order:
- *                                 type: integer
- *                                 example: 1
- *                         details:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               value:
- *                                 type: string
- *                                 example: "3"
- *                               category_detail:
- *                                 type: object
- *                                 properties:
- *                                   field_name:
- *                                     type: string
- *                                     example: string
- *                                   field_type:
- *                                     type: string
- *                                     example: number
- *                         amenities:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               amenity:
- *                                 type: object
- *                                 properties:
- *                                   name:
- *                                     type: string
- *                                     example: Thử nghiệm
- *                         assets:
- *                           type: object
- *                           properties:
- *                             name:
- *                               type: string
- *                               example: nhà phố hồ tây
- *                             type:
- *                               type: string
- *                               example: assets
- *                         needs:
- *                           type: object
- *                           properties:
- *                             name:
- *                               type: string
- *                               example: Đất nền
- *                             type:
- *                               type: string
- *                               example: assets
  */
 
 router
@@ -2032,11 +1830,9 @@ router.put(
 );
 
 //api xác thực agent có phải là ngừoi đảm nhiệm bất động sản không
-router.get(
-  '/post/:id/verify-agent',
-  authMiddleware,
-  roleGuard([RoleName.Agent]),
-  async (req, res) => {
+router
+  .route('/post/verify-agent/:id')
+  .get(authMiddleware, roleGuard([RoleName.Agent]), async (req, res) => {
     try {
       const { id } = req.params;
       const user = req.user;
@@ -2065,7 +1861,6 @@ router.get(
         error: [err.message],
       });
     }
-  }
-);
+  });
 
 export default router;

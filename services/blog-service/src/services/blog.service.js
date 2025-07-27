@@ -38,10 +38,10 @@ class BlogService {
       return {
         blogs,
         pagination: {
-          currentPage: page,
+          total: totalBlogs,
+          page: Number(page),
+          limit: Number(limit),
           totalPages,
-          totalItems: totalBlogs,
-          itemsPerPage: limit,
         },
       };
     } catch (err) {
@@ -302,10 +302,10 @@ class BlogService {
       return {
         blogs: formattedBlogs,
         pagination: {
-          currentPage: page,
+          total: totalBlogs,
+          page: Number(page),
+          limit: Number(limit),
           totalPages,
-          totalItems: totalBlogs,
-          itemsPerPage: limit,
         },
       };
     } catch (err) {
@@ -402,10 +402,10 @@ class BlogService {
           comments,
         },
         commentPagination: {
-          currentPage: commentPage,
+          total: totalComments,
+          page: Number(commentPage),
+          limit: Number(commentLimit),
           totalPages: totalCommentPages,
-          totalItems: totalComments,
-          itemsPerPage: commentLimit,
         },
       };
     } catch (err) {

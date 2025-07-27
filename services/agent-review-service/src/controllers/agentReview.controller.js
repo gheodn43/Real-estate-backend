@@ -215,12 +215,12 @@ async updateReview(req, res) {
 
   async getAgentReviews(req, res) {
     try {
-      const { agent_id, page = 1, pageSize = 10 } = req.query;
+      const { agent_id, page = 1, limit = 10 } = req.query;
       if (!agent_id) throw new Error('agent_id is required');
       const reviews = await agentReviewService.getAgentReviews(
         Number(agent_id),
         Number(page),
-        Number(pageSize)
+        Number(limit)
       );
       res.status(200).json({ 
         data: {reviews: reviews},
@@ -281,10 +281,10 @@ async updateReview(req, res) {
 
   async getPendingReplies(req, res) {
   try {
-    const { page = 1, pageSize = 10 } = req.query;
+    const { page = 1, limit = 10 } = req.query;
     const replies = await agentReviewService.getPendingReplies(
       Number(page),
-      Number(pageSize)
+      Number(limit)
     );
     res.status(200).json({
       data: { replies },
@@ -302,13 +302,13 @@ async updateReview(req, res) {
 
 async getMyReplies(req, res) {
   try {
-    const { status, page = 1, pageSize = 10 } = req.query;
+    const { status, page = 1, limit = 10 } = req.query;
     const agent_id = Number(req.user.userId);
     const replies = await agentReviewService.getMyReplies(
       agent_id,
       status,
       Number(page),
-      Number(pageSize)
+      Number(limit)
     );
     res.status(200).json({
       data: { replies },
