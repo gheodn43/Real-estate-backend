@@ -85,8 +85,8 @@ class AppointmentScheduleService {
   async getAppointments({ page , limit , status }) {
     try {
       const where = {};
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
@@ -125,8 +125,8 @@ class AppointmentScheduleService {
       const where = {
         property_id: { in: [2] },
       };
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
@@ -157,8 +157,8 @@ class AppointmentScheduleService {
       const where = {
         property_id: Number(property_id),
       };
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
@@ -193,8 +193,8 @@ class AppointmentScheduleService {
       const where = {
         property_id: { in: propertyIds },
       };
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
