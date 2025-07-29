@@ -309,7 +309,7 @@ router.get('/my-appointments', authenticateToken, roleGuard([RoleName.Agent]), A
  *         name: status
  *         schema:
  *           type: string
- *           enum: [not_responded, responded, hidden]
+ *           enum: [not_responded, responded]
  *     responses:
  *       200:
  *         description: Property appointments retrieved successfully
@@ -381,7 +381,7 @@ router.get('/property/:property_id', authenticateToken, roleGuard([RoleName.Agen
  *         name: status
  *         schema:
  *           type: string
- *           enum: [not_responded, responded, hidden]
+ *           enum: [not_responded, responded]
  *     responses:
  *       200:
  *         description: Agent appointments retrieved successfully

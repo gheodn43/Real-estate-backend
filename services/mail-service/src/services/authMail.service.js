@@ -1036,6 +1036,59 @@ const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, b
 
 };
 
+const notifyNewAppointment = async ({ appointment }) => {
+  if (!appointment || !appointment.user || !appointment.user.email) {
+    console.error('Invalid appointment data:', appointment);
+    throw new Error('appointment and appointment.user.email are required');
+  }
+
+  const { user, property, start_time, end_time } = appointment;
+  const userEmail = user.email;
+  const userName = user.name || 'N/A';
+  const propertyName = property?.name || 'N/A';
+  const startTime = start_time ? new Date(start_time).toLocaleString('vi-VN') : 'N/A';
+  const endTime = end_time ? new Date(end_time).toLocaleString('vi-VN') : 'N/A';
+
+  console.log(`Preparing to send email to: ${userEmail}`);
+
+  const htmlContent = getEmailTemplate({
+    title: 'Lịch Hẹn Mới',
+    greeting: userName ? `Kính gửi ${userName},` : 'Kính gửi Người dùng,',
+    mainMessage: 'Bạn đã được gán vào một cuộc họp mới. Vui lòng kiểm tra thông tin chi tiết dưới đây:',
+    infoSections: `
+      <div class="highlight-section">
+        <h3>Thông tin cuộc họp</h3>
+        <ul>
+          <li>Người dùng: ${userName}</li>
+          <li>Bất động sản: ${propertyName}</li>
+          <li>Thời gian: ${startTime} - ${endTime}</li>
+        </ul>
+      </div>
+    `,
+  });
+
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: userEmail,
+      subject: 'Lịch Hẹn Mới',
+      html: htmlContent,
+      attachments: [
+        {
+          filename: 'homihub.png',
+          path: imagePath,
+          cid: 'companylogo',
+        },
+      ],
+    });
+    console.log(`Email sent successfully to: ${userEmail}, Message ID: ${info.messageId}`);
+    return info;
+  } catch (error) {
+    console.error(`Failed to send email to ${userEmail}:`, error.message, error.stack);
+    throw new Error(`Failed to send email to ${userEmail}: ${error.message}`);
+  }
+};
+
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
@@ -1058,5 +1111,7 @@ export default {
   notifyJournalistNewReact,
   shareBlog,
   notifyJournalistBlogApproved,
-  notifyJournalistBlogRejected
+  notifyJournalistBlogRejected,
+
+  notifyNewAppointment
 };

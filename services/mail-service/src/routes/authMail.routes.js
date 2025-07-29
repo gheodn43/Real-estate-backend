@@ -403,4 +403,23 @@ router.post('/notifyJournalistBlogRejected', async (req, res) => {
   }
 });
 
+router.post('/notifyNewAppointment', async (req, res) => {
+  const { userEmail, userName, appointment } = req.body;
+  try {
+    await authMailService.notifyNewAppointment({ userEmail, userName, appointment });
+    res.status(200).json({
+      data: {},
+      message: 'User notified of new appointment',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify user',
+      error: [error.message],
+    });
+  }
+});
+
+
 export default router;

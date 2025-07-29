@@ -1,39 +1,78 @@
 import { PrismaClient } from '@prisma/client';
 import ScheduleStatus from '../enum/scheduleStatus.enum.js';
 import { getAssignedProperties } from '../helpers/propertyClient.js';
+import axios from 'axios';
 
 
 const prisma = new PrismaClient();
 
 class AppointmentScheduleService {
   async createAppointment({ property_id, date, time, name, email, number_phone, message, type }) {
-    try {
-      if (!property_id || !date || !time || !name || !email || !number_phone || !type) {
-        throw new Error('Missing required fields');
-      }
-      if (!['directly', 'video_chat'].includes(type)) {
-        throw new Error('Invalid type. Must be "directly" or "video_chat"');
-      }
-      const appointment = await prisma.appointment_schedule.create({
-        data: {
-          property_id: Number(property_id),
-          date: this.convertStringToDate(date),
-          time,
-          name,
-          email,
-          number_phone,
-          message,
-          type,
-          status: ScheduleStatus.not_responded,
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
-      });
-      return appointment;
-    } catch (err) {
-      throw new Error('Failed to create appointment: ' + err.message);
+  try {
+    if (!property_id || !date || !time || !name || !email || !number_phone || !type) {
+      throw new Error('Missing required fields');
     }
+    if (!['directly', 'video_chat'].includes(type)) {
+      throw new Error('Invalid type. Must be "directly" or "video_chat"');
+    }
+    const appointment = await prisma.appointment_schedule.create({
+      data: {
+        property_id: Number(property_id),
+        date: this.convertStringToDate(date),
+        time,
+        name,
+        email,
+        number_phone,
+        message,
+        type,
+        status: ScheduleStatus.not_responded,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+
+    if (appointment.type === 'directly') {
+      try {
+        // Lấy thông tin Agent từ property-service
+        console.log('Fetching agent from property-service...');
+        const agentResponse = await axios.get(
+          `http://property-service:4002/prop/post/${appointment.property_id}/verify-agent`,
+         
+        );
+        const agent = agentResponse.data;
+        console.log('Agent fetched:', agent);
+
+        // Chuẩn bị payload cho notifyNewAppointment
+        const emailPayload = {
+          appointment: {
+            user: {
+              email: agent.email,
+              name: agent.name || 'Agent',
+            },
+            property: {
+              name: `Property ${appointment.property_id}`, // Giả định tên bất động sản
+            },
+          },
+        };
+        console.log('Sending email to agent with payload:', emailPayload);
+
+        // Gọi HTTP tới mail-service
+        await axios.post(
+          'http://mail-service:4003/mail/auth/notifyNewAppointment',
+          emailPayload,
+        );
+        console.log('Notification email sent to agent:', agent.email);
+      } catch (emailErr) {
+        console.error('Failed to send email notification:', emailErr.message, emailErr.stack);
+      }
+    }
+
+    return appointment;
+  } catch (err) {
+    console.error('Create appointment error:', err.message, err.stack);
+    throw new Error('Failed to create appointment: ' + err.message);
   }
+}
 
   convertStringToDate(stringDate) {
     const date = new Date(stringDate);
@@ -46,8 +85,8 @@ class AppointmentScheduleService {
   async getAppointments({ page , limit , status }) {
     try {
       const where = {};
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
@@ -86,8 +125,8 @@ class AppointmentScheduleService {
       const where = {
         property_id: { in: [2] },
       };
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
@@ -118,8 +157,8 @@ class AppointmentScheduleService {
       const where = {
         property_id: Number(property_id),
       };
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
@@ -154,8 +193,8 @@ class AppointmentScheduleService {
       const where = {
         property_id: { in: propertyIds },
       };
-      if (status && !['not_responded', 'responded', 'hidden'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded", "responded", or "hidden"');
+      if (status && !['not_responded', 'responded'].includes(status)) {
+        throw new Error('Invalid status. Must be "not_responded" or "responded"');
       }
       if (status) {
         where.status = status;
