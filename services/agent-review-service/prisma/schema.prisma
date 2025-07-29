@@ -30,6 +30,12 @@ enum ScheduleStatus{
   hidden
 }
 
+enum FeedbackStatus{
+  not_responded
+  responded
+  hidden
+}
+
 model agent_reviews {
   id         Int          @id @default(autoincrement())
   agent_id   Int
@@ -60,6 +66,23 @@ model appointment_schedule {
   response   String?
   type       ScheduleType @default(directly)
   status     ScheduleStatus @default(not_responded)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+}
+
+
+model feedbacks {
+  id         Int          @id @default(autoincrement())
+  last_name  String?
+  first_name String
+  address    String?
+  city       String?
+  email      String
+  number_phone String
+  message    String
+  response   String?
+  response_by String?
+  status     FeedbackStatus @default(not_responded)
   created_at DateTime     @default(now())
   updated_at DateTime     @updatedAt
 }
