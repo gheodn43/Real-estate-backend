@@ -11,8 +11,6 @@ const router = Router();
  *   post:
  *     summary: Tạo mới phản hồi từ khách hàng [Customer]
  *     tags: [Feedback]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -57,7 +55,7 @@ const router = Router();
  *       403:
  *         description: Không có quyền (yêu cầu role customer)
  */
-router.post('/', authenticateToken, FeedbackController.createFeedback);
+router.post('/', FeedbackController.createFeedback);
 
 /**
  * @swagger
@@ -105,8 +103,6 @@ router.get('/', authenticateToken, roleGuard([RoleName.Admin]), FeedbackControll
  *   get:
  *     summary: Lấy danh sách phản hồi đã được trả lời [All role]
  *     tags: [Feedback]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -130,7 +126,7 @@ router.get('/', authenticateToken, roleGuard([RoleName.Admin]), FeedbackControll
  *       403:
  *         description: Không có quyền
  */
-router.get('/responded', authenticateToken, FeedbackController.getRespondedFeedback);
+router.get('/responded', FeedbackController.getRespondedFeedback);
 
 /**
  * @swagger
