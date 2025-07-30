@@ -72,16 +72,11 @@ exports.googleCallback = [
           if (response.data.status === 'success') {
             latitude = response.data.lat;
             longitude = response.data.lon;
-            console.log(`IP-based location: lat=${latitude}, lng=${longitude}`);
           } else {
-            console.warn(
-              `IP geolocation failed: ${response.data.reason || 'Unknown error'}`
-            );
             latitude = null;
             longitude = null;
           }
         } catch (err) {
-          console.error(`Error fetching IP location: ${err.message}`);
           latitude = null;
           longitude = null;
         }
@@ -112,7 +107,6 @@ exports.googleCallback = [
         errors: [],
       });
     } catch (err) {
-      console.error(`Google callback error: ${err.message}`);
       res.status(500).json({
         data: null,
         message: 'Server error',
@@ -722,6 +716,71 @@ exports.getProfileById = async (req, res) => {
         },
       },
       message: 'Profile fetched successfully.',
+      errors: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
+
+exports.getPublicAgent = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        role_id: {
+          in: [2, 4],
+        },
+      },
+    });
+    if (!user)
+      return res.status(404).json({
+        data: null,
+        message: 'User not found.',
+        errors: [],
+      });
+    res.json({
+      data: {
+        user: user,
+      },
+      message: 'Agent fetched successfully.',
+      errors: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
+
+exports.getPublicJouralist = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        role_id: 3,
+      },
+      include: { role: true },
+    });
+    if (!user)
+      return res.status(404).json({
+        data: null,
+        message: 'User not found.',
+        errors: [],
+      });
+    res.json({
+      data: {
+        user: user,
+      },
+      message: 'Agent fetched successfully.',
       errors: [],
     });
   } catch (err) {

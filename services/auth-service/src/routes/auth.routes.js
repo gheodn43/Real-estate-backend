@@ -348,5 +348,10 @@ router.get('/verify', authenticateToken, authController.checkUserExists);
  *         description: User not found
  */
 router.get('/profile/:id', authenticateToken, authController.getProfileById);
+router.get('/publish-agent-profile/:id', authController.getPublicAgent);
+router.get(
+  '/publish-journalist-profile/:id',
+  authController.getPublicJouralist
+);
 
 module.exports = router;
