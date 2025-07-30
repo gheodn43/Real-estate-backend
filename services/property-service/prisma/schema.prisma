@@ -160,8 +160,27 @@ model commissions {
   updated_at   DateTime   @default(now())
 
   property     properties @relation(fields: [property_id], references: [id])
+  agent_commission_fee agent_commission_fee[]
 }
 
+model agent_commission_fee {
+  id             Int       @id @default(autoincrement())
+  commission_id  Int
+  agent_id       Int
+  commission_value Decimal @db.Decimal(15, 2)
+  reject_reason  String?
+  status         AgentCommissionFeeStatus @default(processing)
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @default(now())
+
+  commission     commissions @relation(fields: [commission_id], references: [id])
+}
+
+enum AgentCommissionFeeStatus{
+  processing
+  confirmed
+  rejected
+}
 enum CommissionStatus {
   processing
   completed

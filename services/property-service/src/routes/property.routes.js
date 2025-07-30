@@ -4,6 +4,8 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import roleGuard, { RoleName } from '../middleware/roleGuard.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import CommissionType from '../enums/commissionType.enum.js';
+import AgentCommissionFeeStatus from '../enums/AgentCommissionFeeStatus.js';
+import CommissionStatus from '../enums/commissionStatus.enum.js';
 
 import propertyService from '../services/property.service.js';
 import locationService from '../services/location.service.js';
@@ -112,7 +114,7 @@ router.get('/:id/relate', async (req, res) => {
  *         schema:
  *           type: integer
  *         description: Số phần tử mỗi trang (mặc định 10)
- *     summary: Lấy danh sách yêu cầu ký gửi
+ *     summary: Lấy danh sách yêu cầu ký gửi [CUSTOMER, ADMIN, AGENT]
  *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
  *     responses:
  *       200:
@@ -127,7 +129,6 @@ router.get(
   async (req, res) => {
     try {
       const userData = req.user;
-      console.log('userData', userData);
       const { page = 1, limit = 10 } = req.query;
       const pagination = {
         page: Number(page),
@@ -261,7 +262,6 @@ router
           })
         );
 
-        console.log('agentsData', agentsData);
         const propertyAgentHistories =
           await propertyService.assignAgentToRequest(
             basicPropertyInfo,
@@ -1297,7 +1297,6 @@ router
           requestPostStatus,
           requestStatus,
         });
-        console.log(property);
         if (!property) {
           return res.status(400).json({
             data: null,
@@ -1694,7 +1693,8 @@ router.route('/:slug').get(async (req, res) => {
     }
     if (
       property.requestpost_status !== RequestPostStatus.PUBLISHED &&
-      property.requestpost_status !== RequestPostStatus.SOLD
+      property.requestpost_status !== RequestPostStatus.SOLD &&
+      property.requestpost_status !== RequestPostStatus.EXPIRED
     ) {
       return res.status(404).json({
         data: null,
@@ -1862,5 +1862,131 @@ router
       });
     }
   });
+
+/**
+ * @openapi
+ * /prop/post/complete-transaction/{id}:
+ *   post:
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Hoàn thành giao dịch của bài đăng[Admin, Agent]
+ *     description: Chỉ Admin và Agent mới có quyền hoàn bấm nút hoàn thành.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài đăng
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               agent_id:
+ *                 type: integer
+ *               commission_id:
+ *                 type: integer
+ *                 example: 1
+ *               last_price:
+ *                 type: number
+ *                 example: 1000000
+ *               commission:
+ *                 type: number
+ *                 format: double
+ *                 example: 10
+ *               contract_url:
+ *                 type: string
+ *                 example: 'http://example.com/contract.pdf'
+ *     responses:
+ *       200:
+ *         description: Giao dịch của bài đăng đã được hoàn thành
+ */
+router
+  .route('/post/complete-transaction/:id')
+  .post(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      const { agent_id, commission_id, last_price, commission, contract_url } =
+        req.body;
+      const user = req.user;
+      const { id } = req.params;
+      if (contract_url === null) {
+        return res.status(400).json({
+          data: null,
+          message: '',
+          error: ['Missing contract_url'],
+        });
+      }
+      const commissionData = {
+        id: commission_id,
+        commission: commission,
+        latest_price: last_price,
+        contract_url: contract_url,
+        status: CommissionStatus.COMPLETED,
+      };
+      let agentCommissionFeeStatus = AgentCommissionFeeStatus.PROCESSING;
+      if (user.userRole === RoleName.Admin) {
+        agentCommissionFeeStatus = AgentCommissionFeeStatus.CONFIRMED;
+        const requestStatus =
+          propertyService.getRequestStatusFromRequestPostStatus(
+            RequestPostStatus.EXPIRED
+          );
+        await propertyService.completeTransaction(
+          id,
+          RequestPostStatus.EXPIRED,
+          requestStatus
+        );
+        await commissionService.updateCommission(commissionData);
+        let agentId = user.userId;
+        if (agent_id != null) {
+          agentId = agent_id;
+        }
+        await commissionService.createAgentCommissionFee({
+          commission_id: commission_id,
+          agent_id: agentId,
+          commission_value: (last_price * commission) / 100,
+          status: agentCommissionFeeStatus,
+        });
+
+        return res.status(200).json({
+          data: null,
+          message: 'Transaction completed',
+          error: null,
+        });
+      }
+
+      if (user.userRole === RoleName.Agent) {
+        const isOwner = await agentHistoryService.verifyOwnerPost(
+          user.userId,
+          id
+        );
+        if (!isOwner) {
+          return res.status(403).json({
+            data: null,
+            message: '',
+            error: ['You are not allowed to update this property'],
+          });
+        }
+        await commissionService.createAgentCommissionFee({
+          commission_id: commission_id,
+          agent_id: user.userId,
+          commission_value: (last_price * commission) / 100,
+          status: AgentCommissionFeeStatus.PROCESSING,
+        });
+        await commissionService.updateCommission(commissionData);
+        return res.status(200).json({
+          data: null,
+          message: 'Success, Wait admin confirm',
+          error: null,
+        });
+      }
+    }
+  );
 
 export default router;

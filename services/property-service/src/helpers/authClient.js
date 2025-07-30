@@ -15,4 +15,32 @@ const getCustomerProfile = async (customerId, token) => {
   );
   return res.data;
 };
-export { getProfile, getCustomerProfile };
+
+const getPublicAgentInfor = async (userId, token) => {
+  const res = await axios.get(
+    `http://auth-service:4001/auth/publish-agent-profile/${userId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  const customerData = res.data.data.user;
+  return {
+    id: customerData.id,
+    email: customerData.email,
+    name: customerData.name,
+    avatar: customerData.avatar,
+    number_phone: customerData.number_phone,
+  };
+};
+
+const getAdminInfor = async () => {
+  return {
+    id: 68,
+    email: 'ngvatuan01052002@gmail.com',
+    name: 'Nguyễn Viết Anh Tuấn',
+    avatar:
+      'https://res.cloudinary.com/dln9xmmqe/image/upload/v1753881654/admin-avatar_qibb4r.png',
+    number_phone: '0794982254',
+  };
+};
+export { getProfile, getCustomerProfile, getPublicAgentInfor, getAdminInfor };

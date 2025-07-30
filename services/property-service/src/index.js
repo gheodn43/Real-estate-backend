@@ -9,6 +9,7 @@ import amenityRoutes from './routes/amenity.routes.js';
 import propertyRoutes from './routes/property.routes.js';
 import uploadImageRoutes from './routes/uploadImage.routes.js';
 import expressFileUpload from 'express-fileupload';
+import commissionRoutes from './routes/commission.routes.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use('/prop/category/detail', categoryDetailRoutes);
 app.use('/prop/amenity', amenityRoutes);
 app.use('/prop', propertyRoutes);
 app.use('/prop/upload', uploadImageRoutes);
+app.use('/prop/commission', commissionRoutes);
 
 const PORT = process.env.PORT || 4002;
 app.listen(PORT);
