@@ -791,3 +791,82 @@ exports.getPublicJouralist = async (req, res) => {
     });
   }
 };
+
+exports.getPublicListAgent = async (req, res) => {
+  const agents = await prisma.user.findMany({
+    where: {
+      role_id: { in: [2, 4] },
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role_id: true,
+      avatar: true,
+      latitude: true,
+      longitude: true,
+      dateOfBirth: true,
+      gender: true,
+      addr_city: true,
+      addr_district: true,
+      addr_street: true,
+      addr_detail: true,
+      number_phone: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+  if (agents.lenght == 0) {
+    return res.status(404).json({
+      data: null,
+      message: 'User not found.',
+      errors: [],
+    });
+  }
+  res.json({
+    data: {
+      agents: agents,
+    },
+    message: 'Agent fetched successfully.',
+    errors: [],
+  });
+};
+exports.getPublicListJournalist = async (req, res) => {
+  const agents = await prisma.user.findMany({
+    where: {
+      role_id: 3,
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role_id: true,
+      avatar: true,
+      latitude: true,
+      longitude: true,
+      dateOfBirth: true,
+      gender: true,
+      addr_city: true,
+      addr_district: true,
+      addr_street: true,
+      addr_detail: true,
+      number_phone: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+  if (agents.lenght == 0) {
+    return res.status(404).json({
+      data: null,
+      message: 'User not found.',
+      errors: [],
+    });
+  }
+  res.json({
+    data: {
+      agents: agents,
+    },
+    message: 'Agent fetched successfully.',
+    errors: [],
+  });
+};

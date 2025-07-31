@@ -348,6 +348,42 @@ router.get('/verify', authenticateToken, authController.checkUserExists);
  *         description: User not found
  */
 router.get('/profile/:id', authenticateToken, authController.getProfileById);
+/**
+ * @swagger
+ * /auth/public-list-agent:
+ *   get:
+ *     summary: Lấy danh sách agent [ALL ROLE]
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       400:
+ *         description: Invalid user id
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.get('/public-list-agent', authController.getPublicListAgent);
+
+/**
+ * @swagger
+ * /auth/public-list-journalist:
+ *   get:
+ *     summary: Lấy danh sách journalist [ALL ROLE]
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       400:
+ *         description: Invalid user id
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.get('/public-list-journalist', authController.getPublicListJournalist);
+
 router.get('/publish-agent-profile/:id', authController.getPublicAgent);
 router.get(
   '/publish-journalist-profile/:id',
