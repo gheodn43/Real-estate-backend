@@ -315,6 +315,11 @@ router
  *         schema:
  *           type: string
  *         description: Tìm theo tiêu đề hoặc mô tả
+ *       - in: query
+ *         name: needsType
+ *         schema:
+ *           type: string
+ *         description: Lọc theo loại nhu cầu
  *     responses:
  *       200:
  *         description: Thành công
@@ -328,7 +333,13 @@ router
       try {
         const user = req.user;
 
-        const { page = 1, limit = 10, requestPostStatus, search } = req.query;
+        const {
+          page = 1,
+          limit = 10,
+          requestPostStatus,
+          search,
+          needsType,
+        } = req.query;
 
         const pagination = {
           page: Number(page),
@@ -340,6 +351,7 @@ router
           userRole: user.userRole,
           requestPostStatus,
           search,
+          needsType,
         };
 
         const { properties, total } =
@@ -417,6 +429,11 @@ router
  *         schema:
  *           type: string
  *         description: Tìm kiếm theo tiêu đề hoặc mô tả
+ *       - in: query
+ *         name: needsType
+ *         schema:
+ *           type: string
+ *         description: Lọc theo loại nhu cầu
  *     responses:
  *       200:
  *         description: Thành công
@@ -432,6 +449,7 @@ router.get('/public-list', async (req, res) => {
       assetsId,
       needsId,
       search,
+      needsType,
     } = req.query;
 
     const pagination = {
@@ -446,6 +464,7 @@ router.get('/public-list', async (req, res) => {
       assetsId: Number(assetsId),
       needsId: Number(needsId),
       search,
+      needsType,
     };
 
     const { properties, total } =
@@ -632,36 +651,6 @@ router.get('/filter-prop', async (req, res) => {
  *     responses:
  *       201:
  *         description: Tạo mới yêu cầu bất động sản thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     property:
- *                       type: object
- *                     location:
- *                       type: object
- *                     media:
- *                       type: array
- *                       items:
- *                         type: object
- *                     amenities:
- *                       type: array
- *                       items:
- *                         type: integer
- *                     details:
- *                       type: array
- *                 message:
- *                   type: string
- *                   example: Property created
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       400:
  *         description: Tạo mới yêu cầu bất động sản không thành công
  *       500:
@@ -710,7 +699,7 @@ router
       const propertyId = property.id;
       if (commissionType) {
         await commissionService.initCommission({
-          propertyId,
+          property_id: propertyId,
           type: commissionType,
           commission: 0,
         });
@@ -746,11 +735,11 @@ router
           }))
         );
       }
-      await propertyService.notifyNewPropertySubmission(
-        property,
-        location,
-        user
-      );
+      // await propertyService.notifyNewPropertySubmission(
+      //   property,
+      //   location,
+      //   user
+      // );
       return res.status(201).json({
         data: {
           property: property,
@@ -758,6 +747,7 @@ router
           media: media,
           amenities: amenities,
           details: details,
+          commissionType: commissionType,
         },
         message: 'Property created',
         error: [],
@@ -775,7 +765,7 @@ router
  * @swagger
  * /prop/post:
  *   post:
- *     summary: Tạo mới hoặc cập nhật bất động sản [ADMIN, AGENT]
+ *     summary: Tạo mới  bất động sản [ADMIN, AGENT]
  *     description: API cho phép agent/admin tạo mới hoặc cập nhật bất động sản. [Màn hình thêm mới] gồm các nút Lưu nháp (Agent/Admin) requestPostStatus = draft, nút Xuất bản (Admin) requestPostStatus = published, nút Gửi duyệt (Agent) requestPostStatus = pending_approval. [Màn hình cập nhật] gồm các nút Lưu (Agent/Admin) giữ nguyên trạng thái của requestPostStatus, nút Gửi duyệt (Agent) requestPostStatus = pending_approval, nút Xuất bản (Admin) requestPostStatus = published.
  *     tags:
  *       - Property
