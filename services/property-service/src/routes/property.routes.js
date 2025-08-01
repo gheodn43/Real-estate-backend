@@ -626,6 +626,9 @@ router.get('/filter-prop', async (req, res) => {
  *                 items:
  *                   type: integer
  *                 example: [1, 2]
+ *               commissionType:
+ *                 type: string
+ *                 example: "buying"
  *     responses:
  *       201:
  *         description: Tạo mới yêu cầu bất động sản thành công
@@ -680,6 +683,7 @@ router
         media,
         details,
         amenities,
+        commissionType,
       } = req.body;
       const user = req.user;
       const senderId = user.userId;
@@ -702,7 +706,15 @@ router
           error: ['Property not created'],
         });
       }
+
       const propertyId = property.id;
+      if (commissionType) {
+        await commissionService.initCommission({
+          propertyId,
+          type: commissionType,
+          commission: 0,
+        });
+      }
       if (location) {
         await locationService.updateOrCreateLocation({
           propertyId: propertyId,
