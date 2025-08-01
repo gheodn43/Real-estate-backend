@@ -1231,10 +1231,7 @@ router
           });
         }
         const errors = [];
-        if (
-          commission.type == CommissionType.BUYING &&
-          !commission.commission
-        ) {
+        if (commission && !commission.commission) {
           return res.status(400).json({
             data: null,
             message: '',
@@ -1369,10 +1366,18 @@ router
           }
         }
 
-        // Update commission
+        // Update or create commission
         if (commission) {
           try {
-            await commissionService.updateCommission(commission);
+            if (commission.id) {
+              await commissionService.updateCommission(commission);
+            } else {
+              await commissionService.initCommission({
+                property_id: propertyId,
+                type: commission.type,
+                commission: commission.commission,
+              });
+            }
           } catch (err) {
             errors.push('Failed to update commission: ' + err.message);
           }
