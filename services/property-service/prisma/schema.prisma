@@ -176,6 +176,43 @@ model agent_commission_fee {
   commission     commissions @relation(fields: [commission_id], references: [id])
 }
 
+model sale_bonus {
+  id                 Int       @id @default(autoincrement())
+  agent_id           Int
+  buying_quantity    Int
+  rental_quantity    Int
+  total_buying_commission Decimal @db.Decimal(15, 2)
+  total_rental_commission Decimal @db.Decimal(15, 2)
+  bonus              Decimal @db.Decimal(15, 2) @default(0)
+  penalty            Decimal @db.Decimal(15, 2) @default(0)
+  review             String?
+  review_by          Int?
+  payment_at         DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now())
+}
+
+model customer_needs {
+  id                 Int       @id @default(autoincrement())
+  email              String    @unique
+  name               String
+  number_phone       String?
+  latitude           Float?
+  longitude          Float?
+  agent_id           Int?
+  needs_type         NeedsType?
+  filter             Json?
+  suggestion_latest  Json?
+  the_close          DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now())
+}
+
+enum NeedsType {
+  buying
+  rental
+}
+
 enum AgentCommissionFeeStatus{
   processing
   confirmed
