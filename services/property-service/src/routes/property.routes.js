@@ -680,6 +680,7 @@ router
         media,
         details,
         amenities,
+        commissionType,
       } = req.body;
       const user = req.user;
       const senderId = user.userId;
@@ -702,7 +703,15 @@ router
           error: ['Property not created'],
         });
       }
+
       const propertyId = property.id;
+      if (commissionType) {
+        await commissionService.initCommission({
+          propertyId,
+          type: commissionType,
+          commission: 0,
+        });
+      }
       if (location) {
         await locationService.updateOrCreateLocation({
           propertyId: propertyId,
