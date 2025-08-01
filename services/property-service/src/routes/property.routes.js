@@ -626,6 +626,9 @@ router.get('/filter-prop', async (req, res) => {
  *                 items:
  *                   type: integer
  *                 example: [1, 2]
+ *               commissionType:
+ *                 type: string
+ *                 example: "buying"
  *     responses:
  *       201:
  *         description: Tạo mới yêu cầu bất động sản thành công
