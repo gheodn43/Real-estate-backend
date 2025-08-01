@@ -423,27 +423,22 @@ const getBySlug = async (slug) => {
       },
     },
   });
-  let customerNeeds = 'Chưa xác định';
+  let customerNeeds = null;
   let beforePrice = property.before_price_tag;
   let price = property.price;
   let afterPrice = property.after_price_tag;
   let agentInfo = null;
+  if (
+    (property.requestpost_status == RequestPostStatus.EXPIRED ||
+      property.requestpost_status == RequestPostStatus.SOLD) &&
+    property.commissions[0].status == CommissionStatus.COMPLETED
+  ) {
+    beforePrice = 'Giá liên hệ';
+    price = 0;
+    afterPrice = '';
+  }
   if (property?.commissions?.length) {
-    const type = property.commissions[0].type;
-    if (
-      (property.requestpost_status == RequestPostStatus.EXPIRED ||
-        property.requestpost_status == RequestPostStatus.SOLD) &&
-      property.commissions[0].status == CommissionStatus.COMPLETED
-    ) {
-      if (type === 'buying') customerNeeds = 'Đã bán';
-      if (type === 'rental') customerNeeds = 'Đã cho thuê';
-      beforePrice = 'Giá liên hệ';
-      price = 0;
-      afterPrice = '';
-    } else {
-      if (type === 'buying') customerNeeds = 'Cần bán';
-      if (type === 'rental') customerNeeds = 'Cho thuê';
-    }
+    customerNeeds = property.commissions[0].type;
   }
   const currentAgentId = property?.agentHistory?.[0]?.agent_id;
   if (currentAgentId) {
@@ -877,27 +872,22 @@ const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
 const getListWithCustomerNeeds = async (list) => {
   const propertiesWithCustomerNeeds = await Promise.all(
     list.map(async (property) => {
-      let customerNeeds = 'Chưa xác định';
+      let customerNeeds = null;
       let beforePrice = property.before_price_tag;
       let price = property.price;
       let afterPrice = property.after_price_tag;
 
+      if (
+        (property.requestpost_status === RequestPostStatus.EXPIRED ||
+          property.requestpost_status === RequestPostStatus.SOLD) &&
+        property.commissions[0].status === CommissionStatus.COMPLETED
+      ) {
+        beforePrice = 'Giá liên hệ';
+        price = 0;
+        afterPrice = '';
+      }
       if (property?.commissions?.length) {
-        const type = property.commissions[0].type;
-        if (
-          (property.requestpost_status === RequestPostStatus.EXPIRED ||
-            property.requestpost_status === RequestPostStatus.SOLD) &&
-          property.commissions[0].status === CommissionStatus.COMPLETED
-        ) {
-          if (type === 'buying') customerNeeds = 'Đã bán';
-          if (type === 'rental') customerNeeds = 'Đã cho thuê';
-          beforePrice = 'Giá liên hệ';
-          price = 0;
-          afterPrice = '';
-        } else {
-          if (type === 'buying') customerNeeds = 'Cần bán';
-          if (type === 'rental') customerNeeds = 'Cho thuê';
-        }
+        customerNeeds = property.commissions[0].type;
       }
 
       return {
@@ -917,28 +907,23 @@ const getListWithCustomerNeeds = async (list) => {
 const getListWithCustomerNeedsAndAgentInfo = async (list) => {
   const propertiesWithCustomerNeeds = await Promise.all(
     list.map(async (property, index, array) => {
-      let customerNeeds = 'Chưa xác định';
+      let customerNeeds = null;
       let beforePrice = property.before_price_tag;
       let price = property.price;
       let afterPrice = property.after_price_tag;
       let agentInfo = null;
 
+      if (
+        (property.requestpost_status === RequestPostStatus.EXPIRED ||
+          property.requestpost_status === RequestPostStatus.SOLD) &&
+        property.commissions[0].status === CommissionStatus.COMPLETED
+      ) {
+        beforePrice = 'Giá liên hệ';
+        price = 0;
+        afterPrice = '';
+      }
       if (property?.commissions?.length) {
-        const type = property.commissions[0].type;
-        if (
-          (property.requestpost_status === RequestPostStatus.EXPIRED ||
-            property.requestpost_status === RequestPostStatus.SOLD) &&
-          property.commissions[0].status === CommissionStatus.COMPLETED
-        ) {
-          if (type === 'buying') customerNeeds = 'Đã bán';
-          if (type === 'rental') customerNeeds = 'Đã cho thuê';
-          beforePrice = 'Giá liên hệ';
-          price = 0;
-          afterPrice = '';
-        } else {
-          if (type === 'buying') customerNeeds = 'Cần bán';
-          if (type === 'rental') customerNeeds = 'Cho thuê';
-        }
+        customerNeeds = property.commissions[0].type;
       }
 
       const currentAgentId = property?.agentHistory?.[0]?.agent_id;
