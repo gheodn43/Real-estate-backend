@@ -12,22 +12,32 @@ import slugify from 'slugify';
 import axios from 'axios';
 
 const createRequestProperty = async (data) => {
-  const slug = slugify(data.title, { lower: true, strict: true });
-  const property = await prisma.properties.create({
-    data: {
-      sender_id: data.senderId,
-      title: data.title,
-      slug: slug,
-      description: data.description,
-      before_price_tag: data.beforePriceTag,
-      price: data.price,
-      after_price_tag: data.afterPriceTag,
-      assets_id: data.assetsId,
-      needs_id: data.needsId,
-      stage: Stage.REQUEST,
-      request_status: RequestStatus.PENDING,
-    },
-  });
+  let property = null;
+  if (data.title) {
+    const slug = slugify(data.title, { lower: true, strict: true });
+    const existing = await prisma.properties.findUnique({
+      where: { slug },
+    });
+
+    if (existing) {
+      throw new Error('This name is already taken');
+    }
+    property = await prisma.properties.create({
+      data: {
+        sender_id: data.senderId,
+        title: data.title,
+        slug: slug,
+        description: data.description,
+        before_price_tag: data.beforePriceTag,
+        price: data.price,
+        after_price_tag: data.afterPriceTag,
+        assets_id: data.assetsId,
+        needs_id: data.needsId,
+        stage: Stage.REQUEST,
+        request_status: RequestStatus.PENDING,
+      },
+    });
+  }
   return property;
 };
 const createPostProperty = async (data) => {
@@ -345,59 +355,8 @@ const getRelateProperties = async (currentPropertyId, assetsId, count) => {
     take: count,
   });
 
-  const propertiesWithCustomerNeeds = await Promise.all(
-    properties.map(async (property, index, array) => {
-      let customerNeeds = 'Chưa xác định';
-      let beforePrice = property.before_price_tag;
-      let price = property.price;
-      let afterPrice = property.after_price_tag;
-      let agentInfo = null;
-
-      if (property?.commissions?.length) {
-        const type = property.commissions[0].type;
-        if (
-          (property.requestpost_status === RequestPostStatus.EXPIRED ||
-            property.requestpost_status === RequestPostStatus.SOLD) &&
-          property.commissions[0].status === CommissionStatus.COMPLETED
-        ) {
-          if (type === 'buying') customerNeeds = 'Đã bán';
-          if (type === 'rental') customerNeeds = 'Đã cho thuê';
-          beforePrice = 'Giá liên hệ';
-          price = 0;
-          afterPrice = '';
-        } else {
-          if (type === 'buying') customerNeeds = 'Cần bán';
-          if (type === 'rental') customerNeeds = 'Cho thuê';
-        }
-      }
-
-      const currentAgentId = property?.agentHistory?.[0]?.agent_id;
-      if (currentAgentId) {
-        if (
-          index > 0 &&
-          currentAgentId === array[index - 1]?.agentHistory?.[0]?.agent_id
-        ) {
-          agentInfo = array[index - 1].agentInfo;
-        } else {
-          agentInfo = await getPublicAgentInfor(currentAgentId); // Sử dụng await
-        }
-      } else {
-        agentInfo = await getAdminInfor();
-      }
-
-      return {
-        ...property,
-        customer_needs: customerNeeds,
-        before_price_tag: beforePrice,
-        price: price,
-        after_price_tag: afterPrice,
-        commissions: undefined,
-        agentHistory: undefined,
-        agent: agentInfo,
-      };
-    })
-  );
-
+  const propertiesWithCustomerNeeds =
+    await getListWithCustomerNeedsAndAgentInfo(properties);
   return propertiesWithCustomerNeeds;
 };
 
@@ -517,7 +476,7 @@ const getDraftProperties = async (userId) => {
   return properties;
 };
 const getFilteredProperties = async (filters, pagination) => {
-  const { userId, userRole, requestPostStatus, search } = filters;
+  const { userId, userRole, requestPostStatus, search, needsType } = filters;
   const { page, limit } = pagination;
   const where = {};
 
@@ -542,21 +501,40 @@ const getFilteredProperties = async (filters, pagination) => {
       { description: { contains: search } },
     ];
   }
+  if (needsType) {
+    where.commissions = {
+      some: {
+        type: needsType,
+      },
+    };
+  }
   const [properties, total] = await Promise.all([
     prisma.properties.findMany({
       where,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { updated_at: 'desc' },
+      include: {
+        commissions: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: {
+            type: true,
+            status: true,
+          },
+        },
+      },
     }),
-
     prisma.properties.count({ where }),
   ]);
+  const propertiesWithCustomerNeeds =
+    await getListWithCustomerNeeds(properties);
 
-  return { properties, total };
+  return { properties: propertiesWithCustomerNeeds, total };
 };
 const getPublicFilteredProperties = async (filters, pagination) => {
-  const { latitude, longitude, radius, assetsId, needsId, search } = filters;
+  const { latitude, longitude, radius, assetsId, needsId, search, needsType } =
+    filters;
 
   const { page, limit } = pagination;
 
@@ -601,6 +579,14 @@ const getPublicFilteredProperties = async (filters, pagination) => {
       { title: { contains: search } },
       { description: { contains: search } },
     ];
+  }
+
+  if (needsType) {
+    where.commissions = {
+      some: {
+        type: needsType,
+      },
+    };
   }
 
   const [properties, total] = await Promise.all([
@@ -655,58 +641,8 @@ const getPublicFilteredProperties = async (filters, pagination) => {
     prisma.properties.count({ where }),
   ]);
 
-  const propertiesWithCustomerNeeds = await Promise.all(
-    properties.map(async (property, index, array) => {
-      let customerNeeds = 'Chưa xác định';
-      let beforePrice = property.before_price_tag;
-      let price = property.price;
-      let afterPrice = property.after_price_tag;
-      let agentInfo = null;
-
-      if (property?.commissions?.length) {
-        const type = property.commissions[0].type;
-        if (
-          (property.requestpost_status === RequestPostStatus.EXPIRED ||
-            property.requestpost_status === RequestPostStatus.SOLD) &&
-          property.commissions[0].status === CommissionStatus.COMPLETED
-        ) {
-          if (type === 'buying') customerNeeds = 'Đã bán';
-          if (type === 'rental') customerNeeds = 'Đã cho thuê';
-          beforePrice = 'Giá liên hệ';
-          price = 0;
-          afterPrice = '';
-        } else {
-          if (type === 'buying') customerNeeds = 'Cần bán';
-          if (type === 'rental') customerNeeds = 'Cho thuê';
-        }
-      }
-
-      const currentAgentId = property?.agentHistory?.[0]?.agent_id;
-      if (currentAgentId) {
-        if (
-          index > 0 &&
-          currentAgentId === array[index - 1]?.agentHistory?.[0]?.agent_id
-        ) {
-          agentInfo = array[index - 1].agentInfo;
-        } else {
-          agentInfo = await getPublicAgentInfor(currentAgentId); // Sử dụng await
-        }
-      } else {
-        agentInfo = await getAdminInfor();
-      }
-
-      return {
-        ...property,
-        customer_needs: customerNeeds,
-        before_price_tag: beforePrice,
-        price: price,
-        after_price_tag: afterPrice,
-        commissions: undefined,
-        agentHistory: undefined,
-        agent: agentInfo,
-      };
-    })
-  );
+  const propertiesWithCustomerNeeds =
+    await getListWithCustomerNeedsAndAgentInfo(properties);
   return { properties: propertiesWithCustomerNeeds, total };
 };
 const getFilteredPropertiesForPrivate = async (filters, pagination) => {
@@ -849,11 +785,21 @@ const getRequestPostByCustomerId = async (customerId, pagination) => {
             },
           },
         },
+        commissions: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: {
+            type: true,
+            status: true,
+          },
+        },
       },
     }),
     prisma.properties.count({ where }),
   ]);
-  return { requests, total };
+
+  const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(requests);
+  return { requests: propertiesWithCustomerNeeds, total };
 };
 const getAllRequestPost = async (pagination) => {
   const { page, limit } = pagination;
@@ -893,11 +839,21 @@ const getAllRequestPost = async (pagination) => {
             },
           },
         },
+        commissions: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: {
+            type: true,
+            status: true,
+          },
+        },
       },
     }),
     prisma.properties.count({ where }),
   ]);
-  return { requests, total };
+
+  const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(requests);
+  return { requests: propertiesWithCustomerNeeds, total };
 };
 const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
   switch (requestPostStatus) {
@@ -916,6 +872,102 @@ const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
     default:
       return RequestStatus.PENDING;
   }
+};
+
+const getListWithCustomerNeeds = async (list) => {
+  const propertiesWithCustomerNeeds = await Promise.all(
+    list.map(async (property) => {
+      let customerNeeds = 'Chưa xác định';
+      let beforePrice = property.before_price_tag;
+      let price = property.price;
+      let afterPrice = property.after_price_tag;
+
+      if (property?.commissions?.length) {
+        const type = property.commissions[0].type;
+        if (
+          (property.requestpost_status === RequestPostStatus.EXPIRED ||
+            property.requestpost_status === RequestPostStatus.SOLD) &&
+          property.commissions[0].status === CommissionStatus.COMPLETED
+        ) {
+          if (type === 'buying') customerNeeds = 'Đã bán';
+          if (type === 'rental') customerNeeds = 'Đã cho thuê';
+          beforePrice = 'Giá liên hệ';
+          price = 0;
+          afterPrice = '';
+        } else {
+          if (type === 'buying') customerNeeds = 'Cần bán';
+          if (type === 'rental') customerNeeds = 'Cho thuê';
+        }
+      }
+
+      return {
+        ...property,
+        customer_needs: customerNeeds,
+        before_price_tag: beforePrice,
+        price: price,
+        after_price_tag: afterPrice,
+        commissions: undefined,
+        agentHistory: undefined,
+      };
+    })
+  );
+  return propertiesWithCustomerNeeds;
+};
+
+const getListWithCustomerNeedsAndAgentInfo = async (list) => {
+  const propertiesWithCustomerNeeds = await Promise.all(
+    list.map(async (property, index, array) => {
+      let customerNeeds = 'Chưa xác định';
+      let beforePrice = property.before_price_tag;
+      let price = property.price;
+      let afterPrice = property.after_price_tag;
+      let agentInfo = null;
+
+      if (property?.commissions?.length) {
+        const type = property.commissions[0].type;
+        if (
+          (property.requestpost_status === RequestPostStatus.EXPIRED ||
+            property.requestpost_status === RequestPostStatus.SOLD) &&
+          property.commissions[0].status === CommissionStatus.COMPLETED
+        ) {
+          if (type === 'buying') customerNeeds = 'Đã bán';
+          if (type === 'rental') customerNeeds = 'Đã cho thuê';
+          beforePrice = 'Giá liên hệ';
+          price = 0;
+          afterPrice = '';
+        } else {
+          if (type === 'buying') customerNeeds = 'Cần bán';
+          if (type === 'rental') customerNeeds = 'Cho thuê';
+        }
+      }
+
+      const currentAgentId = property?.agentHistory?.[0]?.agent_id;
+      if (currentAgentId) {
+        if (
+          index > 0 &&
+          currentAgentId === array[index - 1]?.agentHistory?.[0]?.agent_id
+        ) {
+          agentInfo = array[index - 1].agentInfo;
+        } else {
+          agentInfo = await getPublicAgentInfor(currentAgentId); // Sử dụng await
+        }
+      } else {
+        agentInfo = await getAdminInfor();
+      }
+
+      return {
+        ...property,
+        customer_needs: customerNeeds,
+        before_price_tag: beforePrice,
+        price: price,
+        after_price_tag: afterPrice,
+        commissions: undefined,
+        agentHistory: undefined,
+        agent: agentInfo,
+      };
+    })
+  );
+  return propertiesWithCustomerNeeds;
 };
 
 export default {
