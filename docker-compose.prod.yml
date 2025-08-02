@@ -33,6 +33,7 @@ services:
     environment:
       PORT: 4002
       DATABASE_URL: "mysql://root:sum2530623306@mysql:3306/properties_db"
+    restart: always
 
   mail-service:
     image: gheo43dn/mail-service:latest
