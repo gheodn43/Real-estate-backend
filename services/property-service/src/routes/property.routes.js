@@ -114,6 +114,17 @@ router.get('/:id/relate', async (req, res) => {
  *         schema:
  *           type: integer
  *         description: Số phần tử mỗi trang (mặc định 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm
+ *       - in: query
+ *         name: requestStatus
+ *         schema:
+ *           type: enum
+ *           enum: [pending, published, rejected, completed]
+ *         description: Trạng thái yêu cầu
  *     summary: Lấy danh sách yêu cầu ký gửi [CUSTOMER, ADMIN, AGENT]
  *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
  *     responses:
@@ -129,10 +140,14 @@ router.get(
   async (req, res) => {
     try {
       const userData = req.user;
-      const { page = 1, limit = 10 } = req.query;
+      const { page = 1, limit = 10, search, requestStatus } = req.query;
       const pagination = {
         page: Number(page),
         limit: Number(limit),
+      };
+      const filters = {
+        search,
+        requestStatus,
       };
       let requests = [];
       let total = 0;
@@ -142,11 +157,15 @@ router.get(
           pagination
         ));
       } else if (userData.userRole === RoleName.Agent) {
-        ({ requests, total } =
-          await propertyService.getAllRequestPost(pagination));
+        ({ requests, total } = await propertyService.getAllRequestPost(
+          pagination,
+          filters
+        ));
       } else if (userData.userRole === RoleName.Admin) {
-        ({ requests, total } =
-          await propertyService.getAllRequestPost(pagination));
+        ({ requests, total } = await propertyService.getAllRequestPost(
+          pagination,
+          filters
+        ));
       }
 
       return res.status(200).json({
@@ -1417,6 +1436,25 @@ router
  *       - Property
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: page
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: Số lượng kết quả trên một trang
+ *       - name: search
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm
  *     responses:
  *       200:
  *         description: Danh sách bất động sản được lấy ra thành công
@@ -1432,10 +1470,20 @@ router
     authMiddleware,
     roleGuard([RoleName.Agent, RoleName.Admin]),
     async (req, res) => {
+      const { page = 1, limit = 10, search } = req.query;
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const filters = {
+        search,
+      };
       try {
         const user = req.user;
-        const properties = await propertyService.getDraftProperties(
-          user.userId
+        const { properties, total } = await propertyService.getDraftProperties(
+          user.userId,
+          pagination,
+          filters
         );
         if (!properties) {
           return res.status(404).json({
@@ -1447,6 +1495,12 @@ router
         return res.status(200).json({
           data: {
             properties: properties,
+            pagination: {
+              total,
+              page: pagination.page,
+              limit: pagination.limit,
+              totalPages: Math.ceil(total / pagination.limit),
+            },
           },
           message: 'Properties found',
           error: [],

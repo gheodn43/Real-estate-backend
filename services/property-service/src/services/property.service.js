@@ -458,17 +458,31 @@ const getBySlug = async (slug) => {
   };
 };
 
-const getDraftProperties = async (userId) => {
+const getDraftProperties = async (userId, pagination, filters) => {
   const propertyIds = await agentHistoryService.getHistoryByAgentId(userId);
-  const properties = await prisma.properties.findMany({
-    where: {
-      id: {
-        in: propertyIds,
-      },
-      requestpost_status: RequestPostStatus.DRAFT,
+  const { search } = filters;
+  const { page, limit } = pagination;
+  const where = {
+    id: {
+      in: propertyIds,
     },
-  });
-  return properties;
+    requestpost_status: RequestPostStatus.DRAFT,
+  };
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+    ];
+  }
+  const [properties, total] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.properties.count({ where }),
+  ]);
+  return { properties, total };
 };
 const getFilteredProperties = async (filters, pagination) => {
   const { userId, userRole, requestPostStatus, search, needsType } = filters;
@@ -796,13 +810,20 @@ const getRequestPostByCustomerId = async (customerId, pagination) => {
   const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(requests);
   return { requests: propertiesWithCustomerNeeds, total };
 };
-const getAllRequestPost = async (pagination) => {
+const getAllRequestPost = async (pagination, filters) => {
   const { page, limit } = pagination;
+  const { search, requestStatus } = filters;
   const where = {
     request_status: {
       not: null,
     },
   };
+  if (search) {
+    where.OR = [{ title: { contains: search } }];
+  }
+  if (requestStatus) {
+    where.request_status = requestStatus;
+  }
   const [requests, total] = await Promise.all([
     prisma.properties.findMany({
       where,
