@@ -15,6 +15,8 @@ import amenityService from '../services/amentity.service.js';
 import agentHistoryService from '../services/propertyAgentHistory.service.js';
 import commissionService from '../services/commission.service.js';
 import { getPublicAgentInfor } from '../helpers/authClient.js';
+import CustomerRequestType from '../enums/customerRequestType.enum.js';
+import CustomerRequestStatus from '../enums/customerRequestStatus.enum.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
@@ -126,6 +128,10 @@ router.get('/:id/relate', async (req, res) => {
  *           type: enum
  *           enum: [pending, published, rejected, completed]
  *         description: Trạng thái yêu cầu
+ *       - in: query
+ *         name: myAssigned
+ *         schema:
+ *           type: boolean
  *     summary: Lấy danh sách yêu cầu ký gửi [CUSTOMER, ADMIN, AGENT]
  *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
  *     responses:
@@ -141,7 +147,14 @@ router.get(
   async (req, res) => {
     try {
       const userData = req.user;
-      const { page = 1, limit = 10, search, requestStatus } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        requestStatus,
+        myAssigned,
+      } = req.query;
+
       const pagination = {
         page: Number(page),
         limit: Number(limit),
@@ -150,23 +163,43 @@ router.get(
         search,
         requestStatus,
       };
+      const filterForAgent = {
+        ...filters,
+        myAssigned: myAssigned === 'true',
+      };
+
       let requests = [];
       let total = 0;
-      if (userData.userRole === RoleName.Customer) {
-        ({ requests, total } = await propertyService.getRequestPostByCustomerId(
-          userData.userId,
-          pagination
-        ));
-      } else if (userData.userRole === RoleName.Agent) {
-        ({ requests, total } = await propertyService.getAllRequestPost(
-          pagination,
-          filters
-        ));
-      } else if (userData.userRole === RoleName.Admin) {
-        ({ requests, total } = await propertyService.getAllRequestPost(
-          pagination,
-          filters
-        ));
+      switch (userData.userRole) {
+        case RoleName.Customer:
+          ({ requests, total } =
+            await propertyService.getRequestPostByCustomerId(
+              userData.userId,
+              pagination,
+              filters
+            ));
+          break;
+
+        case RoleName.Agent:
+          ({ requests, total } = await propertyService.getRequestPostByAgentId(
+            userData.userId,
+            pagination,
+            filterForAgent
+          ));
+          break;
+        case RoleName.Admin:
+          ({ requests, total } = await propertyService.getAllRequestPost(
+            pagination,
+            filters
+          ));
+          break;
+
+        default:
+          return res.status(403).json({
+            data: null,
+            message: 'Forbidden - Role not allowed',
+            error: [],
+          });
       }
 
       return res.status(200).json({
@@ -2058,5 +2091,271 @@ router
       }
     }
   );
+
+/**
+ * @openapi
+ * /prop/request-delete:
+ *   post:
+ *     tags:
+ *       - Customer request
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Gửi yêu cầu xóa BĐS [Customer]
+ *     description: API cho **Customer** gửi yêu cầu xóa một BĐS mà họ đã đăng.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               property_id:
+ *                 type: integer
+ *                 example: 123
+ *               reason:
+ *                 type: string
+ *                 example: "Không còn muốn bán nữa"
+ *     responses:
+ *       200:
+ *         description: Gửi yêu cầu xóa thành công.
+ *       401:
+ *         description: Unauthorized - Khách hàng chưa đăng nhập hoặc token không hợp lệ.
+ *       403:
+ *         description: Forbidden - Không có quyền Customer.
+ *       500:
+ *         description: Lỗi server.
+ */
+router
+  .route('/request-delete')
+  .post(authMiddleware, roleGuard([RoleName.Customer]), async (req, res) => {
+    const { property_id, reason } = req.body;
+    const user = req.user;
+    await propertyService.initCustomerRequest({
+      customer_id: user.userId,
+      property_id: Number(property_id),
+      type: CustomerRequestType.DELETE,
+      status: CustomerRequestStatus.PENDING,
+      reason: reason || '',
+    });
+    return res.status(200).json({
+      data: null,
+      message: 'Property deleted',
+      error: null,
+    });
+  });
+
+/**
+ * @openapi
+ * /prop/customer-request/get-customer-request:
+ *   get:
+ *     tags:
+ *       - Customer request
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy danh sách yêu cầu của khách hàng [Agent, Admin]
+ *     description: API cho phép **Agent** hoặc **Admin** lấy danh sách các yêu cầu của khách hàng (xóa, chỉnh sửa,...).
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Số trang hiện tại (pagination).
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số bản ghi mỗi trang.
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema:
+ *           type: enum
+ *           enum: [delete, update]
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema:
+ *           type: enum
+ *           enum: [pending, completed]
+ *     responses:
+ *       200:
+ *         description: Thành công - trả về danh sách yêu cầu.
+ *       401:
+ *         description: Unauthorized - Người dùng chưa đăng nhập.
+ *       403:
+ *         description: Forbidden - Chỉ Agent hoặc Admin được truy cập.
+ *       500:
+ *         description: Lỗi server.
+ */
+router
+  .route('/customer-request/get-customer-request')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Agent, RoleName.Admin]),
+    async (req, res) => {
+      const { page, limit, type, status } = req.query;
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const filters = {
+        type: type,
+        status: status,
+      };
+      const { requests, total } = await propertyService.getCustomerRequests(
+        pagination,
+        filters
+      );
+      return res.status(200).json({
+        data: {
+          request: requests,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+          },
+        },
+        message: 'Success',
+        error: null,
+      });
+    }
+  );
+
+/**
+ * @openapi
+ * /prop/accept-delete-request:
+ *   post:
+ *     tags:
+ *       - Customer request
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Chấp nhận yêu cầu xóa BĐS của khách hàng [Admin]
+ *     description: API cho **Admin** duyệt yêu cầu xóa một bài đăng BĐS.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               request_id:
+ *                 type: integer
+ *                 example: 77
+ *     responses:
+ *       200:
+ *         description: Yêu cầu xóa đã được chấp nhận thành công.
+ *       401:
+ *         description: Unauthorized - Chưa đăng nhập hoặc token không hợp lệ.
+ *       403:
+ *         description: Forbidden - Chỉ Admin được thực hiện hành động này.
+ *       404:
+ *         description: Không tìm thấy request.
+ *       500:
+ *         description: Lỗi server.
+ */
+router
+  .route('/accept-delete-request')
+  .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { request_id } = req.body;
+    const request = await propertyService.acceptDeleteRequest(request_id);
+    const requestStatus = propertyService.getRequestStatusFromRequestPostStatus(
+      RequestPostStatus.HIDDEN
+    );
+    await propertyService.updateStatusOfPostProperty(
+      request.property_id,
+      requestStatus,
+      RequestPostStatus.HIDDEN
+    );
+    return res.status(200).json({
+      data: null,
+      message: 'Success',
+      error: null,
+    });
+  });
+
+/**
+ * @openapi
+ * /prop/customer-request/get-my-request:
+ *   get:
+ *     tags:
+ *       - Customer request
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy danh sách yêu cầu của chính khách hàng đang đăng nhập [Customer]
+ *     description: API cho phép **Customer** xem tất cả yêu cầu mà họ đã gửi (ví dụ yêu cầu xóa, chỉnh sửa).
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại (pagination).
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số bản ghi mỗi trang.
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema:
+ *           type: enum
+ *           enum: [delete, update]
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema:
+ *           type: enum
+ *           enum: [pending, completed]
+ *         description: Lọc theo trạng thái yêu cầu.
+ *     responses:
+ *       200:
+ *         description: Thành công - trả về danh sách yêu cầu của chính khách hàng đang đăng nhập.
+ *       401:
+ *         description: Unauthorized - khách hàng chưa đăng nhập hoặc token không hợp lệ.
+ *       403:
+ *         description: Forbidden - chỉ Customer được phép gọi API này.
+ *       500:
+ *         description: Lỗi server.
+ */
+router
+  .route('/customer-request/get-my-request')
+  .get(authMiddleware, roleGuard([RoleName.Customer]), async (req, res) => {
+    const { page = 1, limit = 10, type, status } = req.query;
+    const pagination = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+    const filters = {
+      type: type,
+      status: status,
+      customer_id: req.user.userId,
+    };
+    const { requests, total } = await propertyService.getMyCustomerRequests(
+      filters,
+      pagination
+    );
+    return res.status(200).json({
+      data: {
+        request: requests,
+        pagination: {
+          total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: Math.ceil(total / pagination.limit),
+        },
+      },
+      message: 'Success',
+      error: null,
+    });
+  });
 
 export default router;
