@@ -902,9 +902,9 @@ const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
     case RequestPostStatus.EXPIRED:
       return RequestStatus.COMPLETED;
     case RequestPostStatus.REJECTED:
-      return RequestStatus.PENDING;
+      return RequestStatus.NEGOTIATING;
     case RequestPostStatus.PENDING_APPROVAL:
-      return RequestStatus.PENDING;
+      return RequestStatus.NEGOTIATING;
     case RequestPostStatus.HIDDEN:
       return RequestStatus.HIDDEN;
     default:
