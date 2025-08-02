@@ -322,7 +322,7 @@ router
  * @swagger
  * /prop/amenity/of-parent/{id}:
  *   get:
- *     summary: Lấy danh sách amenity con của 1 amenity cha theo id [ADMIN]
+ *     summary: Lấy danh sách amenity con của 1 amenity cha theo id [ADMIN, AGENT]
  *     tags: [Amenities]
  *     security:
  *       - bearerAuth: []
@@ -372,56 +372,60 @@ router
  */
 router
   .route('/of-parent/:id')
-  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
-    const { search, active, page = 1, limit = 10 } = req.query;
-    const pagination = {
-      page: Number(page),
-      limit: Number(limit),
-    };
-    const filters = {
-      search,
-      status: [],
-    };
-    if (active) {
-      filters.status.push(active === 'true');
-    }
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      const { search, active, page = 1, limit = 10 } = req.query;
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const filters = {
+        search,
+        status: [],
+      };
+      if (active) {
+        filters.status.push(active === 'true');
+      }
 
-    try {
-      const { id } = req.params;
-      const amenities = await amentityService.getAmenitiesByParentId(
-        id,
-        pagination,
-        filters
-      );
-      if (!amenities.parent) {
-        return res.status(404).json({
-          data: null,
-          message: 'Amenity not found',
+      try {
+        const { id } = req.params;
+        const amenities = await amentityService.getAmenitiesByParentId(
+          id,
+          pagination,
+          filters
+        );
+        if (!amenities.parent) {
+          return res.status(404).json({
+            data: null,
+            message: 'Amenity not found',
+            error: [],
+          });
+        } else if (amenities.children.length === 0) {
+          return res.status(404).json({
+            data: null,
+            message: 'Amenity has no children',
+            error: [],
+          });
+        }
+        return res.status(200).json({
+          data: {
+            parent: amenities.parent,
+            amenities: amenities.children,
+          },
+          message: 'Amenity retrieved successfully',
           error: [],
         });
-      } else if (amenities.children.length === 0) {
-        return res.status(404).json({
+      } catch (error) {
+        return res.status(500).json({
           data: null,
-          message: 'Amenity has no children',
-          error: [],
+          message: '',
+          error: [error.message],
         });
       }
-      return res.status(200).json({
-        data: {
-          parent: amenities.parent,
-          amenities: amenities.children,
-        },
-        message: 'Amenity retrieved successfully',
-        error: [],
-      });
-    } catch (error) {
-      return res.status(500).json({
-        data: null,
-        message: '',
-        error: [error.message],
-      });
     }
-  });
+  );
 
 /**
  * @swagger

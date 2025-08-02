@@ -7,6 +7,7 @@ import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
 import { RoleName } from '../middleware/roleGuard.js';
 import { getPublicAgentInfor, getAdminInfor } from '../helpers/authClient.js';
+import CustomerRequestStatus from '../enums/customerRequestStatus.enum.js';
 
 import slugify from 'slugify';
 import axios from 'axios';
@@ -772,11 +773,18 @@ const getFilteredPropertiesForPrivate = async (filters, pagination) => {
 
   return { properties, total };
 };
-const getRequestPostByCustomerId = async (customerId, pagination) => {
+const getRequestPostByCustomerId = async (customerId, pagination, filters) => {
   const { page, limit } = pagination;
+  const { search, requestStatus } = filters;
   const where = {
     sender_id: customerId,
   };
+  if (search) {
+    where.OR = [{ title: { contains: search } }];
+  }
+  if (requestStatus) {
+    where.request_status = requestStatus;
+  }
   const [requests, total] = await Promise.all([
     prisma.properties.findMany({
       where,
@@ -990,6 +998,114 @@ const getListWithCustomerNeedsAndAgentInfo = async (list) => {
   return propertiesWithCustomerNeeds;
 };
 
+const initCustomerRequest = async (data) => {
+  const request = await prisma.customer_request.create({
+    data: {
+      customer_id: data.customer_id,
+      property_id: data.property_id,
+      type: data.type,
+      status: data.status,
+      reason: data.reason,
+    },
+  });
+  return request;
+};
+
+const getCustomerRequests = async (pagination, filters) => {
+  const { page, limit } = pagination;
+  const { type, status } = filters;
+  const where = {};
+  if (type) {
+    where.type = type;
+  }
+  if (status) {
+    where.status = status;
+  }
+
+  const requests = await prisma.customer_request.findMany({
+    where,
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { created_at: 'desc' },
+  });
+  return {
+    requests,
+    total: await prisma.customer_request.count({ where }),
+  };
+};
+
+const acceptDeleteRequest = async (request_id) => {
+  const request = await prisma.customer_request.update({
+    where: { id: request_id },
+    data: {
+      status: CustomerRequestStatus.COMPLETED,
+    },
+  });
+  return request;
+};
+
+const getMyCustomerRequests = async (filters, pagination) => {
+  const { page, limit } = pagination;
+  const { type, status, customer_id } = filters;
+  const where = {};
+  if (type) {
+    where.type = type;
+  }
+  if (status) {
+    where.status = status;
+  }
+  if (customer_id) {
+    where.customer_id = customer_id;
+  }
+  const requests = await prisma.customer_request.findMany({
+    where,
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { created_at: 'desc' },
+  });
+  return {
+    requests,
+    total: await prisma.customer_request.count({ where }),
+  };
+};
+
+const getRequestPostByAgentId = async (agent_id, pagination, filters) => {
+  const { page, limit } = pagination;
+  const { search, requestStatus, myAssigned } = filters;
+  const propertyIds = await agentHistoryService.getHistoryByAgentId(agent_id);
+
+  const where = {
+    request_status: RequestStatus.PENDING,
+  };
+  if (myAssigned) {
+    where.id = {
+      in: propertyIds,
+    };
+    if (requestStatus) {
+      where.request_status = requestStatus;
+    }
+  } else {
+    where.id = {
+      notIn: propertyIds,
+    };
+  }
+  if (search) {
+    where.title = {
+      contains: search,
+    };
+  }
+
+  const requests = await prisma.properties.findMany({
+    where,
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { created_at: 'desc' },
+  });
+  return {
+    requests,
+    total: await prisma.properties.count({ where }),
+  };
+};
 export default {
   createRequestProperty,
   createPostProperty,
@@ -1010,4 +1126,9 @@ export default {
   getRequestStatusFromRequestPostStatus,
   getAllRequestPost,
   completeTransaction,
+  initCustomerRequest,
+  getCustomerRequests,
+  acceptDeleteRequest,
+  getMyCustomerRequests,
+  getRequestPostByAgentId,
 };
