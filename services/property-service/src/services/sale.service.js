@@ -40,7 +40,7 @@ import AgentCommissionFeeStatus from '../enums/AgentCommissionFeeStatus.js';
 //   penalty            Decimal @db.Decimal(15, 2) @default(0)
 //   review             String?
 //   review_by          Int?
-//   payment_at         DateTime?
+//   bonus_of_month     String?
 //   created_at         DateTime  @default(now())
 //   updated_at         DateTime  @default(now())
 // }
@@ -111,7 +111,7 @@ const initSaleBonus = async (data) => {
       penalty: data.penalty,
       review: data.review,
       review_by: data.review_by,
-      payment_at: data.payment_at,
+      bonus_of_month: data.bonus_of_month,
     },
   });
 };

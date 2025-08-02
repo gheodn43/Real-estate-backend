@@ -335,32 +335,36 @@ router.route('/:id').get(authMiddleware, async (req, res) => {
  */
 router
   .route('/by-type/:type')
-  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
-    try {
-      const { type } = req.params;
-      if (!['assets', 'needs'].includes(type)) {
-        return res.status(400).json({
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      try {
+        const { type } = req.params;
+        if (!['assets', 'needs'].includes(type)) {
+          return res.status(400).json({
+            data: null,
+            message: '',
+            error: ['Invalid category type'],
+          });
+        }
+
+        const categories = await categoryService.getCategoryByType(type);
+
+        return res.status(200).json({
+          data: { categories },
+          message: 'Get categories successfully',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
           data: null,
           message: '',
-          error: ['Invalid category type'],
+          error: [error.message],
         });
       }
-
-      const categories = await categoryService.getCategoryByType(type);
-
-      return res.status(200).json({
-        data: { categories },
-        message: 'Get categories successfully',
-        error: [],
-      });
-    } catch (error) {
-      return res.status(500).json({
-        data: null,
-        message: '',
-        error: [error.message],
-      });
     }
-  });
+  );
 
 /**
  * @swagger
