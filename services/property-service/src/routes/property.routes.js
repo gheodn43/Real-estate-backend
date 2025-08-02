@@ -14,6 +14,7 @@ import detailPropertyService from '../services/category.detail.service.js';
 import amenityService from '../services/amentity.service.js';
 import agentHistoryService from '../services/propertyAgentHistory.service.js';
 import commissionService from '../services/commission.service.js';
+import { getPublicAgentInfor } from '../helpers/authClient.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
@@ -1545,14 +1546,7 @@ router
       try {
         const { id } = req.params;
         const user = req.user;
-        const property = await propertyService.getById(id);
-        if (!property) {
-          return res.status(404).json({
-            data: null,
-            message: '',
-            error: ['Property not found'],
-          });
-        }
+        let agent = null;
         // AGENT: chỉ được xem bài của mình
         if (user.userRole === RoleName.Agent) {
           const isAgentOwner = agentHistoryService.verifyOwnerPost(
@@ -1567,9 +1561,24 @@ router
             });
           }
         }
+
+        const { responseProperty, agent_id } =
+          await propertyService.getById(id);
+        if (!responseProperty) {
+          return res.status(404).json({
+            data: null,
+            message: '',
+            error: ['Property not found'],
+          });
+        }
+        console.log('agent', agent_id);
+        if (agent_id) {
+          agent = await getPublicAgentInfor(agent_id);
+        }
         return res.status(200).json({
           data: {
-            property: property,
+            property: responseProperty,
+            agent: agent,
           },
           message: 'Property found',
           error: [],

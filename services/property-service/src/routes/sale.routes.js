@@ -257,6 +257,184 @@ router
     }
   });
 
+/**
+ * @openapi
+ * /prop/sale/mine-history:
+ *   get:
+ *     tags:
+ *       - Sale
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy lịch sử bonus tháng của agent [AGENT]
+ *     parameters:
+ *       - in: query
+ *         name: start_date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "01/07/2025"
+ *         description: Ngày bắt đầu lọc (dd/MM/yyyy). Nếu có start_date mà không có end_date → end_date mặc định là hôm nay.
+ *       - in: query
+ *         name: end_date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "31/07/2025"
+ *         description: Ngày kết thúc lọc (dd/MM/yyyy). Nếu có end_date mà không có start_date → start_date mặc định là 01/01/2020.
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Số trang (pagination).
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số bản ghi trên mỗi trang.
+ *     responses:
+ *       200:
+ *         description: Thành công - Trả về danh sách lịch sử thưởng/phạt của agent hiện tại.
+ *       401:
+ *         description: Unauthorized - Agent chưa đăng nhập hoặc token không hợp lệ.
+ *       500:
+ *         description: Lỗi server.
+ */
+router
+  .route('/mine-history')
+  .get(authMiddleware, roleGuard([RoleName.Agent]), async (req, res) => {
+    const { start_date, end_date, page, limit } = req.query;
+    const agent_id = req.user.userId;
+    try {
+      await getSaleBonusHistoryOfAgent(
+        parseClientDate(start_date),
+        parseClientDate(end_date),
+        agent_id,
+        page,
+        limit,
+        res
+      );
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: 'Server error',
+        error: [err.message],
+      });
+    }
+  });
+
+/**
+ * @openapi
+ * /prop/sale/history-of-agent:
+ *   get:
+ *     tags:
+ *       - Sale
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy lịch sử Bunus tháng của một agent bất kỳ [ADMIN]
+ *     parameters:
+ *       - in: query
+ *         name: agent_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 11
+ *         description: ID của agent cần lấy dữ liệu.
+ *       - in: query
+ *         name: start_date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "01/07/2025"
+ *         description: Ngày bắt đầu lọc (dd/MM/yyyy). Nếu có start_date mà không có end_date → end_date mặc định là hôm nay.
+ *       - in: query
+ *         name: end_date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "31/07/2025"
+ *         description: Ngày kết thúc lọc (dd/MM/yyyy). Nếu có end_date mà không có start_date → start_date mặc định là 01/01/2020.
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Số trang (pagination).
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số bản ghi trên mỗi trang.
+ *     responses:
+ *       200:
+ *         description: Thành công - Trả về danh sách lịch sử thưởng/phạt của agent được chỉ định.
+ *       400:
+ *         description: Thiếu hoặc sai dữ liệu (ví dụ thiếu agent_id).
+ *       401:
+ *         description: Unauthorized - Chưa đăng nhập hoặc không có quyền Admin.
+ *       500:
+ *         description: Lỗi server.
+ */
+router
+  .route('/history-of-agent')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { start_date, end_date, agent_id, page, limit } = req.query;
+    try {
+      await getSaleBonusHistoryOfAgent(
+        parseClientDate(start_date),
+        parseClientDate(end_date),
+        agent_id,
+        page,
+        limit,
+        res
+      );
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: 'Server error',
+        error: [err.message],
+      });
+    }
+  });
+
+router
+  .route('/:id')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await saleService.getOneBonusHistoryOfAgent(id);
+      if (!result) {
+        return res.status(404).json({
+          data: null,
+          message: 'Not found',
+          error: [],
+        });
+      }
+      return res.status(200).json({
+        data: {
+          bonus: result,
+        },
+        message: 'Success',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: 'Server error',
+        error: [err.message],
+      });
+    }
+  });
 const getCompleteTransactionOfAgentInMonth = async (
   start_date,
   end_date,
@@ -301,7 +479,50 @@ const getCompleteTransactionOfAgentInMonth = async (
     error: [],
   });
 };
-
+const getSaleBonusHistoryOfAgent = async (
+  start_date,
+  end_date,
+  agent_id,
+  page,
+  limit,
+  res
+) => {
+  const pagination = {
+    page: Number(page),
+    limit: Number(limit),
+  };
+  const filters = {
+    agent_id: Number(agent_id),
+    start_date,
+    end_date,
+  };
+  const { total, results } = await saleService.getBonusHistoryOfAgent(
+    filters,
+    pagination
+  );
+  if (results.length === 0) {
+    return res.status(404).json({
+      data: null,
+      message: 'Not found',
+      error: [],
+    });
+  }
+  const agent = await getPublicAgentInfor(agent_id);
+  return res.status(200).json({
+    data: {
+      agent,
+      bonus: results,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    },
+    message: 'Success',
+    error: [],
+  });
+};
 const getStartDateAndEndDateInThisMonth = (mooc = 5) => {
   const today = new Date();
 
@@ -323,4 +544,11 @@ const getStartDateAndEndDateInThisMonth = (mooc = 5) => {
 
   return { start_date: startDate, end_date: endDate };
 };
+
+const parseClientDate = (dateString) => {
+  if (!dateString) return undefined;
+  const [day, month, year] = dateString.split('/').map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0);
+};
+
 export default router;

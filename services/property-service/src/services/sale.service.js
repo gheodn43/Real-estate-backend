@@ -116,7 +116,63 @@ const initSaleBonus = async (data) => {
   });
 };
 
+const getBonusHistoryOfAgent = async (filters, pagination) => {
+  let { start_date, end_date } = normalizeDateRange(
+    filters.start_date,
+    filters.end_date
+  );
+  const { page, limit } = pagination;
+  const { agent_id } = filters;
+
+  const where = {
+    agent_id,
+    ...(start_date || end_date
+      ? {
+          created_at: {
+            ...(start_date && { gte: start_date }),
+            ...(end_date && { lte: end_date }),
+          },
+        }
+      : {}),
+  };
+
+  const [total, results] = await Promise.all([
+    prisma.sale_bonus.count({
+      where,
+    }),
+    prisma.sale_bonus.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { created_at: 'desc' },
+    }),
+  ]);
+  return { total, results };
+};
+
+const getOneBonusHistoryOfAgent = async (id) => {
+  return await prisma.sale_bonus.findUnique({
+    where: {
+      id,
+    },
+  });
+};
+
+function normalizeDateRange(start_date, end_date) {
+  let normalizedStart = start_date;
+  let normalizedEnd = end_date;
+  if (start_date && !end_date) {
+    normalizedEnd = new Date();
+  }
+  if (!start_date && end_date) {
+    normalizedStart = new Date(2020, 0, 1); // 01/01/2020
+  }
+  return { start_date: normalizedStart, end_date: normalizedEnd };
+}
+
 export default {
   getCompleteTransactionOfAgentInMonth,
   initSaleBonus,
+  getBonusHistoryOfAgent,
+  getOneBonusHistoryOfAgent,
 };

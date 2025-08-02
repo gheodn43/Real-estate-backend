@@ -263,10 +263,19 @@ const getById = async (propertyId) => {
           status: true,
         },
       },
+      agentHistory: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        where: {
+          type: { in: [AgentHistoryType.REQUEST, AgentHistoryType.ASSIGNED] },
+        },
+        select: { agent_id: true },
+      },
     },
   });
-
-  return {
+  const agent_id =
+    property.agentHistory.length > 0 ? property.agentHistory[0].agent_id : null;
+  const responseProperty = {
     ...property,
     commission:
       property.commissions.length > 0
@@ -277,6 +286,11 @@ const getById = async (propertyId) => {
           }
         : null,
     commissions: undefined,
+    agentHistory: undefined,
+  };
+  return {
+    responseProperty,
+    agent_id,
   };
 };
 
