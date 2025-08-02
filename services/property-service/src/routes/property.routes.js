@@ -16,7 +16,7 @@ import agentHistoryService from '../services/propertyAgentHistory.service.js';
 import commissionService from '../services/commission.service.js';
 import { getPublicAgentInfor } from '../helpers/authClient.js';
 import CustomerRequestType from '../enums/CustomerRequestType.enum.js';
-import CustomerRequestStatus from '../enums/customerRequestStatus.enum.js';
+import CustomerRequestStatus from '../enums/CustomerRequestStatus.enum.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 

@@ -7,7 +7,7 @@ import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
 import { RoleName } from '../middleware/roleGuard.js';
 import { getPublicAgentInfor, getAdminInfor } from '../helpers/authClient.js';
-import CustomerRequestStatus from '../enums/customerRequestStatus.enum.js';
+import CustomerRequestStatus from '../enums/CustomerRequestStatus.enum.js';
 
 import slugify from 'slugify';
 import axios from 'axios';
