@@ -187,7 +187,7 @@ model sale_bonus {
   penalty            Decimal @db.Decimal(15, 2) @default(0)
   review             String?
   review_by          Int?
-  payment_at         DateTime?
+  bonus_of_month     String?
   created_at         DateTime  @default(now())
   updated_at         DateTime  @default(now())
 }

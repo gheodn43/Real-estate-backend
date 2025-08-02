@@ -171,7 +171,7 @@ router
  *               - bonus
  *               - penalty
  *               - review
- *               - payment_at
+ *               - bonus_of_month
  *             properties:
  *               buying_quantity:
  *                 type: integer
@@ -205,6 +205,9 @@ router
  *                 type: string
  *                 example: "Agent đã làm việc hiệu quả trong tháng 7."
  *                 description: Nhận xét/đánh giá về agent.
+ *               bonus_of_month:
+ *                 type: string
+ *                 example: "07/2025"
  *     responses:
  *       200:
  *         description: Thành công - Đã ghi nhận thông tin thưởng/phạt.
@@ -226,7 +229,7 @@ router
       bonus,
       penalty,
       review,
-      payment_at,
+      bonus_of_month,
     } = req.body;
     const review_by = req.user.userId;
     const agent_id = req.user.userId;
@@ -241,7 +244,7 @@ router
         penalty,
         review,
         review_by,
-        payment_at,
+        bonus_of_month,
       });
       return res.status(200).json({
         data: null,
@@ -336,7 +339,7 @@ router
  *       - Sale
  *     security:
  *       - bearerAuth: []
- *     summary: Lấy lịch sử Bunus tháng của một agent bất kỳ [ADMIN]
+ *     summary: Lấy lịch sử Bonus của một agent bất kỳ [ADMIN]
  *     parameters:
  *       - in: query
  *         name: agent_id
@@ -407,34 +410,66 @@ router
     }
   });
 
+/**
+ * @openapi
+ * /prop/sale/{id}:
+ *   get:
+ *     tags:
+ *       - Sale
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy thông tin chi tiết Bonus [Admin, Agent]
+ *     description: API cho phép **Admin** lấy chi tiết một bản ghi thưởng/phạt của agent theo `id`.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 15
+ *         description: ID của bản ghi thưởng/phạt cần lấy.
+ *     responses:
+ *       200:
+ *         description: Thành công - Trả về thông tin chi tiết của bản ghi Sale Bonus.
+ *       404:
+ *         description: Không tìm thấy dữ liệu với ID đã cho.
+ *       401:
+ *         description: Unauthorized - Token không hợp lệ hoặc user không có quyền Admin.
+ *       500:
+ *         description: Lỗi server.
+ */
 router
   .route('/:id')
-  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
-    const { id } = req.params;
-    try {
-      const result = await saleService.getOneBonusHistoryOfAgent(id);
-      if (!result) {
-        return res.status(404).json({
-          data: null,
-          message: 'Not found',
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      const { id } = req.params;
+      try {
+        const result = await saleService.getOneBonusHistoryOfAgent(id);
+        if (!result) {
+          return res.status(404).json({
+            data: null,
+            message: 'Not found',
+            error: [],
+          });
+        }
+        return res.status(200).json({
+          data: {
+            bonus: result,
+          },
+          message: 'Success',
           error: [],
         });
+      } catch (err) {
+        return res.status(500).json({
+          data: null,
+          message: 'Server error',
+          error: [err.message],
+        });
       }
-      return res.status(200).json({
-        data: {
-          bonus: result,
-        },
-        message: 'Success',
-        error: [],
-      });
-    } catch (err) {
-      return res.status(500).json({
-        data: null,
-        message: 'Server error',
-        error: [err.message],
-      });
     }
-  });
+  );
 const getCompleteTransactionOfAgentInMonth = async (
   start_date,
   end_date,

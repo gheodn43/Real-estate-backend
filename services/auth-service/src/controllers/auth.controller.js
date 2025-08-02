@@ -547,6 +547,7 @@ exports.resetPassword = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   const {
+    name,
     dateOfBirth,
     gender,
     avatar,
@@ -560,6 +561,7 @@ exports.updateProfile = async (req, res) => {
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data: {
+        name,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
         gender,
         avatar,

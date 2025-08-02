@@ -281,6 +281,8 @@ router.post('/reset-password', authController.resetPassword);
  *           schema:
  *             type: object
  *             properties:
+ *               name:
+ *                 type: string
  *               dateOfBirth:
  *                 type: string
  *                 format: date
