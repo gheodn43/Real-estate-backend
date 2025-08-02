@@ -26,7 +26,7 @@ model blogs {
   id          Int      @id @default(autoincrement())
   title       String
   description String
-  content     String
+  content     String @db.Text
   small_image       String
   short_link  String
   status      Status   
@@ -44,7 +44,7 @@ model blog_reviews {
   id          Int      @id @default(autoincrement())
   blog_id     Int
   user_id     Int
-  comment     String
+  comment     String @db.Text
   parent_id   Int
   status      BlogReviewStatus @default(published)
   created_at  DateTime @default(now())
