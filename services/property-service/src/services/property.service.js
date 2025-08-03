@@ -1086,15 +1086,56 @@ const getAllRequestAssign = async (pagination, filters) => {
     }),
     prisma.properties.count({ where }),
   ]);
+
   const filtered = requests.filter((p) => {
     if (p.agentHistory.length > 0) {
       return p.agentHistory[0]?.type === AgentHistoryType.REQUEST;
     }
     return false;
   });
+
   const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(filtered);
   return { requests: propertiesWithCustomerNeeds, total: filtered.length };
 };
+const getAgentIDRequestAssignTOProperty = async (propertyId, pagination) => {
+  const { page, limit } = pagination;
+
+  // 1️⃣ Lấy assign gần nhất
+  const lastAssign = await prisma.property_agent_history.findFirst({
+    where: {
+      property_id: propertyId,
+      type: AgentHistoryType.ASSIGNED,
+    },
+    orderBy: { created_at: 'desc' },
+  });
+
+  if (!lastAssign) {
+    return [];
+  }
+
+  // 2️⃣ Lấy danh sách agent_id của request sau assign
+  const requests = await prisma.property_agent_history.findMany({
+    where: {
+      property_id: propertyId,
+      type: AgentHistoryType.REQUEST,
+      created_at: { gt: lastAssign.created_at },
+    },
+    orderBy: { created_at: 'asc' },
+    skip: (page - 1) * limit,
+    take: limit,
+    select: { agent_id: true }, // ✅ chỉ lấy agent_id
+  });
+
+  // 3️⃣ Trả về mảng agent_id
+  return requests.map((r) => r.agent_id);
+};
+
+// const getAllRequestAssignOfProperty = async (propertyId, pagination, filters) => {
+//   const { page, limit } = pagination;
+//   const { search } = filters;
+//   const agentIds = await getAgentIDRequestAssignTOProperty(propertyId, pagination);
+//   // call api to get agent (token, agentIds, filter);
+// };
 
 const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
   switch (requestPostStatus) {
@@ -1425,4 +1466,6 @@ export default {
   getRequestPostAssignedForAgentId,
   getAllRequestAssign,
   forwardDraft,
+  getAgentIDRequestAssignTOProperty,
+  // getAllRequestAssignOfProperty,
 };

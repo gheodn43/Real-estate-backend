@@ -263,43 +263,6 @@ router.route('/:id').get(async (req, res) => {
  *     responses:
  *       200:
  *         description: Category detail found successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     categoryDetail:
- *                       type: object
- *                       properties:
- *                         id:
- *                           type: integer
- *                         categoryId:
- *                           type: integer
- *                         fieldName:
- *                           type: string
- *                         icon:
- *                           type: string
- *                         fieldType:
- *                           type: string
- *                         fieldPlaceholder:
- *                           type: string
- *                         option:
- *                           type: string
- *                         isActive:
- *                           type: boolean
- *                         isRequire:
- *                           type: boolean
- *                         isShowing:
- *                           type: boolean
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       401:
  *         description: Unauthorized
  *       404:
