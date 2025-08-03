@@ -5,7 +5,6 @@ import CommissionStatus from '../enums/commissionStatus.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
-import { RoleName } from '../middleware/roleGuard.js';
 import { getPublicAgentInfor, getAdminInfor } from '../helpers/authClient.js';
 import CustomerRequestStatus from '../enums/CustomerRequestStatus.enum.js';
 
@@ -45,6 +44,7 @@ const createPostProperty = async (data) => {
   const slug = slugify(data.title, { lower: true, strict: true });
   const property = await prisma.properties.create({
     data: {
+      sender_id: data.senderId,
       title: data.title,
       slug: slug,
       description: data.description,
@@ -123,6 +123,21 @@ const updateStatusOfPostProperty = async (
   });
   return property;
 };
+
+const forwardDraft = async (id, requestPostStatus, requestStatus) => {
+  const property = await prisma.properties.update({
+    where: {
+      id: id,
+    },
+    data: {
+      sender_id: null,
+      requestpost_status: requestPostStatus,
+      request_status: requestStatus,
+    },
+  });
+  return property;
+};
+
 const completeTransaction = async (id, requestPostStatus, requestStatus) => {
   const property = await prisma.properties.findUnique({
     where: { id },
@@ -474,13 +489,10 @@ const getBySlug = async (slug) => {
 };
 
 const getDraftProperties = async (userId, pagination, filters) => {
-  const propertyIds = await agentHistoryService.getHistoryByAgentId(userId);
   const { search } = filters;
   const { page, limit } = pagination;
   const where = {
-    id: {
-      in: propertyIds,
-    },
+    sender_id: userId,
     requestpost_status: RequestPostStatus.DRAFT,
   };
   if (search) {
@@ -499,26 +511,53 @@ const getDraftProperties = async (userId, pagination, filters) => {
   ]);
   return { properties, total };
 };
+
 const getFilteredProperties = async (filters, pagination) => {
-  const { userId, userRole, requestPostStatus, search, needsType } = filters;
+  const { type, search, needsType } = filters;
   const { page, limit } = pagination;
-  const where = {};
+  let where = {
+    OR: [
+      { requestpost_status: { notIn: [RequestPostStatus.DRAFT] } },
+      { requestpost_status: null },
+    ],
+  };
 
-  if (requestPostStatus) {
-    where.requestpost_status = requestPostStatus;
-  }
-  if (userRole === RoleName.Agent) {
-    const propertyIdsOfAgent =
-      await agentHistoryService.getHistoryByAgentId(userId);
-    if (propertyIdsOfAgent.length === 0) {
-      return { properties: [], total: 0 };
+  if (type) {
+    switch (type) {
+      case 'rs_rejected':
+        where = {
+          requestpost_status: null,
+          request_status: RequestStatus.REJECTED,
+        };
+        break;
+      case 'not_assigned':
+        where = {
+          requestpost_status: null,
+          agentHistory: {
+            none: {
+              type: AgentHistoryType.ASSIGNED,
+            },
+          },
+        };
+        break;
+      case 'assigned':
+        where = {
+          requestpost_status: null,
+          agentHistory: {
+            some: {
+              type: AgentHistoryType.ASSIGNED,
+            },
+          },
+        };
+        break;
+      default:
+        where = {
+          ...where,
+          requestpost_status: type,
+        };
+        break;
     }
-
-    where.id = {
-      in: propertyIdsOfAgent,
-    };
   }
-
   if (search) {
     where.OR = [
       { title: { contains: search } },
@@ -547,15 +586,46 @@ const getFilteredProperties = async (filters, pagination) => {
             status: true,
           },
         },
+        agentHistory: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          where: {
+            type: AgentHistoryType.ASSIGNED,
+          },
+          select: { agent_id: true },
+        },
       },
     }),
     prisma.properties.count({ where }),
   ]);
+  let propertiesWithAssign = properties.map((p) => {
+    let assign = null;
+    if (p.stage === Stage.REQUEST) {
+      assign = p.agentHistory.length > 0 ? 'assigned' : 'not_assigned';
+    }
+    // eslint-disable-next-line no-unused-vars
+    const { agentHistory, ...rest } = p;
+    return {
+      ...rest,
+      assign,
+    };
+  });
+  if (type === 'not_assigned') {
+    propertiesWithAssign = propertiesWithAssign.filter(
+      (p) => p.assign === 'not_assigned'
+    );
+  }
+  if (type === 'assigned') {
+    propertiesWithAssign = propertiesWithAssign.filter(
+      (p) => p.assign === 'assigned'
+    );
+  }
   const propertiesWithCustomerNeeds =
-    await getListWithCustomerNeeds(properties);
+    await getListWithCustomerNeeds(propertiesWithAssign);
 
   return { properties: propertiesWithCustomerNeeds, total };
 };
+
 const getPublicFilteredProperties = async (filters, pagination) => {
   const { latitude, longitude, radius, assetsId, needsId, search, needsType } =
     filters;
@@ -775,15 +845,18 @@ const getFilteredPropertiesForPrivate = async (filters, pagination) => {
 };
 const getRequestPostByCustomerId = async (customerId, pagination, filters) => {
   const { page, limit } = pagination;
-  const { search, requestStatus } = filters;
-  const where = {
+  const { search, type } = filters;
+  let where = {
     sender_id: customerId,
   };
   if (search) {
     where.OR = [{ title: { contains: search } }];
   }
-  if (requestStatus) {
-    where.request_status = requestStatus;
+  if (type) {
+    where = {
+      ...where,
+      request_status: type,
+    };
   }
   const [requests, total] = await Promise.all([
     prisma.properties.findMany({
@@ -832,19 +905,52 @@ const getRequestPostByCustomerId = async (customerId, pagination, filters) => {
   const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(requests);
   return { requests: propertiesWithCustomerNeeds, total };
 };
+
 const getAllRequestPost = async (pagination, filters) => {
   const { page, limit } = pagination;
-  const { search, requestStatus } = filters;
-  const where = {
+  const { search, type } = filters;
+  let where = {
     request_status: {
       not: null,
     },
   };
+  if (type) {
+    switch (type) {
+      case 'rs_rejected':
+        where = {
+          request_status: RequestStatus.REJECTED,
+        };
+        break;
+      case 'not_assigned':
+        where = {
+          requestpost_status: null,
+          agentHistory: {
+            none: {
+              type: AgentHistoryType.ASSIGNED,
+            },
+          },
+        };
+        break;
+      case 'assigned':
+        where = {
+          requestpost_status: null,
+          agentHistory: {
+            some: {
+              type: AgentHistoryType.ASSIGNED,
+            },
+          },
+        };
+        break;
+      default:
+        where = {
+          ...where,
+          requestpost_status: type,
+        };
+        break;
+    }
+  }
   if (search) {
     where.OR = [{ title: { contains: search } }];
-  }
-  if (requestStatus) {
-    where.request_status = requestStatus;
   }
   const [requests, total] = await Promise.all([
     prisma.properties.findMany({
@@ -885,14 +991,111 @@ const getAllRequestPost = async (pagination, filters) => {
             status: true,
           },
         },
+        agentHistory: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          where: {
+            type: { in: [AgentHistoryType.ASSIGNED] },
+          },
+          select: { agent_id: true },
+        },
       },
     }),
     prisma.properties.count({ where }),
   ]);
-
-  const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(requests);
+  let propertiesWithAssign = requests.map((p) => {
+    let assign = null;
+    if (p.stage === Stage.REQUEST) {
+      assign = p.agentHistory.length > 0 ? 'assigned' : 'not_assigned';
+    }
+    // eslint-disable-next-line no-unused-vars
+    const { agentHistory, ...rest } = p;
+    return {
+      ...rest,
+      assign,
+    };
+  });
+  if (type === 'not_assigned') {
+    propertiesWithAssign = propertiesWithAssign.filter(
+      (p) => p.assign === 'not_assigned'
+    );
+  }
+  if (type === 'assigned') {
+    propertiesWithAssign = propertiesWithAssign.filter(
+      (p) => p.assign === 'assigned'
+    );
+  }
+  const propertiesWithCustomerNeeds =
+    await getListWithCustomerNeeds(propertiesWithAssign);
   return { requests: propertiesWithCustomerNeeds, total };
 };
+
+const getAllRequestAssign = async (pagination, filters) => {
+  const { page, limit } = pagination;
+  const { search } = filters;
+  let where = {
+    agentHistory: { some: {} },
+  };
+  if (search) {
+    where.OR = [{ title: { contains: search } }];
+  }
+  const [requests] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+      include: {
+        media: {
+          where: {
+            type: 'image',
+          },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            order: true,
+          },
+        },
+        locations: true,
+        details: {
+          select: {
+            value: true,
+            category_detail: {
+              select: {
+                field_name: true,
+                icon: true,
+                is_showing: true,
+              },
+            },
+          },
+        },
+        commissions: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: {
+            type: true,
+            status: true,
+          },
+        },
+        agentHistory: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
+      },
+    }),
+    prisma.properties.count({ where }),
+  ]);
+  const filtered = requests.filter((p) => {
+    if (p.agentHistory.length > 0) {
+      return p.agentHistory[0]?.type === AgentHistoryType.REQUEST;
+    }
+    return false;
+  });
+  const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(filtered);
+  return { requests: propertiesWithCustomerNeeds, total: filtered.length };
+};
+
 const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
   switch (requestPostStatus) {
     case RequestPostStatus.PUBLISHED:
@@ -1068,26 +1271,113 @@ const getMyCustomerRequests = async (filters, pagination) => {
     total: await prisma.customer_request.count({ where }),
   };
 };
-
-const getRequestPostByAgentId = async (agent_id, pagination, filters) => {
+const getRequestPostWaitingAssignByAgentId = async (
+  agent_id,
+  pagination,
+  filters
+) => {
   const { page, limit } = pagination;
-  const { search, requestStatus, myAssigned } = filters;
-  const propertyIds = await agentHistoryService.getHistoryByAgentId(agent_id);
+  const { search, type } = filters;
 
-  const where = {
+  const propertyIds =
+    await agentHistoryService.getPropertyAssignedForAgent(agent_id);
+
+  let where = {
     request_status: RequestStatus.PENDING,
+    id: { notIn: propertyIds },
   };
-  if (myAssigned) {
-    where.id = {
-      in: propertyIds,
-    };
-    if (requestStatus) {
-      where.request_status = requestStatus;
+
+  if (type) {
+    switch (type) {
+      case 'request_assign':
+        where = {
+          ...where,
+          agentHistory: {
+            some: {
+              agent_id: agent_id,
+              type: { in: [AgentHistoryType.REQUEST] },
+            },
+          },
+        };
+        break;
+      case 'waiting_assign':
+        where = {
+          ...where,
+          agentHistory: {
+            none: {
+              agent_id: agent_id,
+            },
+          },
+        };
+        break;
+      default:
+        break;
     }
-  } else {
-    where.id = {
-      notIn: propertyIds,
-    };
+  }
+
+  if (search) {
+    where.title = { contains: search };
+  }
+
+  const requests = await prisma.properties.findMany({
+    where,
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { created_at: 'desc' },
+    include: {
+      agentHistory: true,
+    },
+  });
+
+  const total = await prisma.properties.count({ where });
+  const requestsWithAssign = requests.map((req) => {
+    let assign = 'waiting_assign';
+    const hasRequestAssign = req.agentHistory.some(
+      (h) => h.agent_id === agent_id && h.type === AgentHistoryType.REQUEST
+    );
+
+    if (hasRequestAssign) {
+      assign = 'request_assign';
+    }
+    // eslint-disable-next-line no-unused-vars
+    const { agentHistory, ...rest } = req;
+    return { ...rest, assign };
+  });
+  return {
+    requests: requestsWithAssign,
+    total,
+  };
+};
+
+const getRequestPostAssignedForAgentId = async (
+  agent_id,
+  pagination,
+  filters
+) => {
+  const { page, limit } = pagination;
+  const { search, type } = filters;
+  const propertyIds =
+    await agentHistoryService.getPropertyAssignedForAgent(agent_id);
+
+  let where = {
+    id: { in: propertyIds },
+  };
+  if (type) {
+    switch (type) {
+      case 'rs_rejected':
+        where = {
+          ...where,
+          request_status: RequestStatus.REJECTED,
+        };
+        break;
+      default:
+        where = {
+          ...where,
+          sender_id: null,
+          requestpost_status: type,
+        };
+        break;
+    }
   }
   if (search) {
     where.title = {
@@ -1106,6 +1396,7 @@ const getRequestPostByAgentId = async (agent_id, pagination, filters) => {
     total: await prisma.properties.count({ where }),
   };
 };
+
 export default {
   createRequestProperty,
   createPostProperty,
@@ -1130,5 +1421,8 @@ export default {
   getCustomerRequests,
   acceptDeleteRequest,
   getMyCustomerRequests,
-  getRequestPostByAgentId,
+  getRequestPostWaitingAssignByAgentId,
+  getRequestPostAssignedForAgentId,
+  getAllRequestAssign,
+  forwardDraft,
 };

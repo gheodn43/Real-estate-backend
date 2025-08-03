@@ -17,6 +17,7 @@ import commissionService from '../services/commission.service.js';
 import { getPublicAgentInfor } from '../helpers/authClient.js';
 import CustomerRequestType from '../enums/CustomerRequestType.enum.js';
 import CustomerRequestStatus from '../enums/CustomerRequestStatus.enum.js';
+import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
@@ -97,10 +98,9 @@ router.get('/:id/relate', async (req, res) => {
   }
 });
 
-// customer lấy danh sách yêu cầu ký gửi
 /**
  * @openapi
- * /prop/request/get-all:
+ * /prop/request/all-for-admin:
  *   get:
  *     tags:
  *       - Property
@@ -123,37 +123,183 @@ router.get('/:id/relate', async (req, res) => {
  *           type: string
  *         description: Từ khóa tìm kiếm
  *       - in: query
- *         name: requestStatus
+ *         name: type
  *         schema:
  *           type: enum
- *           enum: [pending, published, rejected, completed]
+ *           enum: [rs_rejected, not_assigned, assigned, pending_approval, published, rejected, expired, hidden]
  *         description: Trạng thái yêu cầu
- *       - in: query
- *         name: myAssigned
- *         schema:
- *           type: boolean
- *     summary: Lấy danh sách yêu cầu ký gửi [CUSTOMER, ADMIN, AGENT]
+ *     summary: Lấy danh sách yêu cầu ký gửi [ADMIN]
  *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
  *     responses:
  *       200:
  *         description: Danh sách yêu cầu ký gửi
  */
-
-//xử lý phân trang
 router.get(
-  '/request/get-all',
+  '/request/all-for-admin',
   authMiddleware,
-  roleGuard([RoleName.Customer, RoleName.Agent, RoleName.Admin]),
+  roleGuard([RoleName.Admin]),
+  async (req, res) => {
+    try {
+      const { page = 1, limit = 10, search, type } = req.query;
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const filters = {
+        search,
+        type,
+      };
+      const { requests, total } = await propertyService.getAllRequestPost(
+        pagination,
+        filters
+      );
+      return res.status(200).json({
+        data: {
+          requests,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+          },
+        },
+        message: 'Request post found',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  }
+);
+
+/**
+ * @openapi
+ * /prop/request/all-for-customer:
+ *   get:
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại (mặc định 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số phần tử mỗi trang (mặc định 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: enum
+ *           enum: [rejected, pending, negotiating, published, completed, hidden]
+ *         description: Trạng thái yêu cầu
+ *     summary: Lấy danh sách yêu cầu ký gửi [CUSTOMER]
+ *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
+ *     responses:
+ *       200:
+ *         description: Danh sách yêu cầu ký gửi
+ */
+router.get(
+  '/request/all-for-customer',
+  authMiddleware,
+  roleGuard([RoleName.Customer]),
+  async (req, res) => {
+    try {
+      const { page = 1, limit = 10, search, type } = req.query;
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const filters = {
+        search,
+        type,
+      };
+      const { requests, total } =
+        await propertyService.getRequestPostByCustomerId(
+          req.user.userId,
+          pagination,
+          filters
+        );
+      return res.status(200).json({
+        data: {
+          requests,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+          },
+        },
+        message: 'Request post found',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  }
+);
+
+/**
+ * @openapi
+ * /prop/request/waiting-assign:
+ *   get:
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại (mặc định 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số phần tử mỗi trang (mặc định 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: enum
+ *           enum: [request_assign, waiting_assign]
+ *         description: Trạng thái yêu cầu
+ *     summary: Lấy danh sách yêu cầu ký gửi chưa đc assign cho ai [AGENT]
+ *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
+ *     responses:
+ *       200:
+ *         description: Danh sách yêu cầu ký gửi
+ */
+router.get(
+  '/request/waiting-assign',
+  authMiddleware,
+  roleGuard([RoleName.Agent]),
   async (req, res) => {
     try {
       const userData = req.user;
-      const {
-        page = 1,
-        limit = 10,
-        search,
-        requestStatus,
-        myAssigned,
-      } = req.query;
+      const { page = 1, limit = 10, search, type } = req.query;
 
       const pagination = {
         page: Number(page),
@@ -161,46 +307,104 @@ router.get(
       };
       const filters = {
         search,
-        requestStatus,
-      };
-      const filterForAgent = {
-        ...filters,
-        myAssigned: myAssigned === 'true',
+        type,
       };
 
       let requests = [];
       let total = 0;
-      switch (userData.userRole) {
-        case RoleName.Customer:
-          ({ requests, total } =
-            await propertyService.getRequestPostByCustomerId(
-              userData.userId,
-              pagination,
-              filters
-            ));
-          break;
 
-        case RoleName.Agent:
-          ({ requests, total } = await propertyService.getRequestPostByAgentId(
-            userData.userId,
-            pagination,
-            filterForAgent
-          ));
-          break;
-        case RoleName.Admin:
-          ({ requests, total } = await propertyService.getAllRequestPost(
-            pagination,
-            filters
-          ));
-          break;
+      ({ requests, total } =
+        await propertyService.getRequestPostWaitingAssignByAgentId(
+          userData.userId,
+          pagination,
+          filters
+        ));
 
-        default:
-          return res.status(403).json({
-            data: null,
-            message: 'Forbidden - Role not allowed',
-            error: [],
-          });
-      }
+      return res.status(200).json({
+        data: {
+          requests,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+          },
+        },
+        message: 'Request post found',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [err.message],
+      });
+    }
+  }
+);
+/**
+ * @openapi
+ * /prop/request/my-assigned:
+ *   get:
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại (mặc định 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số phần tử mỗi trang (mặc định 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: enum
+ *           enum: [rs_rejected, pending_approval, rejected, published, expired, hidden]
+ *         description: Trạng thái yêu cầu
+ *     summary: Lấy danh sách yêu cầu ký gửi đã assign cho agent [AGENT]
+ *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
+ *     responses:
+ *       200:
+ *         description: Danh sách yêu cầu ký gửi
+ */
+router.get(
+  '/request/my-assigned',
+  authMiddleware,
+  roleGuard([RoleName.Agent]),
+  async (req, res) => {
+    try {
+      const userData = req.user;
+      const { page = 1, limit = 10, search, type } = req.query;
+
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const filters = {
+        search,
+        type,
+      };
+
+      let requests = [];
+      let total = 0;
+
+      ({ requests, total } =
+        await propertyService.getRequestPostAssignedForAgentId(
+          userData.userId,
+          pagination,
+          filters
+        ));
 
       return res.status(200).json({
         data: {
@@ -336,11 +540,214 @@ router
       }
     }
   );
+
+//admin accept request of agent
+/**
+ * @swagger
+ * /prop/request-assign/action:
+ *   post:
+ *     summary: Xử lý yêu cầu đảm nhiệm phụ trách của agent [ADMIN]
+ *     description: API cho phép admin accept, reject hoặc remove agent
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - propertyId
+ *               - action
+ *             properties:
+ *               propertyId:
+ *                 type: integer
+ *                 example: 14
+ *               action:
+ *                 type: string
+ *                 example: accept
+ *               agent_id:
+ *                 type: integer
+ *                 example: 14
+ *     responses:
+ *       200:
+ *         description: Gán agent thành công
+ *       404:
+ *         description: Bất động sản không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
+router.post(
+  '/request-assign/action',
+  authMiddleware,
+  roleGuard([RoleName.Admin]),
+  async (req, res) => {
+    try {
+      const { propertyId, agent_id, action } = req.body;
+      if (action !== 'accept' && action !== 'reject' && action !== 'remove') {
+        return res.status(400).json({
+          data: null,
+          message: '',
+          error: ['Invalid action'],
+        });
+      }
+      if (action === 'accept') {
+        const request = await agentHistoryService.acceptRequestAssign(
+          propertyId,
+          agent_id
+        );
+        return res.status(200).json({
+          data: request,
+          message: 'Accepted agent to project',
+          error: [],
+        });
+      }
+      if (action === 'reject') {
+        await agentHistoryService.rejectRequestAssign(propertyId, agent_id);
+        return res.status(200).json({
+          data: null,
+          message: 'Request rejected',
+          error: [],
+        });
+      }
+      if (action === 'remove') {
+        const request = await agentHistoryService.removeRequestAssign(
+          propertyId,
+          agent_id
+        );
+        return res.status(200).json({
+          data: request,
+          message: 'Removed agent from project',
+          error: [],
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  }
+);
+
+// AGENT gửi yêu cầu đảm nhiệm phụ trách dự án
+/**
+ * @swagger
+ * /prop/request-assign:
+ *   post:
+ *     summary: Gửi yêu cầu đảm nhiệm phụ trách dự án [AGENT]
+ *     description: API cho phép agent gửi yêu cầu đảm nhiệm phụ trách dự án
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - propertyId
+ *             properties:
+ *               propertyId:
+ *                 type: integer
+ *                 example: 14
+ *     responses:
+ *       200:
+ *         description: Gán agent thành công
+ *       404:
+ *         description: Bất động sản không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
+router.post(
+  '/request-assign',
+  authMiddleware,
+  roleGuard([RoleName.Agent]),
+  async (req, res) => {
+    try {
+      const { propertyId } = req.body;
+      const userData = req.user;
+      const request = await agentHistoryService.requestAssignToProject(
+        propertyId,
+        userData
+      );
+      return res.status(200).json({
+        data: request,
+        message: 'Request assigned Sent to Admin',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  }
+);
+
+// AGENT gửi yêu cầu đảm nhiệm phụ trách dự án
+/**
+ * @swagger
+ * /prop/request-assign/all-for-admin:
+ *   get:
+ *     summary: Lấy danh sách yêu cầu đảm nhiệm phụ trách dự án cần phê duyệt [ADMIN]
+ *     description: API cho phép agent gửi yêu cầu đảm nhiệm phụ trách dự án
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Gán agent thành công
+ *       404:
+ *         description: Bất động sản không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+  '/request-assign/all-for-admin',
+  authMiddleware,
+  roleGuard([RoleName.Admin]),
+  async (req, res) => {
+    const { page = 1, limit = 10, search } = req.query;
+    const pagination = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+    const filters = {
+      search,
+    };
+    try {
+      const request = await propertyService.getAllRequestAssign(
+        pagination,
+        filters
+      );
+      return res.status(200).json({
+        data: request,
+        message: 'Request assigned Sent to Admin',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  }
+);
+
 /**
  * @swagger
  * /prop/list-post:
  *   get:
- *     summary: Lấy danh sách bất động sản ở màn hình quản lý [ADMIN, AGENT]
+ *     summary: Lấy danh sách bất động sản ở màn hình tất cả BĐS [ADMIN]
  *     description: Lọc theo trạng thái, phân trang, tìm kiếm...
  *     tags:
  *       - Property
@@ -358,10 +765,10 @@ router
  *           type: integer
  *         description: Số phần tử mỗi trang (mặc định 10)
  *       - in: query
- *         name: requestPostStatus
+ *         name: type
  *         schema:
  *           type: string
- *           enum: [draft, pending_approval, published, rejected, sold, hidden]
+ *           enum: [rs_rejected, not_assigned, assigned, pending_approval, published, rejected, expired, hidden]
  *         description: Trạng thái bài viết cần lọc
  *       - in: query
  *         name: search
@@ -379,59 +786,47 @@ router
  */
 router
   .route('/list-post')
-  .get(
-    authMiddleware,
-    roleGuard([RoleName.Agent, RoleName.Admin]),
-    async (req, res) => {
-      try {
-        const user = req.user;
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    try {
+      const { page = 1, limit = 10, type, search, needsType } = req.query;
 
-        const {
-          page = 1,
-          limit = 10,
-          requestPostStatus,
-          search,
-          needsType,
-        } = req.query;
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
 
-        const pagination = {
-          page: Number(page),
-          limit: Number(limit),
-        };
+      const filters = {
+        type,
+        search,
+        needsType,
+      };
 
-        const filters = {
-          userId: user.userId,
-          userRole: user.userRole,
-          requestPostStatus,
-          search,
-          needsType,
-        };
+      const { properties, total } = await propertyService.getFilteredProperties(
+        filters,
+        pagination
+      );
 
-        const { properties, total } =
-          await propertyService.getFilteredProperties(filters, pagination);
-
-        return res.status(200).json({
-          data: {
-            properties,
-            pagination: {
-              total,
-              page: pagination.page,
-              limit: pagination.limit,
-              totalPages: Math.ceil(total / pagination.limit),
-            },
+      return res.status(200).json({
+        data: {
+          properties,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
           },
-          message: 'Properties found',
-          error: [],
-        });
-      } catch (error) {
-        return res.status(500).json({
-          data: null,
-          message: '',
-          error: [error.message],
-        });
-      }
+        },
+        message: 'Properties found',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
     }
-  );
+  });
 
 /**
  * @swagger
@@ -957,7 +1352,7 @@ router
         } = req.body;
 
         const user = req.user;
-        const senderId = user.userId;
+        let senderId = null;
 
         let property = null;
         let locationSaved = null;
@@ -1000,8 +1395,9 @@ router
             ],
           });
         }
-
-        // Tạo property
+        if (requestPostStatus === RequestPostStatus.DRAFT) {
+          senderId = user.userId;
+        }
         property = await propertyService.createPostProperty({
           senderId,
           title,
@@ -1080,11 +1476,13 @@ router
         }
         // tạo mới history cho agent/admin.
         try {
-          await agentHistoryService.createHistory({
-            propertyId,
-            agentId: user.userId,
-            userRole: user.userRole,
-          });
+          if (requestPostStatus !== RequestPostStatus.DRAFT) {
+            await agentHistoryService.createHistory({
+              propertyId,
+              agentId: user.userId,
+              type: AgentHistoryType.REQUEST,
+            });
+          }
         } catch (err) {
           errors.push('Failed to create history:' + err.message);
         }
@@ -1904,19 +2302,26 @@ router.put(
       }
 
       // Cập nhật trạng thái
+      let updatedProperty;
       let requestStatus = property.request_status;
-      if (requestPostStatus) {
+      if (requestPostStatus)
         requestStatus =
           propertyService.getRequestStatusFromRequestPostStatus(
             requestPostStatus
           );
+      if (property.requestpost_status === RequestPostStatus.DRAFT) {
+        updatedProperty = await propertyService.forwardDraft(
+          property.id,
+          requestPostStatus,
+          requestStatus
+        );
+      } else {
+        updatedProperty = await propertyService.updateStatusOfPostProperty(
+          property.id,
+          requestPostStatus,
+          requestStatus
+        );
       }
-      const updatedProperty = await propertyService.updateStatusOfPostProperty(
-        property.id,
-        requestPostStatus,
-        requestStatus
-      );
-
       return res.status(200).json({
         data: updatedProperty,
         message: 'Post status updated',
