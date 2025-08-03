@@ -28,10 +28,16 @@ const getDetailById = async (id) => {
 };
 
 const getDetailByCategoryId = async (categoryId) => {
-  const categoryDetail = await prisma.property_category_detail.findMany({
+  const categoryDetail = await prisma.property_categories.findMany({
     where: {
-      category_id: categoryId,
-      deleted_at: null,
+      id: categoryId,
+    },
+    include: {
+      details: {
+        where: {
+          deleted_at: null,
+        },
+      },
     },
   });
   return categoryDetail;

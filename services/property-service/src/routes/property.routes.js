@@ -724,12 +724,20 @@ router.get(
       search,
     };
     try {
-      const request = await propertyService.getAllRequestAssign(
+      const { requests, total } = await propertyService.getAllRequestAssign(
         pagination,
         filters
       );
       return res.status(200).json({
-        data: request,
+        data: {
+          requests,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+          },
+        },
         message: 'Request assigned Sent to Admin',
         error: [],
       });
@@ -742,6 +750,41 @@ router.get(
     }
   }
 );
+
+// router.get(
+//   '/request-assign/of-property/:propertyId',
+//   authMiddleware,
+//   roleGuard([RoleName.Admin]),
+//   async (req, res) => {
+//     const { page = 1, limit = 10, search } = req.query;
+//     const { propertyId } = req.params;
+//     const pagination = {
+//       page: Number(page),
+//       limit: Number(limit),
+//     };
+//     const filters = {
+//       search,
+//     };
+//     try {
+//       const request = await propertyService.getAllRequestAssignOfProperty(
+//         propertyId,
+//         pagination,
+//         filters
+//       );
+//       return res.status(200).json({
+//         data: request,
+//         message: 'List request assign of property',
+//         error: [],
+//       });
+//     } catch (error) {
+//       return res.status(500).json({
+//         data: null,
+//         message: '',
+//         error: [error.message],
+//       });
+//     }
+//   }
+// );
 
 /**
  * @swagger
