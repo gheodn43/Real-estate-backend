@@ -28,19 +28,20 @@ const getDetailById = async (id) => {
 };
 
 const getDetailByCategoryId = async (categoryId) => {
-  const categoryDetail = await prisma.property_categories.findMany({
-    where: {
-      id: categoryId,
-    },
+  const category = await prisma.property_categories.findUnique({
+    where: { id: categoryId },
     include: {
       details: {
-        where: {
-          deleted_at: null,
-        },
+        where: { deleted_at: null },
       },
     },
   });
-  return categoryDetail;
+  if (!category) return null;
+  const { details, ...categoryInfo } = category;
+  return {
+    category: categoryInfo,
+    details,
+  };
 };
 
 const updateDetail = async (id, data) => {

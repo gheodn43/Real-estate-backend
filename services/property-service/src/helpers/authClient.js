@@ -43,4 +43,20 @@ const getAdminInfor = async () => {
     number_phone: '0794982254',
   };
 };
-export { getProfile, getCustomerProfile, getPublicAgentInfor, getAdminInfor };
+
+const getUsersFromListIds = async (userIds, search, token) => {
+  const res = await axios.post(
+    'http://auth-service:4001/auth/get-user-from-list',
+    { userIds, search }, // 👈 gửi body JSON
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res.data;
+};
+
+export {
+  getProfile,
+  getCustomerProfile,
+  getPublicAgentInfor,
+  getAdminInfor,
+  getUsersFromListIds,
+};

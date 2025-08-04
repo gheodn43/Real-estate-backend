@@ -275,9 +275,9 @@ router
   .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
       const { id } = req.params;
-      const categoryDetail =
+      const { category, details } =
         await categoryDetailService.getDetailByCategoryId(id);
-      if (!categoryDetail) {
+      if (!category) {
         return res.status(404).json({
           data: null,
           message: '',
@@ -285,7 +285,10 @@ router
         });
       }
       return res.status(200).json({
-        data: { categoryDetail: categoryDetail },
+        data: {
+          currentCategory: category,
+          categoryDetail: details,
+        },
         message: 'Category detail found successfully',
         error: [],
       });

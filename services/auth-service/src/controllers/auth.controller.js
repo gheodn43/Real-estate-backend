@@ -872,3 +872,55 @@ exports.getPublicListJournalist = async (req, res) => {
     errors: [],
   });
 };
+
+exports.getPublicListProperty = async (req, res) => {
+  let { userIds, search } = req.body;
+  console.log('userIds', userIds);
+  if (!Array.isArray(userIds)) {
+    return res.status(400).json({
+      data: null,
+      message: 'userIds must be an array',
+      errors: [],
+    });
+  }
+  userIds = userIds.map((id) => Number(id));
+  let where = {
+    id: {
+      in: userIds,
+    },
+  };
+  if (search) {
+    where = {
+      ...where,
+      name: {
+        contains: search,
+      },
+    };
+  }
+  const user = await prisma.user.findMany({
+    where,
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatar: true,
+      addr_city: true,
+      addr_district: true,
+      addr_street: true,
+      addr_detail: true,
+      number_phone: true,
+    },
+  });
+  if (user.lenght == 0) {
+    return res.status(404).json({
+      data: null,
+      message: 'User not found.',
+      errors: [],
+    });
+  }
+  res.json({
+    data: user,
+    message: 'User fetched successfully.',
+    errors: [],
+  });
+};

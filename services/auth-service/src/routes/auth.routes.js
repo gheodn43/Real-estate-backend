@@ -392,4 +392,10 @@ router.get(
   authController.getPublicJouralist
 );
 
+router.post(
+  '/get-user-from-list',
+  authenticateToken,
+  authController.getPublicListProperty
+);
+
 module.exports = router;

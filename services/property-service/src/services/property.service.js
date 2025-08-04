@@ -5,7 +5,11 @@ import CommissionStatus from '../enums/commissionStatus.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
-import { getPublicAgentInfor, getAdminInfor } from '../helpers/authClient.js';
+import {
+  getPublicAgentInfor,
+  getAdminInfor,
+  getUsersFromListIds,
+} from '../helpers/authClient.js';
 import CustomerRequestStatus from '../enums/CustomerRequestStatus.enum.js';
 
 import slugify from 'slugify';
@@ -1097,45 +1101,63 @@ const getAllRequestAssign = async (pagination, filters) => {
   const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(filtered);
   return { requests: propertiesWithCustomerNeeds, total: filtered.length };
 };
+
 const getAgentIDRequestAssignTOProperty = async (propertyId, pagination) => {
   const { page, limit } = pagination;
+  const propertyIdNum = Number(propertyId);
 
   // 1️⃣ Lấy assign gần nhất
   const lastAssign = await prisma.property_agent_history.findFirst({
     where: {
-      property_id: propertyId,
+      property_id: propertyIdNum,
       type: AgentHistoryType.ASSIGNED,
     },
     orderBy: { created_at: 'desc' },
   });
 
-  if (!lastAssign) {
-    return [];
-  }
+  // 2️⃣ Điều kiện WHERE cho REQUEST
+  const requestWhere = {
+    property_id: propertyIdNum,
+    type: AgentHistoryType.REQUEST,
+    ...(lastAssign
+      ? { created_at: { gt: lastAssign.created_at } } // nếu có ASSIGNED
+      : {}), // nếu không có ASSIGNED thì bỏ điều kiện này
+  };
 
-  // 2️⃣ Lấy danh sách agent_id của request sau assign
   const requests = await prisma.property_agent_history.findMany({
-    where: {
-      property_id: propertyId,
-      type: AgentHistoryType.REQUEST,
-      created_at: { gt: lastAssign.created_at },
-    },
+    where: requestWhere,
     orderBy: { created_at: 'asc' },
     skip: (page - 1) * limit,
     take: limit,
-    select: { agent_id: true }, // ✅ chỉ lấy agent_id
+    select: { agent_id: true },
   });
 
-  // 3️⃣ Trả về mảng agent_id
   return requests.map((r) => r.agent_id);
 };
 
-// const getAllRequestAssignOfProperty = async (propertyId, pagination, filters) => {
-//   const { page, limit } = pagination;
-//   const { search } = filters;
-//   const agentIds = await getAgentIDRequestAssignTOProperty(propertyId, pagination);
-//   // call api to get agent (token, agentIds, filter);
-// };
+const getAllRequestAssignOfProperty = async (
+  propertyId,
+  pagination,
+  filters,
+  token
+) => {
+  const { search } = filters;
+  if (filters) {
+    pagination = {
+      page: 1,
+      limit: 100,
+    };
+  }
+  const agentIds = await getAgentIDRequestAssignTOProperty(
+    propertyId,
+    pagination
+  );
+  const agents = await getUsersFromListIds(agentIds, search, token);
+  return {
+    agents: agents.data,
+    total: agents.data.length,
+  };
+};
 
 const getRequestStatusFromRequestPostStatus = (requestPostStatus) => {
   switch (requestPostStatus) {
@@ -1466,6 +1488,5 @@ export default {
   getRequestPostAssignedForAgentId,
   getAllRequestAssign,
   forwardDraft,
-  getAgentIDRequestAssignTOProperty,
-  // getAllRequestAssignOfProperty,
+  getAllRequestAssignOfProperty,
 };

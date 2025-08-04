@@ -751,40 +751,90 @@ router.get(
   }
 );
 
-// router.get(
-//   '/request-assign/of-property/:propertyId',
-//   authMiddleware,
-//   roleGuard([RoleName.Admin]),
-//   async (req, res) => {
-//     const { page = 1, limit = 10, search } = req.query;
-//     const { propertyId } = req.params;
-//     const pagination = {
-//       page: Number(page),
-//       limit: Number(limit),
-//     };
-//     const filters = {
-//       search,
-//     };
-//     try {
-//       const request = await propertyService.getAllRequestAssignOfProperty(
-//         propertyId,
-//         pagination,
-//         filters
-//       );
-//       return res.status(200).json({
-//         data: request,
-//         message: 'List request assign of property',
-//         error: [],
-//       });
-//     } catch (error) {
-//       return res.status(500).json({
-//         data: null,
-//         message: '',
-//         error: [error.message],
-//       });
-//     }
-//   }
-// );
+/**
+ * @swagger
+ * /prop/request-assign/of-property/{propertyId}:
+ *   get:
+ *     summary: Lấy danh sách agent đã gửi yêu cầu đảm nhiệm phụ trách dự án cần phê duyệt [ADMIN]
+ *     description: API cho phép agent gửi yêu cầu đảm nhiệm phụ trách dự án
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: propertyId
+ *         schema:
+ *           type: integer
+ *         description: ID của dự án
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Trang hiện tại (mặc định 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số phần tử mỗi trang (mặc định 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm theo tên agent
+ *     responses:
+ *       200:
+ *         description: Gán agent thành công
+ *       404:
+ *         description: Bất động sản không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+  '/request-assign/of-property/:propertyId',
+  authMiddleware,
+  roleGuard([RoleName.Admin]),
+  async (req, res) => {
+    const { page = 1, limit = 10, search } = req.query;
+    const { propertyId } = req.params;
+    const token = req.token;
+    const pagination = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+    const filters = {
+      search,
+    };
+    try {
+      const { agents, total } =
+        await propertyService.getAllRequestAssignOfProperty(
+          propertyId,
+          pagination,
+          filters,
+          token
+        );
+      return res.status(200).json({
+        data: {
+          agents,
+          pagination: {
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+          },
+        },
+        message: 'List request assign of property',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  }
+);
 
 /**
  * @swagger
