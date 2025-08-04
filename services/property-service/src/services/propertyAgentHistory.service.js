@@ -76,7 +76,7 @@ const getPropertyAssignedForAgent = async (agentId) => {
   propertyGroups.forEach((records, propertyId) => {
     const lastAssigned = [...records]
       .reverse()
-      .find((r) => r.type === 'ASSIGNED');
+      .find((r) => r.type === AgentHistoryType.ASSIGNED);
     if (lastAssigned) {
       propertyIds.push(propertyId);
     }

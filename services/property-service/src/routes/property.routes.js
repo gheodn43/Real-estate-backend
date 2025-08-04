@@ -14,7 +14,10 @@ import detailPropertyService from '../services/category.detail.service.js';
 import amenityService from '../services/amentity.service.js';
 import agentHistoryService from '../services/propertyAgentHistory.service.js';
 import commissionService from '../services/commission.service.js';
-import { getPublicAgentInfor } from '../helpers/authClient.js';
+import {
+  getPublicAgentInfor,
+  getCustomerInfor,
+} from '../helpers/authClient.js';
 import CustomerRequestType from '../enums/CustomerRequestType.enum.js';
 import CustomerRequestStatus from '../enums/CustomerRequestStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
@@ -2071,6 +2074,7 @@ router
         const { id } = req.params;
         const user = req.user;
         let agent = null;
+        let sender = null;
         // AGENT: chỉ được xem bài của mình
         if (user.userRole === RoleName.Agent) {
           const isAgentOwner = agentHistoryService.verifyOwnerPost(
@@ -2086,8 +2090,10 @@ router
           }
         }
 
-        const { responseProperty, agent_id } =
-          await propertyService.getById(id);
+        const { responseProperty, agent_id } = await propertyService.getById(
+          id,
+          user
+        );
         if (!responseProperty) {
           return res.status(404).json({
             data: null,
@@ -2095,14 +2101,20 @@ router
             error: ['Property not found'],
           });
         }
-        console.log('agent', agent_id);
         if (agent_id) {
-          agent = await getPublicAgentInfor(agent_id);
+          agent = await getPublicAgentInfor(agent_id, req.token);
+        }
+        if (responseProperty.sender_id) {
+          sender = await getCustomerInfor(
+            responseProperty.sender_id,
+            req.token
+          );
         }
         return res.status(200).json({
           data: {
             property: responseProperty,
             agent: agent,
+            sender: sender,
           },
           message: 'Property found',
           error: [],
