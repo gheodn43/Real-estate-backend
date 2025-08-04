@@ -33,6 +33,23 @@ const getPublicAgentInfor = async (userId, token) => {
   };
 };
 
+const getCustomerInfor = async (customerId, token) => {
+  const res = await axios.get(
+    `http://auth-service:4001/auth/profile/${customerId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  const customerData = res.data.data.user;
+  return {
+    id: customerData.id,
+    email: customerData.email,
+    name: customerData.name,
+    avatar: customerData.avatar,
+    number_phone: customerData.number_phone,
+  };
+};
+
 const getAdminInfor = async () => {
   return {
     id: 68,
@@ -59,4 +76,5 @@ export {
   getPublicAgentInfor,
   getAdminInfor,
   getUsersFromListIds,
+  getCustomerInfor,
 };

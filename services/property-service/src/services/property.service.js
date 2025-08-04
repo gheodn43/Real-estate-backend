@@ -5,6 +5,8 @@ import CommissionStatus from '../enums/commissionStatus.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
+import { RoleName } from '../middleware/roleGuard.js';
+
 import {
   getPublicAgentInfor,
   getAdminInfor,
@@ -223,7 +225,7 @@ const getBasicProperty = async (propertyId) => {
   });
   return property;
 };
-const getById = async (propertyId) => {
+const getById = async (propertyId, userData) => {
   const property = await prisma.properties.findUnique({
     where: {
       id: propertyId,
@@ -288,15 +290,46 @@ const getById = async (propertyId) => {
         take: 1,
         where: {
           type: { in: [AgentHistoryType.REQUEST, AgentHistoryType.ASSIGNED] },
+          ...(userData.userRole === RoleName.Agent
+            ? {
+                agent_id: userData.userId,
+              }
+            : {}),
         },
-        select: { agent_id: true },
+        select: {
+          agent_id: true,
+          type: true,
+        },
       },
     },
   });
   const agent_id =
     property.agentHistory.length > 0 ? property.agentHistory[0].agent_id : null;
+  const assign = () => {
+    if (
+      userData.userRole === RoleName.Agent &&
+      property.agentHistory.length > 0
+    ) {
+      if (property.agentHistory[0].type === AgentHistoryType.ASSIGNED) {
+        return 'assigned';
+      } else if (property.agentHistory[0].type === AgentHistoryType.REQUEST) {
+        return 'request_assign';
+      } else {
+        return 'waiting_assign';
+      }
+    } else if (userData.userRole === RoleName.Admin) {
+      if (property.agentHistory.length > 0) {
+        return 'assigned';
+      } else {
+        return 'not_assigned';
+      }
+    } else {
+      return 'not_assigned';
+    }
+  };
   const responseProperty = {
     ...property,
+    assign: assign(),
     commission:
       property.commissions.length > 0
         ? {
@@ -305,6 +338,7 @@ const getById = async (propertyId) => {
             commission: Number(property.commissions[0].commission),
           }
         : null,
+
     commissions: undefined,
     agentHistory: undefined,
   };
