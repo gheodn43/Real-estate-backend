@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const authenticateToken = require('../middleware/authenticateToken');
+const roleGuard = require('../middleware/roleGuard');
 
 /**
  * @swagger
@@ -308,6 +309,54 @@ router.post('/reset-password', authController.resetPassword);
  */
 router.put('/update-profile', authenticateToken, authController.updateProfile);
 
+/**
+ * @swagger
+ * /auth/update-internal-profile:
+ *   put:
+ *     summary: Update user profile [ADMIN]
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: number
+ *               name:
+ *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               gender:
+ *                 type: string
+ *               avatar:
+ *                 type: string
+ *               addr_city:
+ *                 type: string
+ *               addr_district:
+ *                 type: string
+ *               addr_street:
+ *                 type: string
+ *               addr_detail:
+ *                 type: string
+ *               number_phone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *       401:
+ *         description: Not logged in
+ */
+router.put(
+  '/update-internal-profile',
+  authenticateToken,
+  roleGuard([roleGuard.RoleName.Admin]),
+  authController.updateInternalProfile
+);
 /**
  * @swagger
  * /auth/verify:

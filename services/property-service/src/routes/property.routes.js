@@ -207,7 +207,7 @@ router.get(
  *         name: type
  *         schema:
  *           type: enum
- *           enum: [rejected, pending, negotiating, published, completed, hidden]
+ *           enum: [rejected, pending, negotiating, published, completed]
  *         description: Trạng thái yêu cầu
  *     summary: Lấy danh sách yêu cầu ký gửi [CUSTOMER]
  *     description: Chỉ customer mới có quyền lấy danh sách yêu cầu ký gửi
@@ -234,7 +234,8 @@ router.get(
         await propertyService.getRequestPostByCustomerId(
           req.user.userId,
           pagination,
-          filters
+          filters,
+          req.token
         );
       return res.status(200).json({
         data: {
