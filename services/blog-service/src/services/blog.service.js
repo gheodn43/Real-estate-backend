@@ -765,120 +765,142 @@ class BlogService {
     }
   }
 
-  async updateBlogContent(blog_id, journalist_id, title, description, content, userRole) {
-    try {
-      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
-      if (!blog) {
-        throw new Error('Blog not found');
+  async updateBlogContent(blog_id, journalist_id, title, description, content, small_image, userRole) {
+  try {
+    const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
+    if (!blog) {
+      throw new Error('Blog not found');
+    }
+    if (userRole === RoleName.Journalist) {
+      if (blog.journalist_Id !== Number(journalist_id)) {
+        throw new Error('User not authorized to update this blog');
       }
-      if (userRole === RoleName.Journalist) {
-        if (blog.journalist_Id !== Number(journalist_id)) {
-          throw new Error('User not authorized to update this blog');
-        }
-
-        if (blog.status === BlogStatus.PUBLISHED) {
-          throw new Error('User not authorized to update this blog');
-        }
-
+      if (blog.status === BlogStatus.PUBLISHED) {
+        throw new Error('User not authorized to update this blog');
       }
+    }
 
-
-      if (title && title !== blog.title) {
-        const existingBlog = await prisma.blogs.findFirst({
-          where: {
-            title,
-            journalist_Id: Number(journalist_id),
-            status: { not: BlogStatus.REJECTED },
-            id: { not: Number(blog_id) },
-          },
-        });
-        if (existingBlog) {
-          throw new Error('Blog with this title already exists for this journalist');
-        }
+    if (title && title !== blog.title) {
+      if (!title.trim()) {
+        throw new Error('Title cannot be blank or contain only blank characters');
       }
-
-      let finalShortLink = blog.short_link;
-      if (title && title !== blog.title) {
-        finalShortLink = slugify(title, { lower: true, strict: true });
-        let counter = 1;
-        let tempShortLink = finalShortLink;
-        while (
-          await prisma.blogs.findFirst({
-            where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
-          })
-        ) {
-          tempShortLink = `${finalShortLink}-${counter}`;
-          counter++;
-        }
-        finalShortLink = tempShortLink;
-      }
-
-      const updatedBlog = await prisma.blogs.update({
-        where: { id: Number(blog_id) },
-        data: {
-          title: title || blog.title,
-          description: description || blog.description,
-          content: content || blog.content,
-          short_link: finalShortLink,
-          updated_at: new Date(),
+      const existingBlog = await prisma.blogs.findFirst({
+        where: {
+          title,
+          journalist_Id: Number(journalist_id),
+          status: { not: BlogStatus.REJECTED },
+          id: { not: Number(blog_id) },
         },
       });
-      return updatedBlog;
-    } catch (err) {
-      throw new Error(`Failed to update blog: ${err.message}`);
+      if (existingBlog) {
+        throw new Error('A blog with this title already exists for this journalist');
+      }
     }
+
+    let finalShortLink = blog.short_link;
+    if (title && title !== blog.title) {
+      finalShortLink = slugify(title, { lower: true, strict: true });
+      if (!finalShortLink) {
+        throw new Error('Cannot create short_link from invalid title');
+      }
+      let counter = 1;
+      let tempShortLink = finalShortLink;
+      while (
+        await prisma.blogs.findFirst({
+          where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
+        })
+      ) {
+        tempShortLink = `${finalShortLink}-${counter}`;
+        counter++;
+      }
+      finalShortLink = tempShortLink;
+    }
+
+    const updatedBlog = await prisma.blogs.update({
+      where: { id: Number(blog_id) },
+      data: {
+        title: title || blog.title,
+        description: description || blog.description,
+        content: content || blog.content,
+        small_image: small_image || blog.small_image,
+        short_link: finalShortLink,
+        updated_at: new Date(),
+      },
+    });
+
+    return updatedBlog;
+  } catch (err) {
+    throw new Error(`Failed to update blog: ${err.message}`);
   }
+}
 
-  async resubmitBlog(blog_id, title, description, content) {
-    try {
-      const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
-      if (!blog) {
-        throw new Error('Blog not found');
+  async resubmitBlog(blog_id, journalist_id, title, description, content, small_image) {
+  try {
+    const blog = await prisma.blogs.findUnique({ where: { id: Number(blog_id) } });
+    if (!blog) {
+      throw new Error('Blog not found');
+    }
+    if (blog.status !== BlogStatus.REJECTED) {
+      throw new Error('Blog is not in rejected status');
+    }
+    if (blog.journalist_Id !== Number(journalist_id)) {
+      throw new Error('User not authorized to resubmit this blog');
+    }
+
+    if (title && title !== blog.title) {
+      if (!title.trim()) {
+        throw new Error('Title cannot be blank or contain only blank characters');
       }
-
-      if (title && title !== blog.title) {
-        const existingBlog = await prisma.blogs.findFirst({
-          where: {
-            title
-          },
-        });
-        if (existingBlog) {
-          throw new Error('Blog with this title already exists for this journalist');
-        }
-      }
-
-      let finalShortLink = blog.short_link;
-      if (title && title !== blog.title) {
-        finalShortLink = slugify(title, { lower: true, strict: true });
-        let counter = 1;
-        let tempShortLink = finalShortLink;
-        while (
-          await prisma.blogs.findFirst({
-            where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
-          })
-        ) {
-          tempShortLink = `${finalShortLink}-${counter}`;
-          counter++;
-        }
-        finalShortLink = tempShortLink;
-      }
-
-      const updatedBlog = await prisma.blogs.update({
-        where: { id: Number(blog_id) },
-        data: {
-          title: title || blog.title,
-          description: description || blog.description,
-          content: content || blog.content,
-          short_link: finalShortLink,
-          updated_at: new Date(),
-          status: BlogStatus.PENDING,
+      const existingBlog = await prisma.blogs.findFirst({
+        where: {
+          title,
+          journalist_Id: Number(journalist_id),
+          status: { not: BlogStatus.REJECTED },
+          id: { not: Number(blog_id) },
         },
       });
-      return updatedBlog;
-    } catch (err) {
-      throw new Error(`Failed to update blog: ${err.message}`);
+      if (existingBlog) {
+        throw new Error('A blog with this title already exists for this journalist');
+      }
     }
+
+    let finalShortLink = blog.short_link;
+    if (title && title !== blog.title) {
+      finalShortLink = slugify(title, { lower: true, strict: true });
+      if (!finalShortLink) {
+        throw new Error('Cannot create short_link from invalid title');
+      }
+      let counter = 1;
+      let tempShortLink = finalShortLink;
+      while (
+        await prisma.blogs.findFirst({
+          where: { short_link: tempShortLink, id: { not: Number(blog_id) } },
+        })
+      ) {
+        tempShortLink = `${finalShortLink}-${counter}`;
+        counter++;
+      }
+      finalShortLink = tempShortLink;
+    }
+
+    const updatedBlog = await prisma.blogs.update({
+      where: { id: Number(blog_id) },
+      data: {
+        title: title || blog.title,
+        description: description || blog.description,
+        content: content || blog.content,
+        small_image: small_image || blog.small_image,
+        short_link: finalShortLink,
+        updated_at: new Date(),
+        status: BlogStatus.PENDING,
+      },
+    });
+
+    return updatedBlog;
+  } catch (err) {
+    throw new Error(`Failed to resubmit blog: ${err.message}`);
   }
+}
 
   async publishedBlog(blog_id, title, description, content) {
     try {
@@ -928,6 +950,104 @@ class BlogService {
       return updatedBlog;
     } catch (err) {
       throw new Error(`Failed to update blog: ${err.message}`);
+    }
+  }
+
+  async getBlogsAdmin(user_id, page = 1, limit = 10) {
+    try {
+      const skip = (page - 1) * limit;
+      const blogs = await prisma.blogs.findMany({
+        where: { status: BlogStatus.PUBLISHED },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          small_image: true,
+          short_link: true,
+          reacts: {
+            select: {
+              user_id: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      });
+
+      const totalBlogs = await prisma.blogs.count({ where: { status: BlogStatus.PUBLISHED } });
+      const totalPages = Math.ceil(totalBlogs / limit);
+
+      const formattedBlogs = blogs.map(blog => ({
+        id: blog.id,
+        title: blog.title,
+        description: blog.description,
+        small_image: blog.small_image,
+        short_link: blog.short_link,
+        hasReacted: blog.reacts.some(react => react.user_id === Number(user_id)),
+        reactCount: blog.reacts.length,
+      }));
+
+      return {
+        blogs: formattedBlogs,
+        pagination: {
+          total: totalBlogs,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages,
+        },
+      };
+    } catch (err) {
+      throw new Error(`Failed to get blogs: ${err.message}`);
+    }
+  }
+
+  async getBlogsJournalist(user_id, page = 1, limit = 10) {
+    try {
+      const skip = (page - 1) * limit;
+      const blogs = await prisma.blogs.findMany({
+        where: { status: BlogStatus.PUBLISHED },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          small_image: true,
+          short_link: true,
+          reacts: {
+            select: {
+              user_id: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      });
+
+      const totalBlogs = await prisma.blogs.count({ where: { status: BlogStatus.PUBLISHED } });
+      const totalPages = Math.ceil(totalBlogs / limit);
+
+      const formattedBlogs = blogs.map(blog => ({
+        id: blog.id,
+        title: blog.title,
+        description: blog.description,
+        small_image: blog.small_image,
+        short_link: blog.short_link,
+        hasReacted: blog.reacts.some(react => react.user_id === Number(user_id)),
+        reactCount: blog.reacts.length,
+      }));
+
+      return {
+        blogs: formattedBlogs,
+        pagination: {
+          total: totalBlogs,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages,
+        },
+      };
+    } catch (err) {
+      throw new Error(`Failed to get blogs: ${err.message}`);
     }
   }
 

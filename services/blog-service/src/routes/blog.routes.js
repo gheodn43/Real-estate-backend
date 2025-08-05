@@ -7,6 +7,119 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /blogs/save/{blog_id}:
+ *   put:
+ *     summary: Cập nhật blog tại màn hình cập nhật bấm nút LƯU [Journalist]
+ *     description: Journalist chỉ có thể cập nhật blog ở trạng thái draft, pending, rejected; Admin có thể cập nhật mọi trạng thái. Không cho phép Journalist cập nhật blog published.
+ *     tags: [Blogs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: blog_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của blog cần cập nhật
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Tiêu đề mới của blog (tùy chọn, không được để trống hoặc chỉ chứa kí tự trắng)
+ *               description:
+ *                 type: string
+ *                 description: Mô tả ngắn mới của blog (tùy chọn)
+ *               content:
+ *                 type: string
+ *                 description: Nội dung chi tiết mới của blog (tùy chọn)
+ *               small_image:
+ *                 type: string
+ *                 nullable: true
+ *                 description: URL hình ảnh đại diện (tùy chọn)
+ *     responses:
+ *       200:
+ *         description: Blog đã được cập nhật
+ *       400:
+ *         description: Thiếu blog_id,tiêu đề không hợp lệ (trống hoặc chỉ chứa kí tự trắng), hoặc tiêu đề blog đã tồn tại
+ *       403:
+ *         description: Không có quyền cập nhật blog (Journalist không được cập nhật blog published)
+ *       404:
+ *         description: Blog không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
+router.put(
+  '/save/:blog_id',
+  authMiddleware,
+  roleGuard([RoleName.Journalist]),
+  blogController.updateBlogContent
+);
+
+/**
+ * @swagger
+ * /blogs/admin:
+ *   get:
+ *     summary: Lấy danh sách blog [Admin]
+ *     description: Lấy danh sách blog với thông tin chi tiết và số lượng lượt like. Chỉ Admin có thể thực hiện.
+ *     tags: [Blogs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Danh sách blog đã được lấy thành công
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+  '/admin',
+  authMiddleware,
+  roleGuard([RoleName.Admin]),
+  blogController.getBlogsAdmin
+);
+
+/**
+ * @swagger
+ * /blogs/journalist:
+ *   get:
+ *     summary: Lấy danh sách blog của người dùng [Journalist]
+ *     description: Trả về danh sách blog của người dùng đã đăng. Chỉ người dùng có vai trò Journalist có thể thực hiện.
+ *     tags: [Blogs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách blog đã được lấy thành công
+ *       403:
+ *         description: Không có quyền (chỉ Journalist)
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+  '/journalist',
+  authMiddleware,
+  roleGuard([RoleName.Journalist]),
+  blogController.getBlogsJournalist
+);
+
+
+/**
+ * @swagger
  * /blogs/draft:
  *   get:
  *     summary: Lấy tất cả blog draft (Admin, Journalist)
@@ -52,10 +165,6 @@ router.route('/draft')
  *                 type: string
  *                 nullable: true
  *                 description: URL hình ảnh đại diện (tùy chọn)
- *               short_link:
- *                 type: string
- *                 nullable: true
- *                 description: Đường dẫn ngắn của blog (tùy chọn)
  *             required:
  *               - title
  *               - description
@@ -77,63 +186,13 @@ router.post(
   blogController.createBlog
 );
 
-/**
- * @swagger
- * /blogs/save/{blog_id}:
- *   put:
- *     summary: Cập nhật blog tại màn hình cập nhật bấm nút LƯU [Admin, Journalist]
- *     description: Journalist chỉ có thể cập nhật blog ở trạng thái draft, pending, rejected; Admin có thể cập nhật mọi trạng thái. Không cho phép Journalist cập nhật blog published.
- *     tags: [Blogs]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: blog_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID của blog cần cập nhật
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *                 description: Tiêu đề mới của blog (tùy chọn)
- *               description:
- *                 type: string
- *                 description: Mô tả ngắn mới của blog (tùy chọn)
- *               content:
- *                 type: string
- *                 description: Nội dung chi tiết mới của blog (tùy chọn)
- *     responses:
- *       200:
- *         description: Blog đã được cập nhật
- *       400:
- *         description: Thiếu blog_id
- *       403:
- *         description: Không có quyền cập nhật blog (Journalist không được cập nhật blog published)
- *       404:
- *         description: Blog không tồn tại
- *       500:
- *         description: Lỗi server
- */
-router.put(
-  '/save/:blog_id',
-  authMiddleware,
-  roleGuard([RoleName.Journalist, RoleName.Admin]),
-  blogController.updateBlogContent
-);
 
 /**
  * @swagger
  * /blogs/resubmit/{blog_id}:
  *   put:
- *     summary: Gửi lại blog bị từ chối để duyệt [Journalist, Admin]
- *     description: Chuyển trạng thái blog từ rejected sang pending để duyệt lại. Chỉ Journalist sở hữu blog hoặc Admin có thể thực hiện.
+ *     summary: Gửi lại blog bị từ chối để duyệt [Journalist]
+ *     description: Chuyển trạng thái blog từ rejected sang pending để duyệt lại. Chỉ Journalist sở hữu blog có thể thực hiện. Blog phải ở trạng thái rejected.
  *     tags: [Blogs]
  *     security:
  *       - bearerAuth: []
@@ -153,31 +212,35 @@ router.put(
  *             properties:
  *               title:
  *                 type: string
- *                 description: Tiêu đề mới của blog (tùy chọn)
+ *                 description: Tiêu đề mới của blog (tùy chọn, không được để trống hoặc chỉ chứa kí tự trắng)
  *               description:
  *                 type: string
  *                 description: Mô tả ngắn mới của blog (tùy chọn)
  *               content:
  *                 type: string
  *                 description: Nội dung chi tiết mới của blog (tùy chọn)
+ *               small_image:
+ *                 type: string
+ *                 nullable: true
+ *                 description: URL hình ảnh đại diện (tùy chọn)
  *     responses:
  *       200:
  *         description: Blog đã được gửi lại để duyệt
  *       400:
- *         description: Thiếu blog_id hoặc blog không ở trạng thái rejected
+ *         description: Thiếu blog_id, tiêu đề không hợp lệ (trống hoặc chỉ chứa kí tự trắng), tiêu đề blog đã tồn tại, hoặc blog không ở trạng thái rejected
+ *       401:
+ *         description: Thiếu token xác thực
  *       403:
- *         description: Không có quyền gửi lại blog
+ *         description: Không có quyền gửi lại blog (người dùng không phải journalist sở hữu blog)
  *       404:
  *         description: Blog không tồn tại
- *       405:
- *         description: Blog đã được duyệt
  *       500:
  *         description: Lỗi server
  */
 router.put(
   '/resubmit/:blog_id',
   authMiddleware,
-  roleGuard([RoleName.Journalist, RoleName.Admin]),
+  roleGuard([RoleName.Journalist]),
   blogController.resubmitBlog
 );
 
@@ -361,10 +424,6 @@ router.post(
  *                 type: string
  *                 nullable: true
  *                 description: URL hình ảnh đại diện (tùy chọn)
- *               short_link:
- *                 type: string
- *                 nullable: true
- *                 description: Đường dẫn ngắn của blog (tùy chọn)
  *             required:
  *               - title
  *               - description

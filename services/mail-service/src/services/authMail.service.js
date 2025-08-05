@@ -1042,12 +1042,15 @@ const notifyNewAppointment = async ({ appointment }) => {
     throw new Error('appointment and appointment.user.email are required');
   }
 
-  const { user, property, start_time, end_time } = appointment;
+  const { user, property, date, time, message, type } = appointment;
   const userEmail = user.email;
   const userName = user.name || 'N/A';
+  const userPhone = user.number_phone || 'N/A';
+  const propertyId = property?.id || 'N/A';
   const propertyName = property?.name || 'N/A';
-  const startTime = start_time ? new Date(start_time).toLocaleString('vi-VN') : 'N/A';
-  const endTime = end_time ? new Date(end_time).toLocaleString('vi-VN') : 'N/A';
+  const appointmentType = type || 'N/A';
+  const appointmentMessage = message || 'N/A';
+  const startTime = date && time ? `${time} ${new Date(date).toLocaleDateString('vi-VN')}` : 'N/A';
 
   console.log(`Preparing to send email to: ${userEmail}`);
 
@@ -1060,8 +1063,13 @@ const notifyNewAppointment = async ({ appointment }) => {
         <h3>Thông tin cuộc họp</h3>
         <ul>
           <li>Người dùng: ${userName}</li>
+          <li>Email: ${userEmail}</li>
+          <li>Số điện thoại: ${userPhone}</li>
+          <li>Bất động sản ID: ${propertyId}</li>
           <li>Bất động sản: ${propertyName}</li>
-          <li>Thời gian: ${startTime} - ${endTime}</li>
+          <li>Thời gian: ${startTime}</li>
+          <li>Loại cuộc hẹn: ${appointmentType}</li>
+          <li>Tin nhắn: ${appointmentMessage}</li>
         </ul>
       </div>
     `,

@@ -15,6 +15,13 @@ class AppointmentScheduleService {
     if (!['directly', 'video_chat'].includes(type)) {
       throw new Error('Invalid type. Must be "directly" or "video_chat"');
     }
+
+    // Kết hợp date và time thành start_time
+    const startTime = new Date(`${date}T${time}:00`);
+    if (isNaN(startTime.getTime())) {
+      throw new Error('Invalid date or time format');
+    }
+
     const appointment = await prisma.appointment_schedule.create({
       data: {
         property_id: Number(property_id),
@@ -33,35 +40,65 @@ class AppointmentScheduleService {
 
     if (appointment.type === 'directly') {
       try {
-        // Lấy thông tin Agent từ property-service
-        console.log('Fetching agent from property-service...');
-        const agentResponse = await axios.get(
-          `http://property-service:4002/prop/post/${appointment.property_id}/verify-agent`,
-         
-        );
-        const agent = agentResponse.data;
-        console.log('Agent fetched:', agent);
+        // Kiểm tra email hợp lệ
+        const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        const ADMIN_EMAILS = ['kietnguyen23012002@gmail.com']; // Danh sách email admin cố định
 
-        // Chuẩn bị payload cho notifyNewAppointment
-        const emailPayload = {
-          appointment: {
-            user: {
-              email: agent.email,
-              name: agent.name || 'Agent',
-            },
-            property: {
-              name: `Property ${appointment.property_id}`, // Giả định tên bất động sản
+        // Lấy email của agent phụ trách property_id
+        const agent = await prisma.agent.findFirst({
+          where: {
+            assigned_properties: {
+              some: { property_id: Number(property_id) },
             },
           },
-        };
-        console.log('Sending email to agent with payload:', emailPayload);
+          select: { email: true, name: true },
+        });
 
-        // Gọi HTTP tới mail-service
-        await axios.post(
-          'http://mail-service:4003/mail/auth/notifyNewAppointment',
-          emailPayload,
-        );
-        console.log('Notification email sent to agent:', agent.email);
+        // Danh sách người nhận (agent và admin)
+        const recipients = [];
+        if (agent && agent.email && isValidEmail(agent.email)) {
+          recipients.push({ email: agent.email, name: agent.name || 'Agent' });
+        } else {
+          console.error('No valid agent email found for property_id:', property_id);
+        }
+        ADMIN_EMAILS.forEach((adminEmail) => {
+          if (isValidEmail(adminEmail)) {
+            recipients.push({ email: adminEmail, name: 'Admin' });
+          } else {
+            console.error('Invalid admin email:', adminEmail);
+          }
+        });
+
+        // Gửi email đến từng người nhận
+        for (const recipient of recipients) {
+          const emailPayload = {
+            appointment: {
+              user: {
+                email: recipient.email, // Email của agent hoặc admin
+                name: recipient.name,
+                number_phone: number_phone || 'N/A',
+              },
+              property: {
+                id: property_id,
+                name: `Property ${property_id}`,
+              },
+              date,
+              time,
+              message,
+              type,
+              start_time: startTime.toISOString(),
+              customer_name: name, // Tên khách hàng từ req.body
+              customer_email: email, // Email khách hàng từ req.body
+            },
+          };
+          console.log('Sending email to:', recipient.email, 'with payload:', emailPayload);
+
+          await axios.post(
+            'http://mail-service:4003/mail/auth/notifyNewAppointment',
+            emailPayload,
+          );
+          console.log('Notification email sent to:', recipient.email);
+        }
       } catch (emailErr) {
         console.error('Failed to send email notification:', emailErr.message, emailErr.stack);
       }
