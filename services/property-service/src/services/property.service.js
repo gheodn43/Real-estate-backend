@@ -6,6 +6,7 @@ import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import agentHistoryService from './propertyAgentHistory.service.js';
 import { RoleName } from '../middleware/roleGuard.js';
+('../helpers/authClient.js');
 
 import {
   getPublicAgentInfor,
@@ -881,7 +882,12 @@ const getFilteredPropertiesForPrivate = async (filters, pagination) => {
 
   return { properties, total };
 };
-const getRequestPostByCustomerId = async (customerId, pagination, filters) => {
+const getRequestPostByCustomerId = async (
+  customerId,
+  pagination,
+  filters,
+  token
+) => {
   const { page, limit } = pagination;
   const { search, type } = filters;
   let where = {
@@ -935,12 +941,55 @@ const getRequestPostByCustomerId = async (customerId, pagination, filters) => {
             status: true,
           },
         },
+        agentHistory: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: {
+            type: true,
+            agent_id: true,
+          },
+        },
       },
     }),
     prisma.properties.count({ where }),
   ]);
 
-  const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(requests);
+  const propertyIdsHadRequested = await prisma.customer_request.findMany({
+    where: {
+      property_id: {
+        in: requests.map((request) => request.id),
+      },
+      status: 'pending',
+    },
+    select: {
+      property_id: true,
+    },
+  });
+  const requestedIdSet = new Set(
+    propertyIdsHadRequested.map((item) => item.property_id)
+  );
+  const agent = async (agentHistory) => {
+    if (
+      agentHistory.length > 0 &&
+      agentHistory[0].type === AgentHistoryType.ASSIGNED
+    ) {
+      const resAgent = await getPublicAgentInfor(
+        agentHistory[0].agent_id,
+        token
+      );
+      return resAgent;
+    } else {
+      return null;
+    }
+  };
+  const requestsWithRequestStatus = requests.map(async (request) => ({
+    ...request,
+    agent: await agent(request.agentHistory),
+    request: requestedIdSet.has(request.id) ? 'requested' : 'not_request',
+  }));
+  const propertiesWithCustomerNeeds = await getListWithCustomerNeeds(
+    await Promise.all(requestsWithRequestStatus)
+  );
   return { requests: propertiesWithCustomerNeeds, total };
 };
 

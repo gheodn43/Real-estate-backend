@@ -601,6 +601,65 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
+
+exports.updateInternalProfile = async (req, res) => {
+  const {
+    id,
+    name,
+    dateOfBirth,
+    gender,
+    avatar,
+    addr_city,
+    addr_district,
+    addr_street,
+    addr_detail,
+    number_phone,
+  } = req.body;
+  try {
+    const user = await prisma.user.update({
+      where: { id: id },
+      data: {
+        name,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        gender,
+        avatar,
+        addr_city,
+        addr_district,
+        addr_street,
+        addr_detail,
+        number_phone,
+      },
+    });
+    res.json({
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          avatar: user.avatar,
+          addr_city: user.addr_city,
+          addr_district: user.addr_district,
+          addr_street: user.addr_street,
+          addr_detail: user.addr_detail,
+          number_phone: user.number_phone,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+        },
+      },
+      message: 'Profile updated successfully.',
+      errors: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
+
 exports.checkUserExists = async (req, res) => {
   const userId = req.user?.id || req.session?.userId;
   if (!userId) {

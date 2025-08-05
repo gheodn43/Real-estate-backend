@@ -74,97 +74,159 @@ class BlogController {
   }
 
   async updateBlogContent(req, res) {
-    try {
-      const { blog_id } = req.params;
-      const { title, description, content } = req.body;
-      const journalist_id = Number(req.user.userId);
+  try {
+    const { blog_id } = req.params;
+    const { title, description, content, small_image } = req.body;
+    const journalist_id = Number(req.user.userId);
 
-      if (!blog_id) {
-        return res.status(400).json({
-          data: null,
-          message: 'Thiếu blog_id',
-          errors: [],
-        });
-      }
-
-      const blog = await blogService.updateBlogContent(
-
-        Number(blog_id),
-        journalist_id,
-        title,
-        description,
-        content,
-        req.user.userRole,
-      );
-
-      res.status(200).json({
-        data: blog,
-        message: blog.status === 'published' ? 'Blog đã được cập nhật và giữ trạng thái published' : 'Blog đã được cập nhật',
-        errors: [],
-      });
-    } catch (err) {
-      if (err.message === 'Blog not found') {
-        return res.status(404).json({
-          data: null,
-          message: 'Blog không tồn tại',
-          errors: [err.message],
-        });
-      }
-      if (err.message === 'User not authorized to update this blog' || err.message === 'Blog with this title already exists for this journalist') {
-        return res.status(403).json({
-          data: null,
-          message: 'Không có quyền cập nhật blog',
-          errors: [err.message],
-        });
-      }
-      res.status(500).json({
+    if (!blog_id) {
+      return res.status(400).json({
         data: null,
-        message: 'Lỗi server',
+        message: 'Thiếu blog_id',
+        errors: ['Thiếu blog_id'],
+      });
+    }
+
+    if (title && !title.trim()) {
+      return res.status(400).json({
+        data: null,
+        message: 'Title cannot be blank or contain only blank characters',
+        errors: ['Title is invalid'],
+      });
+    }
+
+    if (small_image !== undefined && small_image !== null && typeof small_image !== 'string') {
+      return res.status(400).json({
+        data: null,
+        message: 'small_image must be a string',
+        errors: ['small_image must be a string'],
+      });
+    }
+
+    const blog = await blogService.updateBlogContent(
+      Number(blog_id),
+      journalist_id,
+      title,
+      description,
+      content,
+      small_image,
+      req.user.userRole
+    );
+
+    res.status(200).json({
+      data: blog,
+      message: blog.status === 'published' ? 'Blog has been updated and remains published' : 'Blog has been updated',
+      errors: [],
+    });
+  } catch (err) {
+    if (err.message === 'Blog not found') {
+      return res.status(404).json({
+        data: null,
+        message: 'Blog not found',
         errors: [err.message],
       });
     }
+    if (err.message === 'User not authorized to update this blog' || err.message.includes('already exists')) {
+      return res.status(403).json({
+        data: null,
+        message: err.message.includes('already exists') ? 'Blog title already exists' : 'User not authorized to update this blog',
+        errors: [err.message],
+      });
+    }
+    if (err.message.includes('Title is invalid')) {
+      return res.status(400).json({
+        data: null,
+        message: 'Title is invalid',
+        errors: [err.message],
+      });
+    }
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
   }
+}
 
   async resubmitBlog(req, res) {
-    try {
-      const { title, description, content } = req.body;
-      const blog_id = req.params.blog_id;
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({
-          data: null,
-          message: 'Missing authorization token',
-          errors: ['Missing authorization token'],
-        });
-      }
-      if (!blog_id) {
-        return res.status(400).json({
-          data: null,
-          message: 'Thiếu blog_id',
-          errors: ['Thiếu blog_id'],
-        });
-      }
-      if (req.user.userRole !== RoleName.Journalist) {
-        return res.status(403).json({
-          data: null,
-          message: 'Không có quyền gửi lại blog',
-          errors: ['Không có quyền gửi lại blog'],
-        });
-      }
-      const blog = await blogService.resubmitBlog(blog_id, title, description, content);
-      res.status(200).json({
-        data: { blog },
-        message: 'Blog đã được gửi lại để duyệt',
-        errors: [],
-      });
-    } catch (err) {
-      res.status(err.message.includes('not found') ? 404 : 400).json({
+  try {
+    const { title, description, content, small_image } = req.body;
+    const blog_id = req.params.blog_id;
+    const journalist_id = Number(req.user.userId);
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
         data: null,
-        message: err.message,
+        message: 'Missing authorization token',
+        errors: ['Missing authorization token'],
+      });
+    }
+    if (!blog_id) {
+      return res.status(400).json({
+        data: null,
+        message: 'Missing blog_id',
+        errors: ['Missing blog_id'],
+      });
+    }
+    if (title && !title.trim()) {
+      return res.status(400).json({
+        data: null,
+        message: 'Title cannot be blank or contain only blank characters',
+        errors: ['Title is invalid'],
+      });
+    }
+
+    if (small_image !== undefined && small_image !== null && typeof small_image !== 'string') {
+      return res.status(400).json({
+        data: null,
+        message: 'small_image must be a string',
+        errors: ['small_image must be a string'],
+      });
+    }
+
+    const blog = await blogService.resubmitBlog(blog_id, journalist_id, title, description, content, small_image);
+    res.status(200).json({
+      data: { blog },
+      message: 'Blog has been resubmitted for approval',
+      errors: [],
+    });
+  } catch (err) {
+    if (err.message === 'Blog not found') {
+      return res.status(404).json({
+        data: null,
+        message: 'Blog not found',
         errors: [err.message],
       });
     }
+    if (err.message.includes('already exists')) {
+      return res.status(400).json({
+        data: null,
+        message: 'Blog title already exists',
+        errors: [err.message],
+      });
+    }
+    if (err.message.includes('Title is invalid')) {
+      return res.status(400).json({
+        data: null,
+        message: 'Title is invalid',
+        errors: [err.message],
+      });
+    }
+    if (err.message === 'Blog is not in rejected status') {
+      return res.status(400).json({
+        data: null,
+        message: 'Blog is not in rejected status',
+        errors: [err.message],
+      });
+    }
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
   }
+}
 
   async deleteBlog(req, res) {
     try {
@@ -469,6 +531,50 @@ class BlogController {
       });
     }
   }
+
+  async getBlogsAdmin(req, res) {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const user_id = req.user ? Number(req.user.userId) : null;
+      const result = await blogService.getBlogsAdmin(user_id, Number(page), Number(limit));
+      res.status(200).json({
+        data: result,
+        message: 'Danh sách blog đã được lấy thành công',
+        errors: [],
+      });
+    } catch (err) {
+      res.status(500).json({
+        data: null,
+        message: 'Lỗi server',
+        errors: [err.message],
+      });
+    }
+  }
+
+  async getBlogsJournalist(req, res) {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const user_id = req.user ? Number(req.user.userId) : null;
+      const result = await blogService.getBlogsJournalist(user_id, Number(page), Number(limit));
+      res.status(200).json({
+        data: result,
+        message: 'Danh sách blog đã được lấy thành công',
+        errors: [],
+      });
+    } catch (err) {
+      res.status(500).json({
+        data: null,
+        message: 'Lỗi server',
+        errors: [err.message],
+      });
+    }
+  }
+
+
+
+
+  
+
 
   
 }
