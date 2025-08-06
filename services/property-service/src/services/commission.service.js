@@ -176,6 +176,14 @@ const getAllCompleted = async (filters, pagination) => {
             agent_commission_fee: {
               orderBy: { created_at: 'desc' },
               take: 1,
+              where: {
+                status: {
+                  in: [
+                    AgentCommissionFeeStatus.REJECTED,
+                    AgentCommissionFeeStatus.PROCESSING,
+                  ],
+                },
+              },
               select: {
                 id: true,
                 status: true,
@@ -251,7 +259,15 @@ const getProcessingOfAgent = async (filters, pagination) => {
             agent_commission_fee: {
               orderBy: { created_at: 'desc' },
               take: 1,
-              where: { agent_id },
+              where: {
+                agent_id,
+                status: {
+                  in: [
+                    AgentCommissionFeeStatus.REJECTED,
+                    AgentCommissionFeeStatus.PROCESSING,
+                  ],
+                },
+              },
               select: {
                 id: true,
                 status: true,
