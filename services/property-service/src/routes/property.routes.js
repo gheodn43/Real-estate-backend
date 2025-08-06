@@ -1772,7 +1772,8 @@ router
         const { id } = req.params;
         const user = req.user;
 
-        let property = await propertyService.getById(id);
+        // AGENT: chỉ được sửa bài của mình
+        let property = await propertyService.getById(id, user);
         if (!property) {
           return res.status(404).json({
             data: null,
@@ -1824,7 +1825,6 @@ router
             });
           }
         }
-
         // Cập nhật property
         let requestStatus = property.request_status;
         if (requestPostStatus) {

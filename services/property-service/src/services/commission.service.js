@@ -131,10 +131,10 @@ const rejectCommissionFee = async (id, rejectReason) => {
 };
 
 const getAllCompleted = async (filters, pagination) => {
-  const { search } = filters;
+  const { search, status } = filters;
   const { page, limit } = pagination;
+
   const where = {
-    requestpost_status: RequestPostStatus.PUBLISHED,
     commissions: {
       some: {
         status: CommissionStatus.COMPLETED,
@@ -143,7 +143,19 @@ const getAllCompleted = async (filters, pagination) => {
     ...(search && {
       title: { contains: search },
     }),
+    ...(status && {
+      commissions: {
+        some: {
+          agent_commission_fee: {
+            some: {
+              status: status,
+            },
+          },
+        },
+      },
+    }),
   };
+
   const [properties, total] = await Promise.all([
     prisma.properties.findMany({
       where,
@@ -160,16 +172,42 @@ const getAllCompleted = async (filters, pagination) => {
             status: CommissionStatus.COMPLETED,
           },
           select: {
-            type: true,
-            commission: true,
-            latest_price: true,
+            id: true,
+            agent_commission_fee: {
+              orderBy: { created_at: 'desc' },
+              take: 1,
+              select: {
+                id: true,
+                status: true,
+              },
+            },
           },
         },
       },
     }),
     prisma.properties.count({ where }),
   ]);
-  return { properties, total };
+
+  const propertiesWithCommission = properties.map((property) => {
+    if (
+      property.commissions.length > 0 &&
+      property.commissions[0].agent_commission_fee.length > 0
+    ) {
+      return {
+        ...property,
+        transaction: {
+          transaction_status:
+            property.commissions[0].agent_commission_fee[0].status,
+          commission_id: property.commissions[0].id,
+          commission_fee_id: property.commissions[0].agent_commission_fee[0].id,
+        },
+
+        commissions: undefined,
+      };
+    }
+    return property;
+  });
+  return { properties: propertiesWithCommission, total };
 };
 
 const getProcessingOfAgent = async (filters, pagination) => {
@@ -205,18 +243,18 @@ const getProcessingOfAgent = async (filters, pagination) => {
           select: { id: true, type: true, url: true, order: true },
         },
         commissions: {
+          where: {
+            status: CommissionStatus.COMPLETED,
+          },
           select: {
             id: true,
-            status: true,
-            commission: true,
-            latest_price: true,
             agent_commission_fee: {
+              orderBy: { created_at: 'desc' },
+              take: 1,
               where: { agent_id },
               select: {
                 id: true,
-                commission_value: true,
                 status: true,
-                reject_reason: true,
               },
             },
           },
@@ -225,8 +263,25 @@ const getProcessingOfAgent = async (filters, pagination) => {
     }),
     prisma.properties.count({ where }),
   ]);
-
-  return { properties, total };
+  const propertiesWithCommission = properties.map((property) => {
+    if (
+      property.commissions.length > 0 &&
+      property.commissions[0].agent_commission_fee.length > 0
+    ) {
+      return {
+        ...property,
+        transaction: {
+          transaction_status:
+            property.commissions[0].agent_commission_fee[0].status,
+          commission_id: property.commissions[0].id,
+          commission_fee_id: property.commissions[0].agent_commission_fee[0].id,
+        },
+        commissions: undefined,
+      };
+    }
+    return property;
+  });
+  return { properties: propertiesWithCommission, total };
 };
 
 const getByPropertyId = async (propertyId) => {
@@ -331,6 +386,20 @@ const getCommissionFeeByCommission = async (commissionId, token) => {
     agent: agent,
   };
 };
+const getDetailCommission = async (commissionId) => {
+  const commission = await prisma.commissions.findUnique({
+    where: {
+      id: commissionId,
+    },
+    include: {
+      property: true,
+    },
+  });
+  if (!commission) {
+    throw new Error('commission not found');
+  }
+  return commission;
+};
 
 export default {
   initCommission,
@@ -342,4 +411,5 @@ export default {
   getProcessingOfAgent,
   getByPropertyId,
   getCommissionFeeByCommission,
+  getDetailCommission,
 };
