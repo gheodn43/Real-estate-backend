@@ -290,7 +290,7 @@ const getById = async (propertyId, userData) => {
         orderBy: { created_at: 'desc' },
         take: 1,
         where: {
-          type: { in: [AgentHistoryType.REQUEST, AgentHistoryType.ASSIGNED] },
+          type: { in: [AgentHistoryType.ASSIGNED] },
           ...(userData.userRole === RoleName.Agent
             ? {
                 agent_id: userData.userId,
@@ -305,7 +305,10 @@ const getById = async (propertyId, userData) => {
     },
   });
   const agent_id =
-    property.agentHistory.length > 0 ? property.agentHistory[0].agent_id : null;
+    property.agentHistory.length > 0 &&
+    property.agentHistory[0].type == AgentHistoryType.ASSIGNED
+      ? property.agentHistory[0].agent_id
+      : null;
   const assign = () => {
     if (
       userData.userRole === RoleName.Agent &&
@@ -337,6 +340,7 @@ const getById = async (propertyId, userData) => {
             id: property.commissions[0].id,
             type: property.commissions[0].type,
             commission: Number(property.commissions[0].commission),
+            status: property.commissions[0].status,
           }
         : null,
 

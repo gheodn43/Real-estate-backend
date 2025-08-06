@@ -159,6 +159,19 @@ router
  *           type: integer
  *           default: 10
  *         description: Số bản ghi mỗi trang
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [processing, confirmed, rejected]
+ *         description: Trạng thái giao dịch
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Tìm kiếm theo tên bất động sản
  *     responses:
  *       200:
  *         description: Thành công - Trả về danh sách properties
@@ -173,14 +186,14 @@ router
   .route('/get-all')
   .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     try {
-      const { page = 1, limit = 10, search } = req.query;
+      const { page = 1, limit = 10, search, status } = req.query;
       const pagination = {
         page: Number(page),
         limit: Number(limit),
       };
-
       const filters = {
         search,
+        status,
       };
       const { properties, total } = await commissionService.getAllCompleted(
         filters,
@@ -409,8 +422,59 @@ router
       });
     }
   });
+
+/**
+ * @openapi
+ * /prop/commission/{id}:
+ *   get:
+ *     tags:
+ *       - Commission
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy chi tiết một commission [Admin, Agent]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của commission muốn xem
+ *     responses:
+ *       200:
+ *         description: Giao dịch đã được Admin xác nhận thành công
+ *       401:
+ *         description: Unauthorized - Không có quyền truy cập
+ *       500:
+ *         description: Lỗi server
+ */
 router
-  .route('/:property_id')
+  .route('/:id')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      const { id } = req.params;
+      try {
+        const commission = await commissionService.getDetailCommission(id);
+        return res.status(200).json({
+          data: {
+            commission: commission,
+          },
+          message: 'Success',
+          error: null,
+        });
+      } catch (err) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [err.message],
+        });
+      }
+    }
+  );
+
+router
+  .route('/of-property/:property_id')
   .get(
     authMiddleware,
     roleGuard([RoleName.Admin, RoleName.Agent]),
