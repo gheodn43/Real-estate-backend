@@ -404,17 +404,37 @@ const getCommissionFeeByCommission = async (commissionId, token) => {
 };
 const getDetailCommission = async (commissionId) => {
   const commission = await prisma.commissions.findUnique({
-    where: {
-      id: commissionId,
-    },
+    where: { id: commissionId },
     include: {
       property: true,
+      agent_commission_fee: true,
     },
   });
+
   if (!commission) {
-    throw new Error('commission not found');
+    throw new Error('Commission not found');
   }
-  return commission;
+
+  const transactionDetail =
+    commission.agent_commission_fee?.length > 0
+      ? commission.agent_commission_fee[0]
+      : null;
+
+  let agent = null;
+  if (transactionDetail?.agent_id) {
+    agent = await getPublicAgentInfor(transactionDetail.agent_id);
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  const { agent_commission_fee, ...restCommission } = commission;
+
+  const commissionWithAgentAndTransaction = {
+    ...restCommission,
+    transaction_detail: transactionDetail,
+    agent,
+  };
+
+  return commissionWithAgentAndTransaction;
 };
 
 export default {
