@@ -473,6 +473,30 @@ router
     }
   );
 
+/**
+ * @openapi
+ * /prop/commission/of-property/{property_id}:
+ *   get:
+ *     tags:
+ *       - Commission
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy chi tiết một commission [Admin, Agent]
+ *     parameters:
+ *       - in: path
+ *         name: property_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của property muốn xem
+ *     responses:
+ *       200:
+ *         description: Giao dịch đã được Admin xác nhận thành công
+ *       401:
+ *         description: Unauthorized - Không có quyền truy cập
+ *       500:
+ *         description: Lỗi server
+ */
 router
   .route('/of-property/:property_id')
   .get(
