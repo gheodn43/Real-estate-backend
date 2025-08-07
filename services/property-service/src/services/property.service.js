@@ -433,6 +433,19 @@ const getRelateProperties = async (currentPropertyId, assetsId, count) => {
   return propertiesWithCustomerNeeds;
 };
 
+const incrementViewCounter = async (propertyId) => {
+  await prisma.properties.update({
+    where: {
+      id: propertyId,
+    },
+    data: {
+      view_counter: {
+        increment: 1,
+      },
+    },
+  });
+};
+
 const getBySlug = async (slug) => {
   const property = await prisma.properties.findUnique({
     where: {
@@ -1397,6 +1410,13 @@ const acceptDeleteRequest = async (request_id) => {
   return request;
 };
 
+const rejectDeleteRequest = async (request_id) => {
+  const request = await prisma.customer_request.delete({
+    where: { id: request_id },
+  });
+  return request;
+};
+
 const getMyCustomerRequests = async (filters, pagination) => {
   const { page, limit } = pagination;
   const { type, status, customer_id } = filters;
@@ -1570,10 +1590,12 @@ export default {
   initCustomerRequest,
   getCustomerRequests,
   acceptDeleteRequest,
+  rejectDeleteRequest,
   getMyCustomerRequests,
   getRequestPostWaitingAssignByAgentId,
   getRequestPostAssignedForAgentId,
   getAllRequestAssign,
   forwardDraft,
   getAllRequestAssignOfProperty,
+  incrementViewCounter,
 };

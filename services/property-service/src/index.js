@@ -11,6 +11,7 @@ import uploadImageRoutes from './routes/uploadImage.routes.js';
 import expressFileUpload from 'express-fileupload';
 import commissionRoutes from './routes/commission.routes.js';
 import saleRoutes from './routes/sale.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/prop', propertyRoutes);
 app.use('/prop/upload', uploadImageRoutes);
 app.use('/prop/commission', commissionRoutes);
 app.use('/prop/sale', saleRoutes);
+app.use('/prop/dashboard', dashboardRoutes);
 
 const PORT = process.env.PORT || 4002;
 app.listen(PORT);
