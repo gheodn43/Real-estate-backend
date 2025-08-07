@@ -1,7 +1,8 @@
 import prisma from '../middleware/prismaClient.js';
 import RequestStatus from '../enums/requestStatus.enum.js';
+import AgentHistoryType from '../enums/agentHistoryType.enum.js';
+import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 // import CommissionStatus from '../enums/commissionStatus.enum.js';
-// import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 
 const getPropertyType = async ({ start_date, end_date }) => {
   const whereBase = {
@@ -33,7 +34,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
       },
       agentHistory: {
         some: {
-          type: 'assigned',
+          type: AgentHistoryType.ASSIGNED,
         },
       },
     },
@@ -45,10 +46,10 @@ const getPropertyType = async ({ start_date, end_date }) => {
       sender_id: {
         not: null,
       },
-      request_status: 'pending',
+      request_status: RequestStatus.PENDING,
       agentHistory: {
         none: {
-          type: 'assigned',
+          type: AgentHistoryType.ASSIGNED,
         },
       },
     },
@@ -60,7 +61,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
       sender_id: {
         not: null,
       },
-      request_status: 'published',
+      request_status: RequestStatus.PUBLISHED,
     },
   });
 
@@ -70,7 +71,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
       sender_id: {
         not: null,
       },
-      request_status: 'rejected',
+      request_status: RequestStatus.REJECTED,
     },
   });
 
@@ -79,7 +80,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
     ...whereBase,
     sender_id: null,
     requestpost_status: {
-      not: 'hidden',
+      not: RequestPostStatus.HIDDEN,
     },
   };
 
@@ -89,7 +90,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
     where: {
       ...whereBase,
       sender_id: null,
-      requestpost_status: 'pending',
+      requestpost_status: RequestPostStatus.PENDING_APPROVAL,
     },
   });
 
@@ -97,7 +98,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
     where: {
       ...whereBase,
       sender_id: null,
-      requestpost_status: 'published',
+      requestpost_status: RequestPostStatus.PUBLISHED,
     },
   });
 
@@ -105,7 +106,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
     where: {
       ...whereBase,
       sender_id: null,
-      requestpost_status: 'rejected',
+      requestpost_status: RequestPostStatus.REJECTED,
     },
   });
 
@@ -113,7 +114,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
     where: {
       ...whereBase,
       sender_id: null,
-      requestpost_status: 'expired',
+      requestpost_status: RequestPostStatus.EXPIRED,
     },
   });
 
@@ -136,6 +137,6 @@ const getPropertyType = async ({ start_date, end_date }) => {
   };
 };
 
-module.exports = {
+export default {
   getPropertyType,
 };
