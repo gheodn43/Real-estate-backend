@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
-import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
 
@@ -12,7 +11,6 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
 
 app.use('/agent-chat/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/swagger.json', (req, res) => {

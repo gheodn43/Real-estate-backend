@@ -2309,7 +2309,7 @@ router.route('/:slug').get(async (req, res) => {
         error: ['Property not found'],
       });
     }
-
+    await propertyService.incrementViewCounter(property.id);
     return res.status(200).json({
       data: {
         property: property,
@@ -2782,6 +2782,50 @@ router
       requestStatus,
       RequestPostStatus.HIDDEN
     );
+    return res.status(200).json({
+      data: null,
+      message: 'Success',
+      error: null,
+    });
+  });
+
+/**
+ * @openapi
+ * /prop/reject-delete-request:
+ *   post:
+ *     tags:
+ *       - Customer request
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Từ chối yêu cầu xóa BĐS của khách hàng [Admin]
+ *     description: API cho **Admin** từ chối yêu cầu xóa một bài đăng BĐS.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               request_id:
+ *                 type: integer
+ *                 example: 77
+ *     responses:
+ *       200:
+ *         description: Yêu cầu xóa đã được chấp nhận thành công.
+ *       401:
+ *         description: Unauthorized - Chưa đăng nhập hoặc token không hợp lệ.
+ *       403:
+ *         description: Forbidden - Chỉ Admin được thực hiện hành động này.
+ *       404:
+ *         description: Không tìm thấy request.
+ *       500:
+ *         description: Lỗi server.
+ */
+router
+  .route('/reject-delete-request')
+  .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { request_id } = req.body;
+    await propertyService.rejectDeleteRequest(request_id);
     return res.status(200).json({
       data: null,
       message: 'Success',
