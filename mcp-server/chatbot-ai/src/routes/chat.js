@@ -215,12 +215,15 @@ router.get(
           error: ['Chat not found'],
         });
       }
+
+      const reversedMemory = [...chat.memory].reverse(); // đảo ngược để lấy tin mới nhất trước
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
-      const chatHistory = chat.memory.slice(startIndex, endIndex);
+      const chatHistory = reversedMemory.slice(startIndex, endIndex);
+
       return res.status(200).json({
         data: {
-          chatHistory: chatHistory,
+          chatHistory,
           currentPage: Number(page),
           totalPages: Math.ceil(chat.memory.length / limit),
         },
