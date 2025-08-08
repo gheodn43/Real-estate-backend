@@ -40,7 +40,7 @@ const getHistoryByAgentId = async (agentId) => {
     where: {
       agent_id: agentId,
       type: {
-        in: [AgentHistoryType.ASSIGNED, AgentHistoryType.REQUEST],
+        in: [AgentHistoryType.ASSIGNED],
       },
     },
     orderBy: {

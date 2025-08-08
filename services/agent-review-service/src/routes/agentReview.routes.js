@@ -307,9 +307,8 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
 /**
  * @swagger
  * /review/agent-reviews:
-
  *   get:
- *     summary: Lấy danh sách đánh giá của Agent [Customer]
+ *     summary: Lấy danh sách và tổng kết đánh giá của Agent [Customer]
  *     tags: [AgentReview]
  *     parameters:
  *       - in: query
@@ -317,17 +316,22 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID của agent
  *       - in: query
  *         name: page
  *         schema:
  *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
+ *           default: 10
+ *         description: Số lượng đánh giá mỗi trang
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
+ *         description: Lấy danh sách và tổng kết thành công
  *         content:
  *           application/json:
  *             schema:
@@ -335,16 +339,44 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
  *               properties:
  *                 data:
  *                   type: object
+ *                   properties:
+ *                     reviews:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           agent_id:
+ *                             type: integer
+ *                           rating:
+ *                             type: number
+ *                           comment:
+ *                             type: string
+ *                           created_at:
+ *                             type: string
+ *                             format: date-time
+ *                           replies:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                     summary:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         avg:
+ *                           type: number
  *                 message:
  *                   type: string
- *                   example: Lấy danh sách đánh giá thành công
+ *                   example: Lấy danh sách và tổng kết đánh giá thành công
  *                 errors:
  *                   type: array
  *                   items:
  *                     type: string
  *                   example: []
  *       403:
- *         description: 'Lấy danh sách thất bại (ví dụ: thiếu agent_id)'
+ *         description: Lấy danh sách và tổng kết thất bại
  *         content:
  *           application/json:
  *             schema:
@@ -352,67 +384,21 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
  *               properties:
  *                 data:
  *                   type: object
+ *                   properties:
+ *                     reviews:
+ *                       type: null
+ *                     summary:
+ *                       type: null
  *                 message:
  *                   type: string
- *                   example: Lấy danh sách đánh giá thất bại
+ *                   example: Lấy danh sách và tổng kết đánh giá thất bại
  *                 errors:
  *                   type: array
  *                   items:
  *                     type: string
- *                   example: [Thiếu agent_id]
+ *                   example: [agent_id is required]
  */
 router.get('/', agentReviewController.getAgentReviews);
-
-/**
- * @swagger
- * /review/agent-reviews/summary:
- *   get:
- *     summary: Lấy tổng kết đánh giá của Agent [Customer]
-
- *     tags: [AgentReview]
- *     parameters:
- *       - in: query
- *         name: agent_id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Lấy tổng kết thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Lấy tổng kết đánh giá thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
- *       403:
- *         description: 'Lấy tổng kết thất bại (ví dụ: thiếu agent_id)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Lấy tổng kết đánh giá thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Thiếu agent_id]
- */
-router.get('/summary', agentReviewController.getAgentReviewSummary);
 
 /**
  * @swagger

@@ -1,6 +1,17 @@
 import prisma from '../middleware/prismaClient.js';
 
 const createDetail = async (data) => {
+  const existing = await prisma.property_category_detail.findFirst({
+    where: {
+      field_name: data.fieldName,
+      category_id: data.categoryId,
+      deleted_at: null,
+    },
+  });
+
+  if (existing) {
+    throw new Error('Field name already exists in this category');
+  }
   const categoryDetail = await prisma.property_category_detail.create({
     data: {
       category_id: data.categoryId,
@@ -15,6 +26,7 @@ const createDetail = async (data) => {
       is_showing: data.isShowing,
     },
   });
+
   return categoryDetail;
 };
 
@@ -45,10 +57,26 @@ const getDetailByCategoryId = async (categoryId) => {
 };
 
 const updateDetail = async (id, data) => {
-  const categoryDetail = await prisma.property_category_detail.update({
+  const currentDetail = await prisma.property_category_detail.findUnique({
+    where: { id },
+  });
+  if (!currentDetail || currentDetail.deleted_at !== null) {
+    throw new Error('Detail not found or has been deleted');
+  }
+  const duplicate = await prisma.property_category_detail.findFirst({
     where: {
-      id: id,
+      id: { not: id }, // bỏ qua chính nó
+      category_id: data.categoryId,
+      field_name: data.fieldName,
+      deleted_at: null,
     },
+  });
+
+  if (duplicate) {
+    throw new Error('Field name already exists in this category');
+  }
+  const categoryDetail = await prisma.property_category_detail.update({
+    where: { id },
     data: {
       category_id: data.categoryId,
       field_name: data.fieldName,

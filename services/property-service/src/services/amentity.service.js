@@ -12,6 +12,16 @@ const createAmenity = async ({ name, parentAmenityId, isActive }) => {
       throw new Error('Cannot create amenity deeper than 2 levels');
     }
   }
+  const existingAmenity = await prisma.amenities.findFirst({
+    where: {
+      name,
+      parent_amentity_id: parentAmenityId || null,
+      deleted_at: null,
+    },
+  });
+  if (existingAmenity) {
+    throw new Error('Duplicate amenity name in the same level');
+  }
   const amenity = await prisma.amenities.create({
     data: {
       name: name,
@@ -21,6 +31,7 @@ const createAmenity = async ({ name, parentAmenityId, isActive }) => {
   });
   return amenity;
 };
+
 const createMultipleAmenities = async (amenities) => {
   const createdAmenities = [];
   for (const amenity of amenities) {
@@ -99,17 +110,49 @@ const getActiveAmenities = async () => {
 };
 
 const updateAmenity = async (id, { name, parentAmenityId, isActive }) => {
-  const amenity = await prisma.amenities.update({
+  // 1️⃣ Kiểm tra amenity cần cập nhật có tồn tại không
+  const currentAmenity = await prisma.amenities.findUnique({ where: { id } });
+  if (!currentAmenity) {
+    throw new Error('Amenity not found');
+  }
+  if (parentAmenityId) {
+    const parentAmenity = await prisma.amenities.findUnique({
+      where: { id: parentAmenityId },
+    });
+    if (!parentAmenity) {
+      throw new Error('Parent amenity not found');
+    }
+
+    if (parentAmenity.parent_amentity_id !== null) {
+      throw new Error('Cannot set parent deeper than 2 levels');
+    }
+
+    if (parentAmenity.id === id) {
+      throw new Error('Amenity cannot be its own parent');
+    }
+  }
+  const duplicate = await prisma.amenities.findFirst({
     where: {
-      id: id,
+      name,
+      parent_amentity_id: parentAmenityId || null,
+      deleted_at: null,
+      id: { not: id },
     },
+  });
+
+  if (duplicate) {
+    throw new Error('Duplicate name in the same level');
+  }
+  const updatedAmenity = await prisma.amenities.update({
+    where: { id },
     data: {
-      name: name,
+      name,
       parent_amentity_id: parentAmenityId,
       is_active: isActive,
     },
   });
-  return amenity;
+
+  return updatedAmenity;
 };
 
 const createAmenityProperty = async (dataArray) => {

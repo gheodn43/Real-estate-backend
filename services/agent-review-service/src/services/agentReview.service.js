@@ -2,7 +2,8 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import axios from 'axios';
 import { getCustomerProfile, getAgentFromAuthService, getUserFromAuthService } from '../helpers/authClient.js';
-import roleGuard, {RoleName} from '../middleware/roleGuard.js';
+import {RoleName} from '../middleware/roleGuard.js';
+import { getPublicAgentInfor } from '../helpers/authClient.js';
 
 
 
@@ -392,46 +393,74 @@ async approveReply(review_id, token) {
     }
   }
 
-  
 
-  async getAgentReviews(agent_id, page = 1, limit = 10) {
-    try {
-      return prisma.agent_reviews.findMany({
-        where: {
-          agent_id: Number(agent_id),
-          type: 'comment',
-          status: 'showing',
-        },
-        orderBy: { created_at: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: { replies: { where: { status: 'showing' } } },
-      });
-    } catch (err) {
-      throw err;
-    }
+  async getAgentReviewsAndSummary(agent_id, page = 1, limit = 10) {
+  if (!Number.isInteger(Number(agent_id)) || agent_id <= 0) {
+    throw new Error('Invalid agent_id: Must be a positive integer');
+  }
+  if (!Number.isInteger(page) || page < 1) {
+    throw new Error('Invalid page number: Must be a positive integer');
+  }
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error('Invalid limit: Must be a positive integer');
   }
 
-  async getAgentReviewSummary(agent_id) {
+  try {
+    let agent = null;
     try {
-      const reviews = await prisma.agent_reviews.findMany({
-        where: {
-          agent_id: Number(agent_id),
-          type: 'comment',
-          status: 'showing',
-        },
-        select: { rating: true },
-      });
-      const total = reviews.length;
-      const avg = total
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / total
-        : 0;
-      return { total, avg };
+      console.log('Calling getPublicAgentInfor with agent_id:', agent_id);
+      agent = await getPublicAgentInfor(agent_id);
+      console.log('Agent:', agent);
     } catch (err) {
-      throw err;
+      console.error('Error in getPublicAgentInfor:', err.message, err.response?.status);
+      // Tiếp tục với agent = null
     }
-  }
 
+    const reviews = await prisma.agent_reviews.findMany({
+      where: {
+        agent_id: Number(agent_id),
+        type: 'comment',
+        status: 'showing',
+      },
+      orderBy: { created_at: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { replies: { where: { status: 'showing' } } },
+    });
+
+    const summaryReviews = await prisma.agent_reviews.findMany({
+      where: {
+        agent_id: Number(agent_id),
+        type: 'comment',
+        status: 'showing',
+      },
+      select: { rating: true },
+    });
+
+    const total = summaryReviews.length;
+    const avg = total
+      ? summaryReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total
+      : 0;
+
+    const result = {
+      agent: agent || {},
+      reviews,
+      rating: avg ,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    console.log('Result of getAgentReviewsAndSummary:', result);
+    return result;
+  } catch (err) {
+    console.error('Error in getAgentReviewsAndSummary:', err.message, err.stack);
+    throw new Error(`Failed to fetch reviews: ${err.message}`);
+  }
+}
   async getUserReview(agent_id, user_id) {
     try {
       return prisma.agent_reviews.findMany({
