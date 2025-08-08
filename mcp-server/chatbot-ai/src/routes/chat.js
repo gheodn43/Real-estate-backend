@@ -99,77 +99,68 @@ router.post('/test/:userId', async (req, res) => {
  *       200:
  *         description: Success
  */
-router.post(
-  '/',
-  authMiddleware,
-  roleGuard([
-    RoleName.Customer,
-    RoleName.Agent,
-    RoleName.Journalist,
-    RoleName.Admin,
-  ]),
-  async (req, res) => {
-    const userId = req.user.userId;
-    const userIP = getIP(req);
-    const { message, lat, lng } = req.body;
+router.post('/', authMiddleware, async (req, res) => {
+  const userId = req.user.userId;
+  const userIP = getIP(req);
+  const { message, lat, lng } = req.body;
 
-    if (!userId || !message) {
-      return res.status(400).json({ error: 'Missing userId or message' });
-    }
-    try {
-      let chat = await ChatMemory.findOne({ userId });
-      if (!chat) {
-        chat = await ChatMemory.findOne({ userId: null, userIP });
-        if (chat) {
-          chat.userId = userId;
-        }
-      }
-      if (!chat) {
-        chat = new ChatMemory({
-          userId,
-          context: 'Cuộc trò chuyện mới bắt đầu.',
-        });
-      }
-      const currentContext = chat.context;
-      const { reply, updatedContext } = await getGrokResponse(
-        message,
-        currentContext,
-        { lat, lng }
-      );
-      //update chat memory
-      chat.memory.push({
-        human: message,
-        agent: reply,
-        status: 'completed',
-        timestamp: new Date(),
-      });
-
-      chat.context = updatedContext;
-      if (chat.memory.length > 100) {
-        chat.memory = chat.memory.slice(chat.memory.length - 100);
-      }
-
-      chat.lastInteraction = new Date();
-      await chat.save();
-
-      res.json({
-        data: {
-          reply: reply,
-          updatedContext: updatedContext,
-          properties: [],
-        },
-        message: 'success',
-        error: [],
-      });
-    } catch (err) {
-      res.status(500).json({
-        data: null,
-        message: '',
-        error: [err.message],
-      });
-    }
+  if (!userId || !message) {
+    return res.status(400).json({ error: 'Missing userId or message' });
   }
-);
+  try {
+    let chat = await ChatMemory.findOne({ userId });
+    if (!chat) {
+      chat = await ChatMemory.findOne({ userId: null, userIP });
+      if (chat) {
+        chat.userId = userId;
+      }
+    }
+    if (!chat) {
+      chat = new ChatMemory({
+        userId,
+        userIP,
+        context: 'Cuộc trò chuyện mới bắt đầu.',
+      });
+    }
+    const currentContext = chat.context;
+    const { reply, updatedContext } = await getGrokResponse(
+      message,
+      currentContext,
+      { lat, lng }
+    );
+    //update chat memory
+    chat.memory.push({
+      human: message,
+      agent: reply,
+      status: 'completed',
+      timestamp: new Date(),
+    });
+
+    chat.context = updatedContext;
+    if (chat.memory.length > 100) {
+      chat.memory = chat.memory.slice(chat.memory.length - 100);
+    }
+
+    chat.lastInteraction = new Date();
+    await chat.save();
+
+    res.json({
+      data: {
+        reply: reply,
+        updatedContext: updatedContext,
+        properties: [],
+      },
+      message: 'success',
+      error: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: '',
+      error: [err.message],
+    });
+  }
+});
 
 /**
  * @openapi
@@ -299,7 +290,6 @@ router.get(
           error: ['Chat not found'],
         });
       }
-
       const reversedMemory = [...chat.memory].reverse(); // đảo ngược để lấy tin mới nhất trước
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
