@@ -17,6 +17,7 @@ import commissionService from '../services/commission.service.js';
 import {
   getPublicAgentInfor,
   getCustomerInfor,
+  getAdminInfor,
 } from '../helpers/authClient.js';
 import CustomerRequestType from '../enums/CustomerRequestType.enum.js';
 import CustomerRequestStatus from '../enums/CustomerRequestStatus.enum.js';
@@ -234,8 +235,7 @@ router.get(
         await propertyService.getRequestPostByCustomerId(
           req.user.userId,
           pagination,
-          filters,
-          req.token
+          filters
         );
       return res.status(200).json({
         data: {
@@ -2103,7 +2103,7 @@ router
           });
         }
         if (agent_id) {
-          agent = await getPublicAgentInfor(agent_id, req.token);
+          agent = await getPublicAgentInfor(agent_id);
         }
         if (responseProperty.sender_id) {
           sender = await getCustomerInfor(
@@ -2911,6 +2911,34 @@ router
       message: 'Success',
       error: null,
     });
+  });
+
+router
+  .route('/get-agent-assigned-for-property/:propertyId')
+  .get(async (req, res) => {
+    const { propertyId } = req.params;
+    try {
+      let agent = await getAdminInfor();
+      const agentId =
+        await agentHistoryService.getAssignedAgentOfProperty(propertyId);
+      if (agentId) {
+        agent = await getPublicAgentInfor(agentId);
+      }
+      return res.status(200).json({
+        data: {
+          agent: agent,
+        },
+        message: 'Success',
+        error: null,
+      });
+    } catch (error) {
+      console.error('Error getting assigned agent:', error);
+      return res.status(500).json({
+        data: null,
+        message: 'Internal Server Error',
+        error: error.message,
+      });
+    }
   });
 
 export default router;

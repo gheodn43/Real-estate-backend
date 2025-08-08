@@ -516,7 +516,6 @@ router
         }
 
         const propertyId = Number(property_id);
-        const token = req.token;
 
         // Get property data
         const property = await commissionService.getByPropertyId(propertyId);
@@ -549,10 +548,7 @@ router
         // Get commission fee and agent info
         const commissionId = property.commissions[0].id;
         const { commissionFee, agent } =
-          await commissionService.getCommissionFeeByCommission(
-            commissionId,
-            token
-          );
+          await commissionService.getCommissionFeeByCommission(commissionId);
 
         // Update response data with transaction info
         responseData.transaction = {

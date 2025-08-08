@@ -899,12 +899,7 @@ const getFilteredPropertiesForPrivate = async (filters, pagination) => {
 
   return { properties, total };
 };
-const getRequestPostByCustomerId = async (
-  customerId,
-  pagination,
-  filters,
-  token
-) => {
+const getRequestPostByCustomerId = async (customerId, pagination, filters) => {
   const { page, limit } = pagination;
   const { search, type } = filters;
   let where = {
@@ -990,10 +985,7 @@ const getRequestPostByCustomerId = async (
       agentHistory.length > 0 &&
       agentHistory[0].type === AgentHistoryType.ASSIGNED
     ) {
-      const resAgent = await getPublicAgentInfor(
-        agentHistory[0].agent_id,
-        token
-      );
+      const resAgent = await getPublicAgentInfor(agentHistory[0].agent_id);
       return resAgent;
     } else {
       return null;

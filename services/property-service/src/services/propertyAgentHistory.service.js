@@ -160,6 +160,19 @@ const rejectRequestAssign = async (propertyId, agent_id) => {
   });
 };
 
+const getAssignedAgentOfProperty = async (propertyId) => {
+  const latestAssigned = await prisma.property_agent_history.findFirst({
+    where: {
+      property_id: Number(propertyId),
+      type: AgentHistoryType.ASSIGNED,
+    },
+    orderBy: {
+      created_at: 'desc',
+    },
+  });
+  return latestAssigned ? latestAssigned.agent_id : null;
+};
+
 export default {
   createHistory,
   verifyOwnerPost,
@@ -169,4 +182,5 @@ export default {
   rejectRequestAssign,
   removeRequestAssign,
   requestAssignToProject,
+  getAssignedAgentOfProperty,
 };

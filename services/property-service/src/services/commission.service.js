@@ -384,7 +384,7 @@ const getByPropertyId = async (propertyId) => {
   };
 };
 
-const getCommissionFeeByCommission = async (commissionId, token) => {
+const getCommissionFeeByCommission = async (commissionId) => {
   const commissionFees = await prisma.agent_commission_fee.findMany({
     where: {
       commission_id: commissionId,
@@ -396,7 +396,7 @@ const getCommissionFeeByCommission = async (commissionId, token) => {
       },
     },
   });
-  const agent = await getPublicAgentInfor(commissionFees[0].agent_id, token);
+  const agent = await getPublicAgentInfor(commissionFees[0].agent_id);
   return {
     commissionFee: commissionFees[0],
     agent: agent,

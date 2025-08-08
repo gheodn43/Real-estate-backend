@@ -16,12 +16,9 @@ const getCustomerProfile = async (customerId, token) => {
   return res.data;
 };
 
-const getPublicAgentInfor = async (userId, token) => {
+const getPublicAgentInfor = async (userId) => {
   const res = await axios.get(
-    `http://auth-service:4001/auth/publish-agent-profile/${userId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
+    `http://auth-service:4001/auth/publish-agent-profile/${userId}`
   );
   const customerData = res.data.data.user;
   return {
