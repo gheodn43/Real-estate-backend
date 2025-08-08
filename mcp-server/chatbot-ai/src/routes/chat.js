@@ -6,6 +6,7 @@ import { getGrokResponse } from '../modules/brain.js';
 import { filterProperty } from '../helpers/propClient.js';
 
 const router = express.Router();
+
 router.post('/test/filter', async (req, res) => {
   const { lat, lng } = req.body;
   const properties = await filterProperty(lat, lng);
@@ -66,7 +67,6 @@ router.post('/test/:userId', async (req, res) => {
       error: [],
     });
   } catch (err) {
-    console.error('Chat error:', err.message);
     res.status(500).json({
       data: null,
       message: '',
@@ -110,7 +110,6 @@ router.post(
   ]),
   async (req, res) => {
     const userId = req.user.userId;
-    console.log(req.user.userId);
     const { message, lat, lng } = req.body;
 
     if (!userId || !message) {
@@ -157,7 +156,6 @@ router.post(
         error: [],
       });
     } catch (err) {
-      console.error('Chat error:', err.message);
       res.status(500).json({
         data: null,
         message: '',
@@ -166,6 +164,85 @@ router.post(
     }
   }
 );
+
+/**
+ * @openapi
+ * /agent-chat/public:
+ *   post:
+ *     summary: public chatbot
+ *     description: public chatbot
+ *     tags:
+ *       - Chatbot
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 description: User message
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.post('/', async (req, res) => {
+  const { message, lat, lng } = req.body;
+  const userIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Missing message' });
+  }
+
+  try {
+    let chat = await ChatMemory.findOne({ userIP });
+    if (!chat) {
+      chat = new ChatMemory({
+        userIP,
+        context: 'Cuộc trò chuyện mới bắt đầu.',
+      });
+    }
+
+    const currentContext = chat.context;
+    const { reply, updatedContext } = await getGrokResponse(
+      message,
+      currentContext,
+      { lat, lng }
+    );
+
+    chat.memory.push({
+      human: message,
+      agent: reply,
+      status: 'completed',
+      timestamp: new Date(),
+    });
+
+    chat.context = updatedContext;
+    if (chat.memory.length > 100) {
+      chat.memory = chat.memory.slice(chat.memory.length - 100);
+    }
+
+    chat.lastInteraction = new Date();
+    await chat.save();
+
+    res.json({
+      data: {
+        reply,
+        updatedContext,
+        properties: [],
+      },
+      message: 'success',
+      error: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: '',
+      error: [err.message],
+    });
+  }
+});
 
 /**
  * @openapi
