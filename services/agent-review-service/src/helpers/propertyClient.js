@@ -16,10 +16,14 @@ const verifyAgent = async (property_id) => {
   }
 };
 
-const getAssignedProperties = async (agentEmail) => {
-  
+const getAssignedProperties = async (agent_id, token) => {
   try {
-    const res = await axios.get(`http://property-service:4002/prop/post/assigned-of-agent/${agent_id}`);
+    const res = await axios.get(
+    `http://property-service:4002/prop/post/assigned-of-agent/${agent_id}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
     if (res.status === 200) {
       return res.data.data;
     }
@@ -29,4 +33,19 @@ const getAssignedProperties = async (agentEmail) => {
   }
 };
 
-export { verifyAgent, getAssignedProperties };
+const getAgentAssignedForProperty = async (propertyId) => {
+  
+  try {
+    const res = await axios.get(`http://property-service:4002/prop/get-agent-assigned-for-property/${propertyId}`);
+    if (res.status === 200) {
+      return res.data.data;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+};
+
+
+
+export { verifyAgent, getAssignedProperties, getAgentAssignedForProperty };

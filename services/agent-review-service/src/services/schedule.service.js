@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import ScheduleStatus from '../enum/scheduleStatus.enum.js';
-import { verifyAgent, getAssignedProperties } from '../helpers/propertyClient.js';
+import {getAssignedProperties, getAgentAssignedForProperty } from '../helpers/propertyClient.js';
+
 
 
 
@@ -12,7 +13,6 @@ const prisma = new PrismaClient();
 class AppointmentScheduleService {
   async createAppointment({ property_id, date, time, name, email, number_phone, message, type }) {
     try {
-
       if (!property_id || !date || !time || !name || !email || !number_phone || !type) {
         throw new Error('Thiếu các trường bắt buộc');
       }
@@ -52,49 +52,15 @@ class AppointmentScheduleService {
           }
         });
 
-        let agent = null;
-        try {
-          const { isValid, agent: verifiedAgent } = await verifyAgent(property_id);
-          if (isValid && verifiedAgent && verifiedAgent.email && isValidEmail(verifiedAgent.email)) {
-            agent = verifiedAgent;
-          } else {
-            try {
-              const property = await prisma.property.findUnique({
-                where: { id: Number(property_id) },
-                include: { agent: true },
-              });
-              if (property?.agent) {
-                agent = {
-                  id: property.agent.id,
-                  email: property.agent.email,
-                  name: property.agent.name,
-                };
-              } else {
-              }
-            } catch (prismaErr) {
-            }
-          }
 
-          if (!agent) {
-            const propertyToAgentMap = {
-              2: 123,
-            };
-            const agentInfoMap = {
-              123: { id: 123, email: 'agent@example.com', name: 'Agent Name' },
-            };
-            if (propertyToAgentMap[property_id]) {
-              const agent_id = propertyToAgentMap[property_id];
-              agent = agentInfoMap[agent_id];
-            }
-          }
+          const agentData = await getAgentAssignedForProperty(property_id);
+          const agent = agentData.agent;
 
-          if (agent && agent.email && isValidEmail(agent.email)) {
-            recipients.push({
-              email: agent.email,
-              name: agent.name || 'Agent',
-            });
-          }
-        } catch (agentErr) {
+        if (agent && agent.email && isValidEmail(agent.email)) {
+          recipients.push({
+            email: agent.email,
+            name: agent.name || 'Agent',
+          });
         }
 
         if (recipients.length === 0) {
@@ -124,22 +90,15 @@ class AppointmentScheduleService {
             recipient_email: recipient.email,
           };
 
-          try {
-            await new Promise((resolve, reject) => {
-              axios.post(
-                'http://mail-service:4003/mail/auth/notifyNewAppointment',
-                emailPayload,
-                { timeout: 30000 }
-              )
-                .then(() => {
-                  resolve();
-                })
-                .catch((err) => {
-                  resolve();
-                });
-            });
-          } catch (sendErr) {
-          }
+          await new Promise((resolve, reject) => {
+            axios.post(
+              'http://mail-service:4003/mail/auth/notifyNewAppointment',
+              emailPayload,
+              { timeout: 30000 }
+            )
+              .then(() => resolve())
+              .catch(() => resolve());
+          });
         }
       }
 
@@ -157,7 +116,8 @@ class AppointmentScheduleService {
     return date;
   }
 
-  async getAppointments({ page , limit , status }) {
+  async getAppointments({ page , limit , status, search, type }) {
+
     try {
       const where = {};
       if (status && !['not_responded', 'responded'].includes(status)) {
@@ -166,6 +126,18 @@ class AppointmentScheduleService {
       if (status) {
         where.status = status;
       }
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { number_phone: { contains: search } },
+          { email: { contains: search } },
+          { message: { contains: search } },
+        ];
+      }
+      if (type) {
+        where.type = type;
+      }
+
       const appointments = await prisma.appointment_schedule.findMany({
         where,
         select: {
@@ -186,7 +158,9 @@ class AppointmentScheduleService {
     }
   }
 
-  async getAgentAppointments({ agent_id, token, page , limit , status }) {
+  async getAgentAppointments({ agent_id, token, page , limit , status, search, type }) {
+
+
     try {
       if (!prisma) {
         throw new Error('Prisma client is not initialized');
@@ -195,10 +169,12 @@ class AppointmentScheduleService {
         throw new Error('Invalid agent_id');
       }
       const propertyIds = await getAssignedProperties(agent_id, token);
-
+      if (propertyIds.length === 0) {
+        throw new Error('Agent does not have any properties');
+      }
 
       const where = {
-        property_id: { in: [2] },
+        property_id: { in: propertyIds },
       };
       if (status && !['not_responded', 'responded'].includes(status)) {
         throw new Error('Invalid status. Must be "not_responded" or "responded"');
@@ -206,7 +182,17 @@ class AppointmentScheduleService {
       if (status) {
         where.status = status;
       }
-
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { number_phone: { contains: search } },
+          { email: { contains: search } },
+          { message: { contains: search } },
+        ];
+      }
+      if (type) {
+        where.type = type;
+      }
       const appointments = await prisma.appointment_schedule.findMany({
         where,
         orderBy: { created_at: 'desc' },
@@ -216,45 +202,84 @@ class AppointmentScheduleService {
       const total = await prisma.appointment_schedule.count({
         where,
       });
-      console.log(total);
       return {appointments, total};
     } catch (err) {
       throw new Error('Failed to get agent appointments: ' + err.message);
     }
   }
 
-  async getPropertyAppointments({ property_id, agent_id, page, limit, status }) {
-    try {
-
-      if (!property_id || isNaN(Number(property_id)) || !agent_id || isNaN(Number(agent_id))) {
-        throw new Error('Invalid property_id or agent_id');
-      }
-      const where = {
-        property_id: Number(property_id),
-      };
-      if (status && !['not_responded', 'responded'].includes(status)) {
-        throw new Error('Invalid status. Must be "not_responded" or "responded"');
-      }
-      if (status) {
-        where.status = status;
-      }
-
-      const appointments = await prisma.appointment_schedule.findMany({
-        where,
-        orderBy: { created_at: 'desc' },
-        skip: (page - 1) * limit,
-        take: Number(limit),
-      });
-      const total = await prisma.appointment_schedule.count({
-        where,
-      });
-      return {appointments, total};
-    } catch (err) {
-      throw new Error('Failed to get property appointments: ' + err.message);
+  async getPropertyAppointments({ property_id, page = 1, limit = 10, status, search, type }) {
+  try {
+    // Validate input parameters
+    
+    if (!Number.isInteger(page) || page < 1) {
+      throw new Error('Invalid page number: Must be a positive integer');
     }
-  }
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new Error('Invalid limit: Must be a positive integer');
+    }
+    if (status && !['not_responded', 'responded'].includes(status)) {
+      throw new Error('Invalid status: Must be "not_responded" or "responded"');
+    }
+    if (type && !['directly', 'video_chat'].includes(type)) { // Dựa trên Swagger
+      throw new Error('Invalid type: Must be "directly" or "video_chat"');
+    }
 
-  async getAgentAllAppointments({ agent_id, token, page , limit , status }) {
+    // Xây dựng điều kiện where
+    const where = {
+      property_id: Number(property_id),
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { number_phone: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { message: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (type) {
+      where.type = type;
+    }
+
+    // Query appointments
+    const appointments = await prisma.appointment_schedule.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip: (page - 1) * limit,
+      take: Number(limit),
+    });
+
+    // Đếm tổng số appointment
+    const total = await prisma.appointment_schedule.count({
+      where,
+    });
+
+    // Trả về kết quả với phân trang
+    const result = {
+      appointments,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    console.log('Result of getPropertyAppointments:', result);
+    return result;
+  } catch (err) {
+    console.error('Error in getPropertyAppointments:', err.message, err.stack);
+    throw new Error(`Failed to get property appointments: ${err.message}`);
+  }
+}
+
+  async getAgentAllAppointments({ agent_id, token, page , limit , status, search, type }) {
     try {
       if (!prisma) {
         throw new Error('Prisma client is not initialized');
@@ -274,6 +299,18 @@ class AppointmentScheduleService {
       if (status) {
         where.status = status;
       }
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { number_phone: { contains: search } },
+          { email: { contains: search } },
+          { message: { contains: search } },
+        ];
+      }
+      if (type) {
+        where.type = type;
+      }
+
 
       const appointments = await prisma.appointment_schedule.findMany({
         where,

@@ -11,7 +11,6 @@ class AgentReviewController {
     this.approveReply = this.approveReply.bind(this);
     this.rejectReply = this.rejectReply.bind(this);
     this.getAgentReviews = this.getAgentReviews.bind(this);
-    this.getAgentReviewSummary = this.getAgentReviewSummary.bind(this);
     this.getUserReview = this.getUserReview.bind(this);
     this.getPendingReplies = this.getPendingReplies.bind(this);
     this.getMyReplies = this.getMyReplies.bind(this);
@@ -202,43 +201,27 @@ async updateReview(req, res) {
 
   async getAgentReviews(req, res) {
     try {
+
       const { agent_id, page = 1, limit = 10 } = req.query;
       if (!agent_id) throw new Error('agent_id is required');
-      const reviews = await agentReviewService.getAgentReviews(
+      const { reviews, rating, agent, pagination } = await agentReviewService.getAgentReviewsAndSummary(
+
+
         Number(agent_id),
         Number(page),
         Number(limit)
       );
-      res.status(200).json({ 
-        data: {reviews: reviews},
-        message: 'Get agent reviews successfully',
-        errors: [],
-      });
-    } catch (err) {
-      return res.status(403).json({
-        data: {reviews: null},
-        message: 'Get agent reviews failed',
-        errors: [err.message],
-      });
-    }
-  }
+      res.status(200).json({
+        data: { agent, reviews, rating, pagination },
 
-  async getAgentReviewSummary(req, res) {
-    try {
-      const { agent_id } = req.query;
-      if (!agent_id) throw new Error('agent_id is required');
-      const summary = await agentReviewService.getAgentReviewSummary(
-        Number(agent_id)
-      );
-      res.status(200).json({ 
-        data: {summary: summary},
-        message: 'Get agent review summary successfully',
+
+        message: 'Lấy danh sách và tổng kết đánh giá thành công',
         errors: [],
       });
     } catch (err) {
       return res.status(403).json({
-        data: {summary: null},
-        message: 'Get agent review summary failed',
+        data: { reviews: null, summary: null },
+        message: 'Lấy danh sách và tổng kết đánh giá thất bại',
         errors: [err.message],
       });
     }
