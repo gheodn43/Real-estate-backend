@@ -1036,14 +1036,15 @@ const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, b
 
 };
 
-const notifyNewAppointment = async ({ appointment }) => {
-  if (!appointment || !appointment.user || !appointment.user.email) {
-    console.error('Invalid appointment data:', appointment);
-    throw new Error('appointment and appointment.user.email are required');
+const notifyNewAppointment = (payload, callback) => {
+  if (!payload || !payload.appointment || !payload.appointment.user) {
+    const error = new Error('payload.appointment and payload.appointment.user are required');
+    return callback(error);
   }
 
-  const { user, property, date, time, message, type } = appointment;
-  const userEmail = user.email;
+  const { appointment, recipient_email } = payload;
+  const { user, property, date, time, message, type, customer_name, customer_email } = appointment;
+  const recipientEmail = recipient_email || user.email;
   const userName = user.name || 'N/A';
   const userPhone = user.number_phone || 'N/A';
   const propertyId = property?.id || 'N/A';
@@ -1052,7 +1053,10 @@ const notifyNewAppointment = async ({ appointment }) => {
   const appointmentMessage = message || 'N/A';
   const startTime = date && time ? `${time} ${new Date(date).toLocaleDateString('vi-VN')}` : 'N/A';
 
-  console.log(`Preparing to send email to: ${userEmail}`);
+  if (!recipientEmail) {
+    const error = new Error('No valid recipient email provided');
+    return callback(error);
+  }
 
   const htmlContent = getEmailTemplate({
     title: 'Lịch Hẹn Mới',
@@ -1062,8 +1066,8 @@ const notifyNewAppointment = async ({ appointment }) => {
       <div class="highlight-section">
         <h3>Thông tin cuộc họp</h3>
         <ul>
-          <li>Người dùng: ${userName}</li>
-          <li>Email: ${userEmail}</li>
+          <li>Người dùng: ${customer_name || 'N/A'}</li>
+          <li>Email: ${customer_email || 'N/A'}</li>
           <li>Số điện thoại: ${userPhone}</li>
           <li>Bất động sản ID: ${propertyId}</li>
           <li>Bất động sản: ${propertyName}</li>
@@ -1075,26 +1079,21 @@ const notifyNewAppointment = async ({ appointment }) => {
     `,
   });
 
-  try {
-    const info = await transporter.sendMail({
+  transporter.sendMail(
+    {
       from: process.env.MAIL_USER,
-      to: userEmail,
+      to: recipientEmail,
       subject: 'Lịch Hẹn Mới',
       html: htmlContent,
-      attachments: [
-        {
-          filename: 'homihub.png',
-          path: imagePath,
-          cid: 'companylogo',
-        },
-      ],
-    });
-    console.log(`Email sent successfully to: ${userEmail}, Message ID: ${info.messageId}`);
-    return info;
-  } catch (error) {
-    console.error(`Failed to send email to ${userEmail}:`, error.message, error.stack);
-    throw new Error(`Failed to send email to ${userEmail}: ${error.message}`);
-  }
+      attachments: [],
+    },
+    (error, info) => {
+      if (error) {
+        return callback(new Error(`Failed to send email to ${recipientEmail}: ${error.message}`));
+      }
+      callback(null, { data: {}, message: 'User notified of new appointment', error: [] });
+    }
+  );
 };
 
 export default {

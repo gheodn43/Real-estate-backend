@@ -15,38 +15,18 @@ class AppointmentScheduleController {
   }
 
   async createAppointment(req, res) {
-    try {
-      const { property_id, date, time, name, email, number_phone, message, type } = req.body;
-      if (!property_id || !date || !time || !name || !email || !number_phone || !type) {
-        return res.status(400).json({
-          data: null,
-          message: 'Missing required fields',
-          errors: ['property_id, date, time, name, email, number_phone, and type are required'],
-        });
-      }
-      const appointment = await appointmentScheduleService.createAppointment({
-        property_id,
-        date,
-        time,
-        name,
-        email,
-        number_phone,
-        message,
-        type,
-      });
-      res.status(201).json({
-        data: { appointment },
-        message: 'Create appointment successfully',
-        errors: [],
-      });
-    } catch (err) {
-      return res.status(400).json({
-        data: null,
-        message: 'Create appointment failed',
-        errors: [err.message],
-      });
-    }
+  try {
+    console.log('Entering createAppointment controller...');
+    console.log('Request body:', req.body);
+    const result = await appointmentScheduleService.createAppointment(req.body);
+    console.log('createAppointment result:', result);
+    res.status(201).json(result);
+  } catch (err) {
+    console.log('Controller error:', err.message);
+    res.status(400).json({ error: err.message });
   }
+}
+
 
   async getAppointments(req, res) {
     try {
