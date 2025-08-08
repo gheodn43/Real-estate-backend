@@ -853,6 +853,52 @@ exports.getPublicJouralist = async (req, res) => {
   }
 };
 
+exports.getPublicCustomer = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        role_id: 1,
+      },
+    });
+    if (!user)
+      return res.status(404).json({
+        data: null,
+        message: 'User not found.',
+        errors: [],
+      });
+    res.json({
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          dayOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          avatar: user.avatar,
+          role: user.role,
+          addr_city: user.addr_city,
+          addr_district: user.addr_district,
+          addr_street: user.addr_street,
+          addr_detail: user.addr_detail,
+          number_phone: user.number_phone,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+        },
+      },
+      message: 'Agent fetched successfully.',
+      errors: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
+
 exports.getPublicListAgent = async (req, res) => {
   const agents = await prisma.user.findMany({
     where: {
