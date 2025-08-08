@@ -171,45 +171,20 @@ router.post('/', AppointmentScheduleController.createAppointment);
  *         schema:
  *           type: string
  *           enum: [not_responded, responded, hidden]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [directly, video_chat]
  *     responses:
  *       200:
  *         description: Appointments retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/AppointmentSummary'
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Failed to retrieve appointments
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: null
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  */
 router.get('/', authenticateToken, roleGuard([RoleName.Admin]), AppointmentScheduleController.getAppointments);
 
@@ -238,6 +213,15 @@ router.get('/', authenticateToken, roleGuard([RoleName.Admin]), AppointmentSched
  *         schema:
  *           type: string
  *           enum: [not_responded, responded, hidden]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [directly, video_chat]
  *     responses:
  *       200:
  *         description: Agent appointments retrieved successfully
@@ -310,6 +294,15 @@ router.get('/my-appointments', authenticateToken, roleGuard([RoleName.Agent]), A
  *         schema:
  *           type: string
  *           enum: [not_responded, responded]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [directly, video_chat]
  *     responses:
  *       200:
  *         description: Property appointments retrieved successfully
@@ -382,6 +375,15 @@ router.get('/property/:property_id', authenticateToken, roleGuard([RoleName.Agen
  *         schema:
  *           type: string
  *           enum: [not_responded, responded]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [directly, video_chat]
  *     responses:
  *       200:
  *         description: Agent appointments retrieved successfully

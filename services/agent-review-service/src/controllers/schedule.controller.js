@@ -16,7 +16,6 @@ class AppointmentScheduleController {
 
   async createAppointment(req, res) {
   try {
-    
     const result = await appointmentScheduleService.createAppointment(req.body);
     res.status(201).json(result);
   } catch (err) {
@@ -27,11 +26,14 @@ class AppointmentScheduleController {
 
   async getAppointments(req, res) {
     try {
-      const { page, limit, status } = req.query;
+      const { page, limit, status, search, type } = req.query;
+
       const appointments = await appointmentScheduleService.getAppointments({
         page: Number(page) || 1,
         limit: Number(limit) || 10,
         status,
+        search,
+        type,
       });
       res.status(200).json({
         data: { appointments },
@@ -49,7 +51,8 @@ class AppointmentScheduleController {
 
   async getAgentAppointments(req, res) {
     try {
-      const { page, limit, status} = req.query;
+      const { page, limit, status, search, type } = req.query;
+
       const agent_id = Number(req.user.userId);
       const token = req.token; // Lấy token từ req.token
 
@@ -59,6 +62,9 @@ class AppointmentScheduleController {
         page: Number(page) || 1,
         limit: Number(limit) || 10,
         status,
+        search,
+        type,
+
       });
       return res.status(200).json({
         data: { 
@@ -83,54 +89,54 @@ class AppointmentScheduleController {
   }
 
   async getPropertyAppointments(req, res) {
-    try {
-      const { property_id } = req.params;
-      const { page, limit, status } = req.query;
-      const agent_id = Number(req.user.userId);
-      const token = req.token;
-      // nếu userRole = admin thì cho phép truy cập
-      if (req.user.userRole === RoleName.Agent) {
-        const isAgentAuthorized = await verifyAgent(property_id, token);
-        if (!isAgentAuthorized) {
-          return res.status(403).json({
-            data: { appointments: null },
-            message: 'Permission denied',
-            error: ['Agent is not authorized to access this property'],
-          });
-        }
+  try {
+    const { property_id } = req.params;
+    const { page, limit, status, search, type } = req.query;
+    const token = req.token;
+
+    // Nếu userRole = Agent, kiểm tra quyền truy cập
+    if (req.user.userRole === RoleName.Agent) {
+      const isAgentAuthorized = await verifyAgent(property_id, token);
+      if (!isAgentAuthorized) {
+        return res.status(403).json({
+          data: { appointments: null },
+          message: 'Permission denied',
+          error: ['Agent is not authorized to access this property'],
+        });
       }
-      const {appointments, total} = await appointmentScheduleService.getPropertyAppointments({
-        property_id,
-        agent_id,
-        page: Number(page) || 1,
-        limit: Number(limit) || 10,
-        status,
-      });
-      return res.status(200).json({
-        data: { 
-          appointments: appointments,
-          pagination:{
-            total: total,
-            page: Number(page) || 1,
-            limit: Number(limit) || 10,
-            totalPages: Math.ceil(total / (Number(limit))),
-          }
-        },
-        message: 'Get property appointments successfully',
-        error: [],
-      });
-    } catch (err) {
-      return res.status(400).json({
-        data: { appointments: null },
-        message: 'Failed to get property appointments',
-        error: [err.message],
-      });
     }
+
+    // Gọi service
+    const { appointments, pagination } = await appointmentScheduleService.getPropertyAppointments({
+      property_id,
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      status,
+      search,
+      type,
+    });
+
+    return res.status(200).json({
+      data: {
+        appointments,
+        pagination,
+      },
+      message: 'Get property appointments successfully',
+      error: [],
+    });
+  } catch (err) {
+    console.error('Error in getPropertyAppointments controller:', err.message, err.stack);
+    return res.status(400).json({
+      data: { appointments: null },
+      message: 'Failed to get property appointments',
+      error: [err.message],
+    });
   }
+}
 
   async getAgentAllAppointments(req, res) {
     try {
-      const { agent_id, page, limit, status } = req.query;
+      const { agent_id, page, limit, status, search, type } = req.query;
       const agentIdNum = Number(agent_id);
       const token = req.token; // Lấy token từ req.token
       if (!agent_id || isNaN(agentIdNum)) {
@@ -148,11 +154,14 @@ class AppointmentScheduleController {
         });
       }
       const {appointments, total} = await appointmentScheduleService.getAgentAllAppointments({
+
         agent_id: agentIdNum,
         token,
         page: Number(page) || 1,
         limit: Number(limit) || 10,
         status,
+        search,
+        type,
       });
       return res.status(200).json({
         data: { 
@@ -162,6 +171,7 @@ class AppointmentScheduleController {
             page: Number(page) || 1,
             limit: Number(limit) || 10,
             totalPages: Math.ceil(total / (Number(limit))),
+            
           }
         },
         message: 'Get all agent appointments successfully',
