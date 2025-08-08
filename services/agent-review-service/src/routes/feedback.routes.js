@@ -157,7 +157,7 @@ router.get('/:id', authenticateToken, roleGuard([RoleName.Admin]), FeedbackContr
 /**
  * @swagger
  * /review/feedback/{id}/reply:
- *   patch:
+ *   put:
  *     summary: Admin trả lời một phản hồi [Admin]
  *     tags: [Feedback]
  *     security:
@@ -192,12 +192,13 @@ router.get('/:id', authenticateToken, roleGuard([RoleName.Admin]), FeedbackContr
  *       403:
  *         description: Không có quyền (yêu cầu role admin)
  */
-router.patch('/:id/reply', authenticateToken, roleGuard([RoleName.Admin]), FeedbackController.replyFeedback);
+router.put('/:id/reply', authenticateToken, roleGuard([RoleName.Admin]), FeedbackController.replyFeedback);
+
 
 /**
  * @swagger
  * /review/feedback/{id}/hide:
- *   patch:
+ *   put:
  *     summary: Admin ẩn một phản hồi [Admin]
  *     tags: [Feedback]
  *     security:
@@ -218,6 +219,6 @@ router.patch('/:id/reply', authenticateToken, roleGuard([RoleName.Admin]), Feedb
  *       403:
  *         description: Không có quyền (yêu cầu role admin)
  */
-router.patch('/:id/hide', authenticateToken, roleGuard([RoleName.Admin]), FeedbackController.hideFeedback);
+router.put('/:id/hide', authenticateToken, roleGuard([RoleName.Admin]), FeedbackController.hideFeedback);
 
 export default router;

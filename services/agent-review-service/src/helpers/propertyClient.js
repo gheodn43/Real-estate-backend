@@ -1,35 +1,30 @@
 import axios from 'axios';
 
-const verifyAgent = async (property_id, token) => {
+const verifyAgent = async (property_id) => {
+  
   try {
-    const res = await axios.get(`http://property-service:4002/prop/post/verify-agent/${property_id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.status === 200) {
-      return true;
+    const response = await axios.get(`http://property-service:4002/prop/post/verify-agent/${property_id}`);
+    if (response.data?.isValid) {
+    } else {
     }
-    return false;
+    return {
+      isValid: response.data?.isValid || false,
+      agent: response.data?.agent || null,
+    };
   } catch (err) {
-    console.error(`Error in getPropertyAgent for property_id ${property_id}:`, err.message);
-    return false;
+    return { isValid: false, agent: null };
   }
 };
 
-
-
-const getAssignedProperties = async (agent_id, token) => {
+const getAssignedProperties = async (agentEmail) => {
+  
   try {
-    const res = await axios.get(`http://property-service:4002/prop/post/assigned-of-agent/${agent_id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await axios.get(`http://property-service:4002/prop/post/assigned-of-agent/${agent_id}`);
     if (res.status === 200) {
-            console.log(res.data.data);
-
-      return res.data.data; 
+      return res.data.data;
     }
     return [];
   } catch (err) {
-    console.error(`Error in getAssignedProperties for agent_id ${agent_id}:`, err.message);
     return [];
   }
 };
