@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import axios from 'axios';
 import { getCustomerProfile, getAgentFromAuthService, getUserFromAuthService } from '../helpers/authClient.js';
+import roleGuard, {RoleName} from '../middleware/roleGuard.js';
 
 
 
@@ -156,104 +157,104 @@ async updateReview({
   return updatedReview;
 }
 
-  async reply(review_id, user_id, role, { comment, images, token }) {
-  const review = await prisma.agent_reviews.findUnique({
-    where: { id: Number(review_id) },
-  });
-  if (!review) throw new Error('Review not found');
+async reply(review_id, user_id, role, { comment, images, token }) {
+    const review = await prisma.agent_reviews.findUnique({
+      where: { id: Number(review_id) },
+    });
+    if (!review) throw new Error('Review not found');
 
-  // Role-specific validation
-  if (role === 'AGENT' && Number(review.agent_id) !== Number(user_id)) {
-    throw new Error('Agent not authorized to reply to this review');
-  }
-
-  // Role-specific status
-  const status = role === 'ADMIN' ? 'showing' : 'pending';
-
-  // Create reply
-  const reply = await prisma.agent_reviews.create({
-    data: {
-      agent_id: Number(review.agent_id),
-      user_id: Number(user_id),
-      comment,
-      images: images || [],
-      parent_id: Number(review_id),
-      type: 'repcomment',
-      status,
-      rating: 0,
-    },
-  });
-
-  // Role-specific email notification
-  try {
-    if (role === 'AGENT') {
-      const admin = { email: 'kietnguyen23012002@gmail.com', name: 'Admin' };
-      const agent = await getAgentFromAuthService(user_id, token);
-      const agentUser = agent?.data?.user;
-
-      const emailPayload = {
-        adminEmail: admin.email,
-        adminName: admin.name,
-        reply: {
-          id: reply.id,
-          comment: reply.comment,
-          images: reply.images,
-          created_at: reply.created_at,
-        },
-        agent: {
-          id: agentUser?.id,
-          name: agentUser?.name,
-          email: agentUser?.email,
-        },
-        review: {
-          id: review.id,
-          rating: review.rating,
-          comment: review.comment,
-          images: review.images,
-          created_at: review.created_at,
-        },
-      };
-      await axios.post(
-        'http://mail-service:4003/mail/auth/notifyAdminAgentReply',
-        emailPayload
-      );
-    } else if (role === 'ADMIN') {
-      const user = await getUserFromAuthService(review.user_id, token);
-      const admin = await getUserFromAuthService(user_id, token);
-      const userData = user?.data?.user;
-      const adminData = admin?.data?.user;
-
-      const emailPayload = {
-        userEmail: userData?.email,
-        userName: userData?.name,
-        reply: {
-          id: reply.id,
-          comment: reply.comment,
-          images: reply.images,
-          created_at: reply.created_at,
-        },
-        review: {
-          id: review.id,
-          rating: review.rating,
-          comment: review.comment,
-          images: review.images,
-          created_at: review.created_at,
-        },
-        admin: {
-          id: adminData?.id || user_id,
-          name: adminData?.name,
-          email: adminData?.email,
-        },
-      };
-      await axios.post(
-        'http://mail-service:4003/mail/auth/notifyUserAdminReply',
-        emailPayload
-      );
+    // Role-specific validation
+    if (role === RoleName.Agent && Number(review.agent_id) !== Number(user_id)) {
+      throw new Error('Agent not authorized to reply to this review');
     }
-  } catch (emailErr) {}
 
-  return reply;
-}
+    // Role-specific status
+    const status = role === RoleName.Admin ? 'showing' : 'pending';
+
+    // Create reply
+    const reply = await prisma.agent_reviews.create({
+      data: {
+        agent_id: Number(review.agent_id),
+        user_id: Number(user_id),
+        comment,
+        images: images || [],
+        parent_id: Number(review_id),
+        type: 'repcomment',
+        status,
+        rating: 0,
+      },
+    });
+
+    // Role-specific email notification
+    try {
+      if (role === RoleName.Agent) {
+        const admin = { email: 'kietnguyen23012002@gmail.com', name: 'Admin' };
+        const agent = await getAgentFromAuthService(user_id, token);
+        const agentUser = agent?.data?.user;
+
+        const emailPayload = {
+          adminEmail: admin.email,
+          adminName: admin.name,
+          reply: {
+            id: reply.id,
+            comment: reply.comment,
+            images: reply.images,
+            created_at: reply.created_at,
+          },
+          agent: {
+            id: agentUser?.id,
+            name: agentUser?.name,
+            email: agentUser?.email,
+          },
+          review: {
+            id: review.id,
+            rating: review.rating,
+            comment: review.comment,
+            images: review.images,
+            created_at: review.created_at,
+          },
+        };
+        await axios.post(
+          'http://mail-service:4003/mail/auth/notifyAdminAgentReply',
+          emailPayload
+        );
+      } else if (role === RoleName.Admin) {
+        const user = await getUserFromAuthService(review.user_id, token);
+        const admin = await getUserFromAuthService(user_id, token);
+        const userData = user?.data?.user;
+        const adminData = admin?.data?.user;
+
+        const emailPayload = {
+          userEmail: userData?.email,
+          userName: userData?.name,
+          reply: {
+            id: reply.id,
+            comment: reply.comment,
+            images: reply.images,
+            created_at: reply.created_at,
+          },
+          review: {
+            id: review.id,
+            rating: review.rating,
+            comment: review.comment,
+            images: review.images,
+            created_at: review.created_at,
+          },
+          admin: {
+            id: adminData?.id || user_id,
+            name: adminData?.name,
+            email: adminData?.email,
+          },
+        };
+        await axios.post(
+          'http://mail-service:4003/mail/auth/notifyUserAdminReply',
+          emailPayload
+        );
+      }
+    } catch (emailErr) {}
+
+    return reply;
+  }
 
 async approveReply(review_id, token) {
   const reply = await prisma.agent_reviews.findUnique({

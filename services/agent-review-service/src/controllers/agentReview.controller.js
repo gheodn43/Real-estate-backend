@@ -1,4 +1,6 @@
 import agentReviewService from '../services/agentReview.service.js';
+import roleGuard, {RoleName} from '../middleware/roleGuard.js';
+
 
 class AgentReviewController {
   constructor() {
@@ -76,40 +78,40 @@ async updateReview(req, res) {
 }
 
   async reply(req, res) {
-  try {
-    if (!req.body || !req.body.comment) {
-      return res.status(400).json({
+    try {
+      if (!req.body || !req.body.comment) {
+        return res.status(400).json({
+          data: { reply: null },
+          message: 'Request body is missing or comment is required',
+          errors: ['Comment is required in the request body'],
+        });
+      }
+
+      const token = req.token;
+      const review_id = Number(req.params.id);
+      const user_id = Number(req.user.userId);
+      const role = req.user.userRole === RoleName.Admin ? RoleName.Admin : RoleName.Agent;
+      const { comment, images } = req.body;
+
+      const reply = await agentReviewService.reply(review_id, user_id, role, {
+        comment,
+        images,
+        token,
+      });
+
+      res.status(201).json({
+        data: { reply },
+        message: `${role === RoleName.Admin ? 'Admin' : 'Agent'} reply successfully`,
+        errors: [],
+      });
+    } catch (err) {
+      return res.status(403).json({
         data: { reply: null },
-        message: 'Request body is missing or comment is required',
-        errors: ['Comment is required in the request body'],
+        message: `${req.user.userRole === RoleName.Admin ? 'Admin' : 'Agent'} reply failed`,
+        errors: [err.message],
       });
     }
-
-    const token = req.token;
-    const review_id = Number(req.params.id);
-    const user_id = Number(req.user.userId);
-    const role = req.user.userRole === 4 ? 'ADMIN' : 'AGENT';
-    const { comment, images } = req.body;
-
-    const reply = await agentReviewService.reply(review_id, user_id, role, {
-      comment,
-      images,
-      token,
-    });
-
-    res.status(201).json({
-      data: { reply },
-      message: `${role === 'ADMIN' ? 'Admin' : 'Agent'} reply successfully`,
-      errors: [],
-    });
-  } catch (err) {
-    return res.status(403).json({
-      data: { reply: null },
-      message: `${req.user.userRole === 4 ? 'Admin' : 'Agent'} reply failed`,
-      errors: [err.message],
-    });
   }
-}
 
   async handleReviewAction(req, res) {
     try {

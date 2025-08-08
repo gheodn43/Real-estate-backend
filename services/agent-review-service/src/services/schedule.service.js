@@ -12,7 +12,6 @@ const prisma = new PrismaClient();
 class AppointmentScheduleService {
   async createAppointment({ property_id, date, time, name, email, number_phone, message, type }) {
     try {
-      console.log('createAppointment input:', { property_id, date, time, name, email, number_phone, message, type });
 
       if (!property_id || !date || !time || !name || !email || !number_phone || !type) {
         throw new Error('Thiếu các trường bắt buộc');
@@ -22,12 +21,10 @@ class AppointmentScheduleService {
       }
 
       const startTime = new Date(`${date}T${time}:00`);
-      console.log('startTime:', startTime);
       if (isNaN(startTime.getTime())) {
         throw new Error('Định dạng ngày hoặc giờ không hợp lệ');
       }
 
-      console.log('Creating appointment in Prisma...');
       const appointment = await prisma.appointment_schedule.create({
         data: {
           property_id: Number(property_id),
@@ -43,13 +40,10 @@ class AppointmentScheduleService {
           updated_at: new Date(),
         },
       });
-      console.log('Appointment created:', appointment);
 
       if (appointment.type === 'directly') {
-        console.log('Processing email for direct appointment...');
         const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         const ADMIN_EMAILS = ['kietnguyen23012002@gmail.com'];
-        console.log('ADMIN_EMAILS:', ADMIN_EMAILS);
 
         const recipients = [];
         ADMIN_EMAILS.forEach((adminEmail) => {
@@ -60,37 +54,28 @@ class AppointmentScheduleService {
 
         let agent = null;
         try {
-          console.log('Calling verifyAgent for property_id:', property_id);
           const { isValid, agent: verifiedAgent } = await verifyAgent(property_id);
-          console.log('verifyAgent result:', { isValid, agent: verifiedAgent });
           if (isValid && verifiedAgent && verifiedAgent.email && isValidEmail(verifiedAgent.email)) {
             agent = verifiedAgent;
-            console.log('Agent found via API:', agent);
           } else {
-            console.log('No valid agent found via API, falling back to Prisma...');
             try {
               const property = await prisma.property.findUnique({
                 where: { id: Number(property_id) },
                 include: { agent: true },
               });
-              console.log('Prisma property query result:', property);
               if (property?.agent) {
                 agent = {
                   id: property.agent.id,
                   email: property.agent.email,
                   name: property.agent.name,
                 };
-                console.log('Agent from Prisma:', agent);
               } else {
-                console.log('No agent found in Prisma for property_id:', property_id);
               }
             } catch (prismaErr) {
-              console.log('Prisma error:', prismaErr.message);
             }
           }
 
           if (!agent) {
-            console.log('Falling back to static mapping...');
             const propertyToAgentMap = {
               2: 123,
             };
@@ -100,7 +85,6 @@ class AppointmentScheduleService {
             if (propertyToAgentMap[property_id]) {
               const agent_id = propertyToAgentMap[property_id];
               agent = agentInfoMap[agent_id];
-              console.log('Agent from static mapping:', agent);
             }
           }
 
@@ -111,12 +95,9 @@ class AppointmentScheduleService {
             });
           }
         } catch (agentErr) {
-          console.log('Error finding agent:', agentErr.message);
         }
 
-        console.log('Recipients:', recipients);
         if (recipients.length === 0) {
-          console.log('No valid recipients, skipping email');
           return appointment;
         }
 
@@ -142,7 +123,6 @@ class AppointmentScheduleService {
             },
             recipient_email: recipient.email,
           };
-          console.log('Preparing to send email to:', recipient.email);
 
           try {
             await new Promise((resolve, reject) => {
@@ -152,23 +132,19 @@ class AppointmentScheduleService {
                 { timeout: 30000 }
               )
                 .then(() => {
-                  console.log('Email sent to:', recipient.email);
                   resolve();
                 })
                 .catch((err) => {
-                  console.log('Error sending email to:', recipient.email, err.message);
                   resolve();
                 });
             });
           } catch (sendErr) {
-            console.log('Error in email sending loop:', sendErr.message);
           }
         }
       }
 
       return appointment;
     } catch (err) {
-      console.log('Error creating appointment:', err.message);
       throw new Error('Không thể tạo cuộc hẹn: ' + err.message);
     }
   }

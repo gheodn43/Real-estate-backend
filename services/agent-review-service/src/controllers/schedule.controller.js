@@ -16,13 +16,10 @@ class AppointmentScheduleController {
 
   async createAppointment(req, res) {
   try {
-    console.log('Entering createAppointment controller...');
-    console.log('Request body:', req.body);
+    
     const result = await appointmentScheduleService.createAppointment(req.body);
-    console.log('createAppointment result:', result);
     res.status(201).json(result);
   } catch (err) {
-    console.log('Controller error:', err.message);
     res.status(400).json({ error: err.message });
   }
 }
