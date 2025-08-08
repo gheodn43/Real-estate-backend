@@ -1,14 +1,15 @@
 import agentReviewService from '../services/agentReview.service.js';
+import roleGuard, {RoleName} from '../middleware/roleGuard.js';
+
 
 class AgentReviewController {
   constructor() {
     this.createReview = this.createReview.bind(this);
     this.updateReview = this.updateReview.bind(this);
-    this.createReply = this.createReply.bind(this);
+    this.reply = this.reply.bind(this);
     this.deleteReview = this.deleteReview.bind(this);
     this.approveReply = this.approveReply.bind(this);
     this.rejectReply = this.rejectReply.bind(this);
-    this.adminReply = this.adminReply.bind(this);
     this.getAgentReviews = this.getAgentReviews.bind(this);
     this.getAgentReviewSummary = this.getAgentReviewSummary.bind(this);
     this.getUserReview = this.getUserReview.bind(this);
@@ -76,26 +77,37 @@ async updateReview(req, res) {
   }
 }
 
-  async createReply(req, res) {
+  async reply(req, res) {
     try {
+      if (!req.body || !req.body.comment) {
+        return res.status(400).json({
+          data: { reply: null },
+          message: 'Request body is missing or comment is required',
+          errors: ['Comment is required in the request body'],
+        });
+      }
+
       const token = req.token;
-      const review_id = Number(req.params.id); 
-      const agent_id = Number(req.user.userId); 
+      const review_id = Number(req.params.id);
+      const user_id = Number(req.user.userId);
+      const role = req.user.userRole === RoleName.Admin ? RoleName.Admin : RoleName.Agent;
       const { comment, images } = req.body;
-      const reply = await agentReviewService.createReply(review_id, agent_id, {
+
+      const reply = await agentReviewService.reply(review_id, user_id, role, {
         comment,
         images,
-        token
+        token,
       });
-      res.status(201).json({ 
-        data: {reply: reply}, 
-        message: 'Create reply successfully',
+
+      res.status(201).json({
+        data: { reply },
+        message: `${role === RoleName.Admin ? 'Admin' : 'Agent'} reply successfully`,
         errors: [],
       });
     } catch (err) {
       return res.status(403).json({
-        data: {reply: null},
-        message: 'Create reply failed',
+        data: { reply: null },
+        message: `${req.user.userRole === RoleName.Admin ? 'Admin' : 'Agent'} reply failed`,
         errors: [err.message],
       });
     }
@@ -183,31 +195,6 @@ async updateReview(req, res) {
       return res.status(403).json({
         data: {review: null},
         message: 'Delete review failed',
-        errors: [err.message],
-      });
-    }
-  }
-
-  async adminReply(req, res) {
-    try {
-      const token = req.token;
-      const review_id = Number(req.params.id);
-      const admin_id = Number(req.user.userId);
-      const { comment, images } = req.body;
-      const reply = await agentReviewService.adminReply(review_id, admin_id, {
-        comment,
-        images,
-        token
-      });
-      res.status(201).json({ 
-        data: {reply: reply}, 
-        message: 'Admin reply successfully',
-        errors: [],
-      });
-    } catch (err) {
-      return res.status(403).json({
-        data: {reply: null},
-        message: 'Admin reply failed',
         errors: [err.message],
       });
     }

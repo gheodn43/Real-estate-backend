@@ -151,10 +151,8 @@ router.put(
 /**
  * @swagger
  * /review/agent-reviews/{id}/reply:
-
  *   post:
- *     summary: Agent trả lời đánh giá [Agent]
-
+ *     summary: Trả lời đánh giá [Agent hoặc Admin]
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -164,22 +162,27 @@ router.put(
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID của đánh giá cần trả lời
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - comment
  *             properties:
  *               comment:
  *                 type: string
+ *                 description: Nội dung trả lời
  *               images:
  *                 type: array
  *                 items:
  *                   type: string
+ *                 description: Danh sách URL hình ảnh
  *     responses:
  *       201:
- *         description: Tạo rep-comment thành công
+ *         description: Trả lời đánh giá thành công
  *         content:
  *           application/json:
  *             schema:
@@ -187,6 +190,10 @@ router.put(
  *               properties:
  *                 data:
  *                   type: object
+ *                   properties:
+ *                     reply:
+ *                       type: object
+ *                       description: Thông tin trả lời
  *                 message:
  *                   type: string
  *                   example: Trả lời được tạo thành công
@@ -195,8 +202,8 @@ router.put(
  *                   items:
  *                     type: string
  *                   example: []
- *       403:
- *         description: 'Tạo rep-comment thất bại (ví dụ: không có quyền)'
+ *       400:
+ *         description: Yêu cầu không hợp lệ (thiếu body hoặc comment)
  *         content:
  *           application/json:
  *             schema:
@@ -204,9 +211,32 @@ router.put(
  *               properties:
  *                 data:
  *                   type: object
+ *                   properties:
+ *                     reply:
+ *                       type: null
  *                 message:
  *                   type: string
- *                   example: Tạo trả lời thất bại
+ *                   example: Yêu cầu không hợp lệ
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: [Comment là bắt buộc]
+ *       403:
+ *         description: Trả lời thất bại (ví dụ không có quyền hoặc đánh giá không tồn tại)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     reply:
+ *                       type: null
+ *                 message:
+ *                   type: string
+ *                   example: Trả lời thất bại
  *                 errors:
  *                   type: array
  *                   items:
@@ -216,8 +246,8 @@ router.put(
 router.post(
   '/:id/reply',
   authenticateToken,
-  roleGuard([RoleName.Agent]),
-  agentReviewController.createReply
+  roleGuard([RoleName.Agent, RoleName.Admin]),
+  agentReviewController.reply
 );
 
 /**
@@ -555,78 +585,6 @@ router.put(
   authenticateToken,
   roleGuard([RoleName.Admin]),
   agentReviewController.handleReviewAction
-);
-
-/**
- * @swagger
- * /review/agent-reviews/{id}/admin-reply:
-
- *   post:
- *     summary: Admin trả lời đánh giá [Admin]
-
- *     tags: [AgentReview]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               comment:
- *                 type: string
- *               images:
- *                 type: array
- *                 items:
- *                   type: string
- *     responses:
- *       201:
- *         description: Tạo admin reply thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Trả lời của admin được tạo thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
- *       403:
- *         description: 'Tạo admin reply thất bại (ví dụ: không có quyền)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Tạo trả lời của admin thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Không có quyền]
- */
-router.post(
-  '/:id/admin-reply',
-  authenticateToken,
-  roleGuard([RoleName.Admin]),
-  agentReviewController.adminReply
 );
 
 /**
