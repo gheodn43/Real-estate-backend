@@ -2932,7 +2932,6 @@ router
         error: null,
       });
     } catch (error) {
-      console.error('Error getting assigned agent:', error);
       return res.status(500).json({
         data: null,
         message: 'Internal Server Error',

@@ -440,6 +440,7 @@ router.get(
   '/publish-journalist-profile/:id',
   authController.getPublicJouralist
 );
+router.get('/publish-customer-profile/:id', authController.getPublicCustomer);
 
 router.post(
   '/get-user-from-list',

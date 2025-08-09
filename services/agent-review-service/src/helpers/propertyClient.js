@@ -46,6 +46,23 @@ const getAgentAssignedForProperty = async (propertyId) => {
   }
 };
 
+const getPropertyInfor= async (property_id, token) => {
+  try {
+    const res = await axios.get(
+    `http://property-service:4002/prop/post/${property_id}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+    if (res.status === 200) {
+      return res.data.data;
+    }
+    return [];
+  } catch (err) {
+    return [];
+  }
+};
 
 
-export { verifyAgent, getAssignedProperties, getAgentAssignedForProperty };
+
+export { verifyAgent, getAssignedProperties, getAgentAssignedForProperty, getPropertyInfor };
