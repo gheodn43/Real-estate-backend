@@ -5,6 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const axios = require('axios');
+const roleGuard = require('../middleware/roleGuard');
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -1027,4 +1028,90 @@ exports.getPublicListProperty = async (req, res) => {
     message: 'User fetched successfully.',
     errors: [],
   });
+};
+
+exports.getTotalCustomer = async (req, res) => {
+  try {
+    const totalCustomer = await prisma.user.count({
+      where: {
+        role_id: roleGuard.RoleName.Customer,
+      },
+    });
+
+    res.json({
+      data: {
+        total_customer: totalCustomer,
+      },
+      message: 'User fetched successfully.',
+      errors: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Error fetching total customers.',
+      errors: [error.message],
+    });
+  }
+};
+
+exports.getMonthlyNewCustomers = async (req, res) => {
+  try {
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setMonth(startDate.getMonth() - 11); // 12 tháng tính cả hiện tại
+    startDate.setDate(1); // đầu tháng
+
+    // Lấy toàn bộ customer trong khoảng thời gian này
+    const customers = await prisma.user.findMany({
+      where: {
+        role_id: roleGuard.RoleName.Customer,
+        created_at: {
+          gte: startDate,
+          lte: now,
+        },
+      },
+      select: {
+        created_at: true,
+      },
+    });
+
+    // Khởi tạo mảng 12 tháng
+    const monthlyStats = [];
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(startDate);
+      date.setMonth(startDate.getMonth() + i);
+
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+
+      monthlyStats.push({
+        month: `${month}/${year}`,
+        customer_count: 0,
+      });
+    }
+
+    // Đếm số lượng theo tháng
+    customers.forEach((c) => {
+      const month = String(c.created_at.getMonth() + 1).padStart(2, '0');
+      const year = c.created_at.getFullYear();
+      const monthLabel = `${month}/${year}`;
+
+      const stat = monthlyStats.find((m) => m.month === monthLabel);
+      if (stat) {
+        stat.customer_count += 1;
+      }
+    });
+
+    res.json({
+      data: monthlyStats,
+      message: 'Monthly customer stats fetched successfully.',
+      errors: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Error fetching monthly customer stats.',
+      errors: [error.message],
+    });
+  }
 };

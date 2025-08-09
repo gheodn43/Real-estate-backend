@@ -49,29 +49,36 @@ const getCompleteTransactionOfAgentInMonth = async (filters, pagination) => {
   const { agent_id, start_date, end_date, search } = filters;
   const { page, limit } = pagination;
   const skip = (page - 1) * limit;
+
   const where = {
     agent_commission_fee: {
       some: {
         agent_id,
-        status: AgentCommissionFeeStatus.CONFIRMED,
+        status: {
+          in: [
+            AgentCommissionFeeStatus.CONFIRMED,
+            AgentCommissionFeeStatus.REJECTED,
+          ],
+        },
       },
     },
   };
+
   if (search) {
     where.property = {
       title: { contains: search },
     };
   }
+
   if (start_date && end_date) {
     where.updated_at = {
       gte: start_date,
       lte: end_date,
     };
   }
-  const [total, results] = await Promise.all([
-    prisma.commissions.count({
-      where,
-    }),
+
+  const [total, resultsRaw] = await Promise.all([
+    prisma.commissions.count({ where }),
     prisma.commissions.findMany({
       where,
       skip,
@@ -89,13 +96,24 @@ const getCompleteTransactionOfAgentInMonth = async (filters, pagination) => {
         },
         agent_commission_fee: {
           select: {
-            id: true,
             commission_value: true,
+            status: true,
           },
         },
       },
     }),
   ]);
+
+  // Format lại kết quả
+  const results = resultsRaw.map((item) => {
+    const { agent_commission_fee, ...rest } = item;
+    return {
+      ...rest,
+      commission_value: agent_commission_fee?.[0]?.commission_value,
+      status: agent_commission_fee?.[0]?.status,
+    };
+  });
+
   return { total, results };
 };
 

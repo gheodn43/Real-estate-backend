@@ -15,11 +15,9 @@ const getPropertyType = async ({ start_date, end_date }) => {
   // 1. Consignment: sender_id != null
   const consignmentWhere = {
     ...whereBase,
-    sender_id: {
-      not: null,
-    },
+    sender_id: null,
     request_status: {
-      not: RequestStatus.HIDDEN,
+      notIn: [RequestStatus.HIDDEN, null],
     },
   };
   const consignmentTotal = await prisma.properties.count({
@@ -46,7 +44,6 @@ const getPropertyType = async ({ start_date, end_date }) => {
       sender_id: {
         not: null,
       },
-      request_status: RequestStatus.PENDING,
       agentHistory: {
         none: {
           type: AgentHistoryType.ASSIGNED,

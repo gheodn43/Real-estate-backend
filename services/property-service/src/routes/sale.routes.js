@@ -13,7 +13,7 @@ import { getPublicAgentInfor } from '../helpers/authClient.js';
  *       - Sale
  *     security:
  *       - bearerAuth: []
- *     summary: Lấy danh sách BĐS đã hoàn tất giao dịch trong tháng của một agent [ADMIN]
+ *     summary: Lấy danh sách BĐS đã hoàn tất giao dịch trong tháng của một agent [ADMIN, AGENT]
  *     description:
  *       API dành cho Admin, trả về danh sách BĐS đã hoàn tất giao dịch trong khoảng thời gian (theo tháng lương hiện tại) của một agent.
  *       Sử dụng hàm `getStartDateAndEndDateInThisMonth()` để xác định khoảng thời gian.
@@ -25,6 +25,12 @@ import { getPublicAgentInfor } from '../helpers/authClient.js';
  *           type: integer
  *           example: 12
  *         description: ID của agent cần lấy dữ liệu.
+ *       - in: query
+ *         name: mooc_date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           example: "07/07/2025"
  *       - in: query
  *         name: search
  *         required: false
@@ -55,97 +61,56 @@ import { getPublicAgentInfor } from '../helpers/authClient.js';
  *       500:
  *         description: Server error.
  */
-
 router
   .route('/of-agent-in-month')
-  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
-    const { agent_id, search, page, limit } = req.query;
-    const { start_date, end_date } = getStartDateAndEndDateInThisMonth();
-    try {
-      await getCompleteTransactionOfAgentInMonth(
-        start_date,
-        end_date,
-        agent_id,
-        search,
-        page,
-        limit,
-        res
-      );
-    } catch (err) {
-      return res.status(500).json({
-        data: null,
-        message: 'Server error',
-        error: [err.message],
-      });
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      const userRole = req.user.userRole;
+      const { agent_id, mooc_date, search, page, limit } = req.query;
+      const bonusMonth = await getCustomCurrentMonth(mooc_date);
+      const { start_date, end_date } =
+        getStartDateAndEndDateByMonthString(bonusMonth);
+      let agentId = agent_id;
+      if (userRole == RoleName.Agent && agent_id) {
+        return res.status(400).json({
+          data: null,
+          message: '',
+          error: ['Ditme mi không thể xem lịch sử của agent khác'],
+        });
+      }
+      if (userRole == RoleName.Agent) {
+        agentId = req.user.userId;
+      }
+      try {
+        await getCompleteTransactionOfAgentInMonth(
+          start_date,
+          end_date,
+          bonusMonth,
+          agentId,
+          search,
+          page,
+          limit,
+          res
+        );
+      } catch (err) {
+        return res.status(500).json({
+          data: null,
+          message: 'Server error',
+          error: [err.message],
+        });
+      }
     }
-  });
+  );
+// router
+//   .route('/list-agent')
+//   .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+//   const {mooc_date, search, page, limit } = req.query;
+//   const bonusMonth = await getCustomCurrentMonth(mooc_date);
+//     const { start_date, end_date } = getStartDateAndEndDateByMonthString(bonusMonth);
 
-/**
- * @openapi
- * /prop/sale/mine-in-month:
- *   get:
- *     tags:
- *       - Sale
- *     security:
- *       - bearerAuth: []
- *     summary: Lấy danh sách BĐS đã hoàn tất giao dịch trong tháng [AGENT]
- *     description:
- *       API dành cho Agent, trả về danh sách BĐS đã hoàn tất giao dịch trong khoảng thời gian (theo tháng lương hiện tại) của chính agent đó.
- *     parameters:
- *       - in: query
- *         name: search
- *         required: false
- *         schema:
- *           type: string
- *         description: Tìm kiếm theo tiêu đề BĐS (title).
- *       - in: query
- *         name: page
- *         required: false
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Số trang (pagination).
- *       - in: query
- *         name: limit
- *         required: false
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Số bản ghi mỗi trang.
- *     responses:
- *       200:
- *         description: Thành công - Trả về danh sách BĐS đã hoàn tất giao dịch trong tháng của agent đang đăng nhập.
- *       401:
- *         description: Unauthorized - Agent chưa đăng nhập hoặc token không hợp lệ.
- *       500:
- *         description: Server error.
- */
-
-router
-  .route('/mine-in-month')
-  .get(authMiddleware, roleGuard([RoleName.Agent]), async (req, res) => {
-    const { search, page, limit } = req.query;
-    const agent_id = req.user.userId;
-    const { start_date, end_date } = getStartDateAndEndDateInThisMonth();
-    try {
-      await getCompleteTransactionOfAgentInMonth(
-        start_date,
-        end_date,
-        agent_id,
-        search,
-        page,
-        limit,
-        res
-      );
-    } catch (err) {
-      return res.status(500).json({
-        data: null,
-        message: 'Server error',
-        error: [err.message],
-      });
-    }
-  });
-
+// })
 /**
  * @openapi
  * /prop/sale/bonus:
@@ -164,6 +129,8 @@ router
  *           schema:
  *             type: object
  *             required:
+ *               - image_url
+ *               - agent_id
  *               - buying_quantity
  *               - rental_quantity
  *               - total_buying_commission
@@ -173,6 +140,14 @@ router
  *               - review
  *               - bonus_of_month
  *             properties:
+ *               agent_id:
+ *                 type: integer
+ *                 example: 11
+ *                 description: id của agent
+ *               image_url:
+ *                 type: string
+ *                 example: "link ảnh"
+ *                 description: Link ảnh screenshot component
  *               buying_quantity:
  *                 type: integer
  *                 example: 3
@@ -222,6 +197,8 @@ router
   .route('/bonus')
   .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     const {
+      image_url,
+      agent_id,
       buying_quantity,
       rental_quantity,
       total_buying_commission,
@@ -232,7 +209,6 @@ router
       bonus_of_month,
     } = req.body;
     const review_by = req.user.userId;
-    const agent_id = req.user.userId;
     try {
       await saleService.initSaleBonus({
         agent_id,
@@ -246,6 +222,12 @@ router
         review_by,
         bonus_of_month,
       });
+      const agent = getPublicAgentInfor(Number(agent_id));
+      console.log('gọi hàm gửi mail cho agent kèm hình ảnh?', {
+        agent,
+        image_url,
+      });
+
       return res.status(200).json({
         data: null,
         message: 'Success',
@@ -268,7 +250,7 @@ router
  *       - Sale
  *     security:
  *       - bearerAuth: []
- *     summary: Lấy lịch sử bonus tháng của agent [AGENT]
+ *     summary: Lấy lịch sử thưởng/phat của agent [AGENT]
  *     parameters:
  *       - in: query
  *         name: start_date
@@ -339,7 +321,7 @@ router
  *       - Sale
  *     security:
  *       - bearerAuth: []
- *     summary: Lấy lịch sử Bonus của một agent bất kỳ [ADMIN]
+ *     summary: Lấy lịch sử thưởng/phạt của một agent bất kỳ [ADMIN]
  *     parameters:
  *       - in: query
  *         name: agent_id
@@ -418,7 +400,7 @@ router
  *       - Sale
  *     security:
  *       - bearerAuth: []
- *     summary: Lấy thông tin chi tiết Bonus [Admin, Agent]
+ *     summary: Lấy thông tin chi tiết thưởng/phạt [Admin, Agent]
  *     description: API cho phép **Admin** lấy chi tiết một bản ghi thưởng/phạt của agent theo `id`.
  *     parameters:
  *       - in: path
@@ -454,8 +436,10 @@ router
             error: [],
           });
         }
+        const agent = await getPublicAgentInfor(result.agent_id);
         return res.status(200).json({
           data: {
+            agent: agent,
             bonus: result,
           },
           message: 'Success',
@@ -470,9 +454,11 @@ router
       }
     }
   );
+
 const getCompleteTransactionOfAgentInMonth = async (
   start_date,
   end_date,
+  bonusMonth,
   agent_id,
   search,
   page,
@@ -499,6 +485,10 @@ const getCompleteTransactionOfAgentInMonth = async (
     });
   }
   const agent = await getPublicAgentInfor(agent_id);
+  console.log(
+    'gọi hàm kiểm tra trạng thái đã khởi tạo thưởng/phạt chưa?',
+    bonusMonth
+  );
   return res.status(200).json({
     data: {
       agent,
@@ -558,24 +548,13 @@ const getSaleBonusHistoryOfAgent = async (
     error: [],
   });
 };
-const getStartDateAndEndDateInThisMonth = (mooc = 5) => {
-  const today = new Date();
+const getStartDateAndEndDateByMonthString = (monthString) => {
+  if (!monthString) return undefined;
 
-  const currentDay = today.getDate();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
+  const [month, year] = monthString.split('/').map(Number);
 
-  let startDate, endDate;
-
-  if (currentDay > mooc) {
-    // Ngày hiện tại > mooc → tháng này -> tháng sau
-    startDate = new Date(currentYear, currentMonth, mooc + 1, 0, 0, 0); // ngày 6, 00:00:00
-    endDate = new Date(currentYear, currentMonth + 1, mooc, 23, 59, 59); // ngày 5 tháng sau, 23:59:59
-  } else {
-    // Ngày hiện tại <= mooc → tháng trước -> tháng này
-    startDate = new Date(currentYear, currentMonth - 1, mooc + 1, 0, 0, 0);
-    endDate = new Date(currentYear, currentMonth, mooc, 23, 59, 59);
-  }
+  const startDate = new Date(year, month - 1, 6, 0, 0, 0); // Ngày 6 tháng đó
+  const endDate = new Date(year, month, 5, 23, 59, 59); // Ngày 5 tháng sau
 
   return { start_date: startDate, end_date: endDate };
 };
@@ -584,6 +563,31 @@ const parseClientDate = (dateString) => {
   if (!dateString) return undefined;
   const [day, month, year] = dateString.split('/').map(Number);
   return new Date(year, month - 1, day, 0, 0, 0);
+};
+
+const getCustomCurrentMonth = async (dateString) => {
+  let dateObj;
+
+  if (!dateString) {
+    dateObj = new Date();
+  } else {
+    const [day, month, year] = dateString.split('/').map(Number);
+    dateObj = new Date(year, month - 1, day);
+  }
+
+  const day = dateObj.getDate();
+  let month = dateObj.getMonth() + 1; // JS month 0-based
+  let year = dateObj.getFullYear();
+
+  if (day >= 4 && day <= 12) {
+    // Lùi về tháng trước
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
+  return `${String(month).padStart(2, '0')}/${year}`;
 };
 
 export default router;
