@@ -980,7 +980,6 @@ exports.getPublicListJournalist = async (req, res) => {
 
 exports.getPublicListProperty = async (req, res) => {
   let { userIds, search } = req.body;
-  console.log('userIds', userIds);
   if (!Array.isArray(userIds)) {
     return res.status(400).json({
       data: null,

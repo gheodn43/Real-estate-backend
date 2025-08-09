@@ -1,6 +1,6 @@
 import appointmentScheduleService from '../services/schedule.service.js';
 import { RoleName } from '../middleware/roleGuard.js';
-import { verifyAgent } from '../helpers/propertyClient.js';
+import { verifyAgent, getPropertyInfor } from '../helpers/propertyClient.js';
 
 
 class AppointmentScheduleController {
@@ -36,7 +36,16 @@ class AppointmentScheduleController {
         type,
       });
       res.status(200).json({
-        data: { appointments },
+        data: { 
+          appointments,
+          pagination:{
+            total: appointments.length,
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            totalPages: Math.ceil(appointments.length / (Number(limit))),
+          }
+
+        },
         message: 'Get appointments successfully',
         errors: [],
       });
@@ -116,8 +125,11 @@ class AppointmentScheduleController {
       type,
     });
 
+    const propertyInfor = await getPropertyInfor(property_id, token);
+
     return res.status(200).json({
       data: {
+        propertyInfor,
         appointments,
         pagination,
       },
@@ -125,7 +137,6 @@ class AppointmentScheduleController {
       error: [],
     });
   } catch (err) {
-    console.error('Error in getPropertyAppointments controller:', err.message, err.stack);
     return res.status(400).json({
       data: { appointments: null },
       message: 'Failed to get property appointments',

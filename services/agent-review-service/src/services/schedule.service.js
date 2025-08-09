@@ -140,14 +140,6 @@ class AppointmentScheduleService {
 
       const appointments = await prisma.appointment_schedule.findMany({
         where,
-        select: {
-          id: true,
-          name: true,
-          number_phone: true,
-          status: true,
-          property_id: true,
-          message: true,
-        },
         orderBy: { created_at: 'desc' },
         skip: (page - 1) * limit,
         take: Number(limit),
@@ -271,10 +263,8 @@ class AppointmentScheduleService {
       },
     };
 
-    console.log('Result of getPropertyAppointments:', result);
     return result;
   } catch (err) {
-    console.error('Error in getPropertyAppointments:', err.message, err.stack);
     throw new Error(`Failed to get property appointments: ${err.message}`);
   }
 }
@@ -289,7 +279,6 @@ class AppointmentScheduleService {
       }
       // Lấy danh sách property_id từ property-service
       const propertyIds = await getAssignedProperties(agent_id, token);
- 
       const where = {
         property_id: { in: propertyIds },
       };

@@ -109,40 +109,8 @@ const router = Router();
  *     responses:
  *       201:
  *         description: Appointment created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointment:
- *                       $ref: '#/components/schemas/Appointment'
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Failed to create appointment
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointment:
- *                       type: null
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  */
 router.post('/', AppointmentScheduleController.createAppointment);
 
@@ -225,42 +193,8 @@ router.get('/', authenticateToken, roleGuard([RoleName.Admin]), AppointmentSched
  *     responses:
  *       200:
  *         description: Agent appointments retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Appointment'
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Failed to retrieve agent appointments
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: null
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  */
 router.get('/my-appointments', authenticateToken, roleGuard([RoleName.Agent]), AppointmentScheduleController.getAgentAppointments);
 
@@ -306,42 +240,8 @@ router.get('/my-appointments', authenticateToken, roleGuard([RoleName.Agent]), A
  *     responses:
  *       200:
  *         description: Property appointments retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Appointment'
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Failed to retrieve property appointments
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: null
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  */
 router.get('/property/:property_id', authenticateToken, roleGuard([RoleName.Agent, RoleName.Admin]), AppointmentScheduleController.getPropertyAppointments);
 
@@ -387,42 +287,8 @@ router.get('/property/:property_id', authenticateToken, roleGuard([RoleName.Agen
  *     responses:
  *       200:
  *         description: Agent appointments retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Appointment'
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Failed to retrieve agent appointments
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointments:
- *                       type: null
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  */
 router.get('/agent', authenticateToken, roleGuard([RoleName.Admin]), AppointmentScheduleController.getAgentAllAppointments);
 
@@ -455,40 +321,8 @@ router.get('/agent', authenticateToken, roleGuard([RoleName.Admin]), Appointment
  *     responses:
  *       200:
  *         description: Appointment responded successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointment:
- *                       $ref: '#/components/schemas/Appointment'
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Failed to respond to appointment
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointment:
- *                       type: null
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  */
 router.put('/:appointment_id/respond', authenticateToken, roleGuard([RoleName.Admin, RoleName.Agent]), AppointmentScheduleController.respondAppointment);
 
@@ -510,40 +344,8 @@ router.put('/:appointment_id/respond', authenticateToken, roleGuard([RoleName.Ad
  *     responses:
  *       200:
  *         description: Appointment deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointment:
- *                       $ref: '#/components/schemas/Appointment'
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  *       400:
  *         description: Failed to delete appointment
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     appointment:
- *                       type: null
- *                 message:
- *                   type: string
- *                 error:
- *                   type: array
- *                   items:
- *                     type: string
  */
 router.delete('/:appointment_id', authenticateToken, roleGuard([RoleName.Admin, RoleName.Agent]), AppointmentScheduleController.deleteAppointment);
 
