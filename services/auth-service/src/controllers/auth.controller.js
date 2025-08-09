@@ -1037,10 +1037,15 @@ exports.getTotalCustomer = async (req, res) => {
         role_id: roleGuard.RoleName.Customer,
       },
     });
-
+    const totalStaff = await prisma.user.count({
+      where: {
+        role_id: roleGuard.RoleName.Agent,
+      },
+    });
     res.json({
       data: {
         total_customer: totalCustomer,
+        total_staff: totalStaff,
       },
       message: 'User fetched successfully.',
       errors: [],

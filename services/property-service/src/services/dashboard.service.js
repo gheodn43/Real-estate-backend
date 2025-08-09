@@ -1,9 +1,8 @@
 import prisma from '../middleware/prismaClient.js';
 import RequestStatus from '../enums/requestStatus.enum.js';
-import AgentHistoryType from '../enums/agentHistoryType.enum.js';
+// import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 // import CommissionStatus from '../enums/commissionStatus.enum.js';
-
 const getPropertyType = async ({ start_date, end_date }) => {
   const whereBase = {
     created_at: {
@@ -12,117 +11,85 @@ const getPropertyType = async ({ start_date, end_date }) => {
     },
   };
 
-  // 1. Consignment: sender_id != null
-  const consignmentWhere = {
-    ...whereBase,
-    sender_id: null,
-    request_status: {
-      notIn: [RequestStatus.HIDDEN, null],
-    },
-  };
-  const consignmentTotal = await prisma.properties.count({
-    where: consignmentWhere,
-  });
-
-  const consignmentAssigned = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: {
-        not: null,
-      },
-      agentHistory: {
-        some: {
-          type: AgentHistoryType.ASSIGNED,
-        },
-      },
+  // Lấy toàn bộ bản ghi trong khoảng thời gian
+  const properties = await prisma.properties.findMany({
+    where: whereBase,
+    select: {
+      sender_id: true,
+      request_status: true,
+      requestpost_status: true,
     },
   });
 
-  const consignmentNotAssigned = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: {
-        not: null,
-      },
-      agentHistory: {
-        none: {
-          type: AgentHistoryType.ASSIGNED,
-        },
-      },
-    },
-  });
+  let consignmentTotal = 0;
+  let consignmentCompleted = 0;
+  let consignmentPending = 0;
+  let consignmentNegotiating = 0;
+  let consignmentPublished = 0;
+  let consignmentRejected = 0;
 
-  const consignmentPublished = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: {
-        not: null,
-      },
-      request_status: RequestStatus.PUBLISHED,
-    },
-  });
+  let outsideTotal = 0;
+  let outsidePending = 0;
+  let outsidePublished = 0;
+  let outsideRejected = 0;
+  let outsideCompleted = 0;
 
-  const consignmentRejected = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: {
-        not: null,
-      },
-      request_status: RequestStatus.REJECTED,
-    },
-  });
-
-  // 2. Outside: sender_id == null
-  const outsideWhere = {
-    ...whereBase,
-    sender_id: null,
-    requestpost_status: {
-      not: RequestPostStatus.HIDDEN,
-    },
-  };
-
-  const outsideTotal = await prisma.properties.count({ where: outsideWhere });
-
-  const outsidePending = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: null,
-      requestpost_status: RequestPostStatus.PENDING_APPROVAL,
-    },
-  });
-
-  const outsidePublished = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: null,
-      requestpost_status: RequestPostStatus.PUBLISHED,
-    },
-  });
-
-  const outsideRejected = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: null,
-      requestpost_status: RequestPostStatus.REJECTED,
-    },
-  });
-
-  const outsideCompleted = await prisma.properties.count({
-    where: {
-      ...whereBase,
-      sender_id: null,
-      requestpost_status: RequestPostStatus.EXPIRED,
-    },
-  });
+  for (const p of properties) {
+    const isConsignment = p.sender_id !== null;
+    if (isConsignment) {
+      if (
+        p.request_status !== RequestStatus.HIDDEN &&
+        p.request_status !== null
+      ) {
+        consignmentTotal++;
+      }
+      switch (p.request_status) {
+        case RequestStatus.COMPLETED:
+          consignmentCompleted++;
+          break;
+        case RequestStatus.PENDING:
+          consignmentPending++;
+          break;
+        case RequestStatus.NEGOTIATING:
+          consignmentNegotiating++;
+          break;
+        case RequestStatus.PUBLISHED:
+          consignmentPublished++;
+          break;
+        case RequestStatus.REJECTED:
+          consignmentRejected++;
+          break;
+      }
+    } else {
+      if (p.requestpost_status !== RequestPostStatus.HIDDEN) {
+        outsideTotal++;
+      }
+      switch (p.requestpost_status) {
+        case RequestPostStatus.PENDING_APPROVAL:
+          outsidePending++;
+          break;
+        case RequestPostStatus.PUBLISHED:
+          outsidePublished++;
+          break;
+        case RequestPostStatus.REJECTED:
+          outsideRejected++;
+          break;
+        case RequestPostStatus.EXPIRED:
+          outsideCompleted++;
+          break;
+      }
+    }
+  }
 
   return {
     total_property: consignmentTotal + outsideTotal,
     consignment: {
       total: consignmentTotal,
-      not_assigned: consignmentNotAssigned,
-      assigned: consignmentAssigned,
-      publish: consignmentPublished,
+      pending: consignmentPending,
+      negotiating: consignmentNegotiating,
+      published: consignmentPublished,
       rejected: consignmentRejected,
+      completed: consignmentCompleted,
     },
     outside: {
       total: outsideTotal,
