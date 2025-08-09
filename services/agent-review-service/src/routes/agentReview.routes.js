@@ -40,38 +40,8 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Tạo đánh giá thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Đánh giá được tạo thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       403:
  *         description: 'Tạo đánh giá thất bại (ví dụ: review đã tồn tại)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Tạo đánh giá thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Đánh giá đã tồn tại]
  */
 router.post('/', authenticateToken, roleGuard([RoleName.Customer, RoleName.Admin]), agentReviewController.createReview);
 
@@ -108,38 +78,8 @@ router.post('/', authenticateToken, roleGuard([RoleName.Customer, RoleName.Admin
  *     responses:
  *       200:
  *         description: Cập nhật đánh giá thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Đánh giá được cập nhật thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       403:
  *         description: 'Cập nhật thất bại (ví dụ: review đã bị xóa hoặc không có quyền)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Cập nhật đánh giá thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Đánh giá đã bị xóa hoặc không có quyền]
  */
 router.put(
   '/:id',
@@ -183,65 +123,10 @@ router.put(
  *     responses:
  *       201:
  *         description: Trả lời đánh giá thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     reply:
- *                       type: object
- *                       description: Thông tin trả lời
- *                 message:
- *                   type: string
- *                   example: Trả lời được tạo thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       400:
  *         description: Yêu cầu không hợp lệ (thiếu body hoặc comment)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     reply:
- *                       type: null
- *                 message:
- *                   type: string
- *                   example: Yêu cầu không hợp lệ
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Comment là bắt buộc]
  *       403:
  *         description: Trả lời thất bại (ví dụ không có quyền hoặc đánh giá không tồn tại)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     reply:
- *                       type: null
- *                 message:
- *                   type: string
- *                   example: Trả lời thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Không có quyền]
  */
 router.post(
   '/:id/reply',
@@ -269,38 +154,8 @@ router.post(
  *     responses:
  *       200:
  *         description: Xóa đánh giá thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Đánh giá được xóa thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       403:
  *         description: 'Xóa thất bại (ví dụ: không có quyền)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Xóa đánh giá thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Không có quyền]
  */
 router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
 
@@ -332,71 +187,8 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
  *     responses:
  *       200:
  *         description: Lấy danh sách và tổng kết thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     reviews:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                           agent_id:
- *                             type: integer
- *                           rating:
- *                             type: number
- *                           comment:
- *                             type: string
- *                           created_at:
- *                             type: string
- *                             format: date-time
- *                           replies:
- *                             type: array
- *                             items:
- *                               type: object
- *                     summary:
- *                       type: object
- *                       properties:
- *                         total:
- *                           type: integer
- *                         avg:
- *                           type: number
- *                 message:
- *                   type: string
- *                   example: Lấy danh sách và tổng kết đánh giá thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       403:
  *         description: Lấy danh sách và tổng kết thất bại
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     reviews:
- *                       type: null
- *                     summary:
- *                       type: null
- *                 message:
- *                   type: string
- *                   example: Lấy danh sách và tổng kết đánh giá thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [agent_id is required]
  */
 router.get('/', agentReviewController.getAgentReviews);
 
@@ -468,21 +260,6 @@ router.get('/', agentReviewController.getAgentReviews);
  *                   example: []
  *       403:
  *         description: 'Lấy danh sách đánh giá thất bại (ví dụ: token không hợp lệ hoặc lỗi database)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Lấy danh sách đánh giá của người dùng thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Token không hợp lệ]
  */
 router.get(
   '/:agent_id/user',
@@ -516,55 +293,10 @@ router.get(
  *     responses:
  *       200:
  *         description: Hành động thực hiện thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Hành động thực hiện thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  *       400:
  *         description: 'Hành động thất bại (ví dụ: rep-comment không tồn tại hoặc hành động không hợp lệ)'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Hành động thất bại
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Rep-comment không tồn tại, Hành động không hợp lệ]
  *       403:
  *         description: 'Không có quyền'
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Không có quyền
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: [Không có quyền]
  */
 router.put(
   '/:id/action',
@@ -595,21 +327,6 @@ router.put(
  *     responses:
  *       200:
  *         description: Thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Lấy danh sách trả lời đang chờ phê duyệt thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  */
 router.get(
   '/pending-replies',
@@ -644,21 +361,6 @@ router.get(
  *     responses:
  *       200:
  *         description: Thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                 message:
- *                   type: string
- *                   example: Lấy danh sách trả lời của tôi thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
  */
 router.get(
   '/my-replies',

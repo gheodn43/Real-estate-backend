@@ -201,20 +201,15 @@ async updateReview(req, res) {
 
   async getAgentReviews(req, res) {
     try {
-
       const { agent_id, page = 1, limit = 10 } = req.query;
       if (!agent_id) throw new Error('agent_id is required');
       const { reviews, rating, agent, pagination } = await agentReviewService.getAgentReviewsAndSummary(
-
-
         Number(agent_id),
         Number(page),
         Number(limit)
       );
       res.status(200).json({
         data: { agent, reviews, rating, pagination },
-
-
         message: 'Lấy danh sách và tổng kết đánh giá thành công',
         errors: [],
       });

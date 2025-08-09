@@ -26,7 +26,6 @@ class FeedbackService {
 
       return feedback;
     } catch (err) {
-      console.error('Create feedback error:', err.message, err.stack);
       throw new Error('Failed to create feedback: ' + err.message);
     }
   }

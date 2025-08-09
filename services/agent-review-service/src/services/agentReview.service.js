@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import axios from 'axios';
-import { getCustomerProfile, getAgentFromAuthService, getUserFromAuthService } from '../helpers/authClient.js';
+import { getCustomerProfile, getAgentFromAuthService, getUserFromAuthService, getPublicCustomerInfor } from '../helpers/authClient.js';
 import {RoleName} from '../middleware/roleGuard.js';
 import { getPublicAgentInfor } from '../helpers/authClient.js';
 
@@ -408,11 +408,8 @@ async approveReply(review_id, token) {
   try {
     let agent = null;
     try {
-      console.log('Calling getPublicAgentInfor with agent_id:', agent_id);
       agent = await getPublicAgentInfor(agent_id);
-      console.log('Agent:', agent);
     } catch (err) {
-      console.error('Error in getPublicAgentInfor:', err.message, err.response?.status);
       // Tiếp tục với agent = null
     }
 
@@ -442,9 +439,45 @@ async approveReply(review_id, token) {
       ? summaryReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total
       : 0;
 
+    // Map user info vào reviews và replies
+// --- build set các user_id (reviews + replies) ---
+const userIdsSet = new Set();
+reviews.forEach(r => {
+  if (r.user_id != null) userIdsSet.add(Number(r.user_id));
+  if (Array.isArray(r.replies)) {
+    r.replies.forEach(rep => { if (rep.user_id != null) userIdsSet.add(Number(rep.user_id)); });
+  }
+});
+const userIds = Array.from(userIdsSet);
+
+// --- fetch tất cả users song song, chịu lỗi từng request ---
+const settled = await Promise.allSettled(userIds.map(id => getPublicCustomerInfor(id)));
+
+const usersById = {};
+userIds.forEach((id, idx) => {
+  const res = settled[idx];
+  usersById[id] = (res.status === 'fulfilled' && res.value) ? res.value : {};
+});
+
+// --- map reviews & replies: thay user_id bằng user object ---
+const reviewsWithUser = reviews.map(review => {
+  const { user_id, replies, ...restReview } = review;
+  const user = usersById[Number(user_id)] || {};
+
+  const repliesWithUser = (Array.isArray(replies) ? replies : []).map(reply => {
+    const { user_id: r_uid, ...restReply } = reply;
+    const replyUser = usersById[Number(r_uid)] || {};
+    return { ...restReply, user: replyUser };
+  });
+
+  return { ...restReview, user, replies: repliesWithUser };
+});
+
+
+
     const result = {
       agent: agent || {},
-      reviews,
+      reviews: reviewsWithUser,
       rating: avg ,
       pagination: {
         total,
@@ -454,10 +487,8 @@ async approveReply(review_id, token) {
       },
     };
 
-    console.log('Result of getAgentReviewsAndSummary:', result);
     return result;
   } catch (err) {
-    console.error('Error in getAgentReviewsAndSummary:', err.message, err.stack);
     throw new Error(`Failed to fetch reviews: ${err.message}`);
   }
 }
