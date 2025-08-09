@@ -6,6 +6,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 require('./passport');
 const app = express();
@@ -29,6 +30,7 @@ app.get('/swagger.json', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/auth/admin', adminRoutes);
+app.use('/auth/dashboard', dashboardRoutes);
 
 const PORT = process.env.PORT || 4001;
 app.listen(PORT);
