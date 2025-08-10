@@ -194,124 +194,9 @@ router.get('/', agentReviewController.getAgentReviews);
 
 /**
  * @swagger
- * /review/agent-reviews/{agent_id}/user:
-
+ * /review/agent-reviews/agent/comments-needing-reply:
  *   get:
- *     summary: Lấy danh sách đánh giá của user hiện tại với Agent [Customer]
- *     tags: [AgentReview]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: agent_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID của Agent
- *     responses:
- *       200:
- *         description: Lấy danh sách đánh giá thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     review:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: integer
- *                           agent_id:
- *                             type: integer
- *                           user_id:
- *                             type: integer
- *                           rating:
- *                             type: integer
- *                           comment:
- *                             type: string
- *                           images:
- *                             type: array
- *                             items:
- *                               type: string
- *                           type:
- *                             type: string
- *                             enum: [comment]
- *                           status:
- *                             type: string
- *                             enum: [showing, deleted]
- *                           created_at:
- *                             type: string
- *                             format: date-time
- *                           updated_at:
- *                             type: string
- *                             format: date-time
- *                 message:
- *                   type: string
- *                   example: Lấy danh sách đánh giá của người dùng thành công
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: []
- *       403:
- *         description: 'Lấy danh sách đánh giá thất bại (ví dụ: token không hợp lệ hoặc lỗi database)'
- */
-router.get(
-  '/:agent_id/user',
-  authenticateToken,
-  agentReviewController.getUserReview
-);
-
-/**
- * @swagger
- * /review/agent-reviews/{id}/action:
-
- *   put:
- *     summary: Admin thực hiện hành động duyệt hoặc từ chối rep-comment
- *     tags: [AgentReview]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID của rep-comment
- *       - in: query
- *         name: action
- *         required: true
- *         schema:
- *           type: string
- *           enum: [approve, reject]
- *         description: Hành động cần thực hiện (approve hoặc reject)
- *     responses:
- *       200:
- *         description: Hành động thực hiện thành công
- *       400:
- *         description: 'Hành động thất bại (ví dụ: rep-comment không tồn tại hoặc hành động không hợp lệ)'
- *       403:
- *         description: 'Không có quyền'
- */
-router.put(
-  '/:id/action',
-  authenticateToken,
-  roleGuard([RoleName.Admin]),
-  agentReviewController.handleReviewAction
-);
-
-/**
- * @swagger
- * /review/agent-reviews/pending-replies:
-
- *   get:
- *     summary: Admin lấy danh sách rep-comment cần phê duyệt [Admin]
-
+ *     summary: Lấy danh sách comment mà Agent cần trả lời [Agent]
  *     tags: [AgentReview]
  *     security:
  *       - bearerAuth: []
@@ -320,53 +205,26 @@ router.put(
  *         name: page
  *         schema:
  *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
+ *           default: 10
+ *         description: Số lượng comment mỗi trang
  *     responses:
  *       200:
- *         description: Thành công
+ *         description: Lấy danh sách thành công
+ *       403:
+ *         description: Lấy danh sách thất bại
  */
 router.get(
-  '/pending-replies',
-  authenticateToken,
-  roleGuard([RoleName.Admin]),
-  agentReviewController.getPendingReplies
-);
-
-/**
- * @swagger
- * /review/agent-reviews/my-replies:
-
- *   get:
- *     summary: Agent xem danh sách rep-comment của mình [Agent]
- *     tags: [AgentReview]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [pending, showing, rejected]
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Thành công
- */
-router.get(
-  '/my-replies',
+  '/agent/comments-needing-reply',
   authenticateToken,
   roleGuard([RoleName.Agent]),
-  agentReviewController.getMyReplies
+  agentReviewController.getCommentsAgentNeedingReply,
 );
+
 
 export default router;
