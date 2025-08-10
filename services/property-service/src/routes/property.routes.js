@@ -1495,6 +1495,10 @@ router
         if (requestPostStatus === RequestPostStatus.DRAFT) {
           senderId = user.userId;
         }
+        const requestStatus =
+          propertyService.getRequestStatusFromRequestPostStatus(
+            requestPostStatus
+          );
         property = await propertyService.createPostProperty({
           senderId,
           title,
@@ -1504,6 +1508,7 @@ router
           afterPriceTag,
           assetsId,
           needsId,
+          requestStatus,
           requestPostStatus,
         });
 

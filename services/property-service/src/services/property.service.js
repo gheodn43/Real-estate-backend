@@ -61,6 +61,7 @@ const createPostProperty = async (data) => {
       assets_id: data.assetsId,
       needs_id: data.needsId,
       stage: Stage.POST,
+      request_status: data.requestStatus,
       requestpost_status: data.requestPostStatus,
     },
   });
