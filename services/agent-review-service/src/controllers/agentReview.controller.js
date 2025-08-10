@@ -1,5 +1,5 @@
 import agentReviewService from '../services/agentReview.service.js';
-import roleGuard, {RoleName} from '../middleware/roleGuard.js';
+import { RoleName } from '../middleware/roleGuard.js';
 
 
 class AgentReviewController {
@@ -15,66 +15,67 @@ class AgentReviewController {
     this.getPendingReplies = this.getPendingReplies.bind(this);
     this.getMyReplies = this.getMyReplies.bind(this);
     this.handleReviewAction = this.handleReviewAction.bind(this);
+    this.getCommentsAgentNeedingReply = this.getCommentsAgentNeedingReply.bind(this);
   }
 
-async createReview(req, res) {
-  try {
-    const token = req.token;
-    const { agent_id, rating, comment, images, parent_id, type } = req.body;
-    const user = req.user;
-    const review = await agentReviewService.createReview({
-      token,
-      user,
-      agent_id: Number(agent_id),
-      rating,
-      comment,
-      images,
-      parent_id,
-      type,
-    });
-    res.status(201).json({
-      data: { review },
-      message: 'Create review successfully',
-      errors: [],
-    });
-  } catch (err) {
-    return res.status(403).json({
-      data: null,
-      message: 'Create review failed',
-      errors: [err.message],
-    });
+  async createReview(req, res) {
+    try {
+      const token = req.token;
+      const { agent_id, rating, comment, images, parent_id, type } = req.body;
+      const user = req.user;
+      const review = await agentReviewService.createReview({
+        token,
+        user,
+        agent_id: Number(agent_id),
+        rating,
+        comment,
+        images,
+        parent_id,
+        type,
+      });
+      res.status(201).json({
+        data: { review },
+        message: 'Create review successfully',
+        errors: [],
+      });
+    } catch (err) {
+      return res.status(403).json({
+        data: null,
+        message: 'Create review failed',
+        errors: [err.message],
+      });
+    }
   }
-}
 
-async updateReview(req, res) {
-  try {
-    const token = req.token;
-    const review_id = Number(req.params.id);
-    const user_id = Number(req.user.userId);
-    const { rating, comment, images } = req.body;
-    const user = req.user;
-    const review = await agentReviewService.updateReview({
-      review_id,
-      user_id,
-      rating,
-      comment,
-      images,
-      user,
-      token,
-    });
-    res.status(200).json({
-      data: { review },
-      message: 'Update review successfully',
-      errors: [],
-    });
-  } catch (err) {
-    return res.status(403).json({
-      data: null,
-      message: 'Update review failed',
-      errors: [err.message],
-    });
+  async updateReview(req, res) {
+    try {
+      const token = req.token;
+      const review_id = Number(req.params.id);
+      const user_id = Number(req.user.userId);
+      const { rating, comment, images } = req.body;
+      const user = req.user;
+      const review = await agentReviewService.updateReview({
+        review_id,
+        user_id,
+        rating,
+        comment,
+        images,
+        user,
+        token,
+      });
+      res.status(200).json({
+        data: { review },
+        message: 'Update review successfully',
+        errors: [],
+      });
+    } catch (err) {
+      return res.status(403).json({
+        data: null,
+        message: 'Update review failed',
+        errors: [err.message],
+      });
+    }
   }
-}
 
   async reply(req, res) {
     try {
@@ -165,14 +166,14 @@ async updateReview(req, res) {
       const token = req.token;
       const review_id = Number(req.params.id);
       const reply = await agentReviewService.rejectReply(review_id, token);
-      res.status(200).json({ 
-        data: {reply: reply},
+      res.status(200).json({
+        data: { reply: reply },
         message: 'Reject reply successfully',
         errors: [],
       });
     } catch (err) {
       return res.status(403).json({
-        data: {reply: null},
+        data: { reply: null },
         message: 'Reject reply failed',
         errors: [err.message],
       });
@@ -185,14 +186,14 @@ async updateReview(req, res) {
       const user_id = Number(req.user.userId);
       const user_role = Number(req.user.userRole);
       const review = await agentReviewService.deleteReview(review_id, user_id, user_role);
-      res.status(200).json({ 
-        data: {review: review},
+      res.status(200).json({
+        data: { review: review },
         message: 'Delete review successfully',
         errors: [],
       });
     } catch (err) {
       return res.status(403).json({
-        data: {review: null},
+        data: { review: null },
         message: 'Delete review failed',
         errors: [err.message],
       });
@@ -230,14 +231,14 @@ async updateReview(req, res) {
         Number(agent_id),
         user_id
       );
-      res.status(200).json({ 
-        data: {review: review},
+      res.status(200).json({
+        data: { review: review },
         message: 'Get user review successfully',
         errors: [],
       });
     } catch (err) {
       return res.status(403).json({
-        data: {review: null},
+        data: { review: null },
         message: 'Get user review failed',
         errors: [err.message],
       });
@@ -245,49 +246,75 @@ async updateReview(req, res) {
   }
 
   async getPendingReplies(req, res) {
-  try {
-    const { page = 1, limit = 10 } = req.query;
-    const replies = await agentReviewService.getPendingReplies(
-      Number(page),
-      Number(limit)
-    );
-    res.status(200).json({
-      data: { replies },
-      message: 'Get pending replies successfully',
-      errors: [],
-    });
-  } catch (err) {
-    return res.status(403).json({
-      data: { replies: null },
-      message: 'Get pending replies failed',
-      errors: [err.message],
-    });
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const replies = await agentReviewService.getPendingReplies(
+        Number(page),
+        Number(limit)
+      );
+      res.status(200).json({
+        data: { replies },
+        message: 'Get pending replies successfully',
+        errors: [],
+      });
+    } catch (err) {
+      return res.status(403).json({
+        data: { replies: null },
+        message: 'Get pending replies failed',
+        errors: [err.message],
+      });
+    }
   }
-}
 
-async getMyReplies(req, res) {
-  try {
-    const { status, page = 1, limit = 10 } = req.query;
-    const agent_id = Number(req.user.userId);
-    const replies = await agentReviewService.getMyReplies(
-      agent_id,
-      status,
-      Number(page),
-      Number(limit)
-    );
-    res.status(200).json({
-      data: { replies },
-      message: 'Get agent replies successfully',
-      errors: [],
-    });
-  } catch (err) {
-    return res.status(403).json({
-      data: { replies: null },
-      message: 'Get agent replies failed',
-      errors: [err.message],
-    });
+  async getMyReplies(req, res) {
+    try {
+      const { status, page = 1, limit = 10 } = req.query;
+      const agent_id = Number(req.user.userId);
+      const replies = await agentReviewService.getMyReplies(
+        agent_id,
+        status,
+        Number(page),
+        Number(limit)
+      );
+      res.status(200).json({
+        data: { replies },
+        message: 'Get agent replies successfully',
+        errors: [],
+      });
+    } catch (err) {
+      return res.status(403).json({
+        data: { replies: null },
+        message: 'Get agent replies failed',
+        errors: [err.message],
+      });
+    }
   }
-}
+
+  async getCommentsAgentNeedingReply(req, res) {
+    try {
+      const agent_id = Number(req.user.userId);
+      const { page = 1, limit = 10 } = req.query;
+
+      const result = await agentReviewService.getCommentsAgentNeedingReply(
+        agent_id,
+        Number(page),
+        Number(limit)
+      );
+
+      res.status(200).json({
+        data: result,
+        message: 'Get comments needing reply successfully',
+        errors: [],
+      });
+    } catch (err) {
+      return res.status(403).json({
+        data: null,
+        message: 'Get comments needing reply failed',
+        errors: [err.message],
+      });
+    }
+  }
+
 }
 
 export default new AgentReviewController();

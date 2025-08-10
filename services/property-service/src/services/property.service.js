@@ -545,6 +545,105 @@ const getBySlug = async (slug) => {
   };
 };
 
+const getBySlugAndSender = async (slug, senderId) => {
+  const property = await prisma.properties.findUnique({
+    where: {
+      slug: slug,
+      sender_id: senderId,
+    },
+    include: {
+      locations: true,
+      media: true,
+      details: {
+        select: {
+          value: true,
+          category_detail: {
+            select: {
+              id: true,
+              field_name: true,
+              icon: true,
+            },
+          },
+        },
+      },
+      amenities: {
+        include: {
+          amenity: {
+            select: {
+              id: true,
+              name: true,
+              is_active: true,
+            },
+          },
+        },
+      },
+      assets: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      },
+      needs: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      },
+      agentHistory: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        where: {
+          type: { in: [AgentHistoryType.REQUEST, AgentHistoryType.ASSIGNED] },
+        },
+        select: { agent_id: true },
+      },
+      commissions: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        select: {
+          type: true,
+          status: true,
+        },
+      },
+    },
+  });
+  let customerNeeds = null;
+  let beforePrice = property.before_price_tag;
+  let price = property.price;
+  let afterPrice = property.after_price_tag;
+  let agentInfo = null;
+  if (
+    (property.requestpost_status == RequestPostStatus.EXPIRED ||
+      property.requestpost_status == RequestPostStatus.SOLD) &&
+    property.commissions[0].status == CommissionStatus.COMPLETED
+  ) {
+    beforePrice = 'Giá liên hệ';
+    price = 0;
+    afterPrice = '';
+  }
+  if (property?.commissions?.length) {
+    customerNeeds = property.commissions[0].type;
+  }
+  const currentAgentId = property?.agentHistory?.[0]?.agent_id;
+  if (currentAgentId) {
+    agentInfo = await getPublicAgentInfor(currentAgentId);
+  } else {
+    agentInfo = await getAdminInfor();
+  }
+  return {
+    ...property,
+    customer_needs: customerNeeds,
+    before_price_tag: beforePrice,
+    price: price,
+    after_price_tag: afterPrice,
+    commissions: undefined,
+    agentHistory: undefined,
+    agent: agentInfo,
+  };
+};
+
 const getDraftProperties = async (userId, pagination, filters) => {
   const { search } = filters;
   const { page, limit } = pagination;
@@ -1591,4 +1690,5 @@ export default {
   forwardDraft,
   getAllRequestAssignOfProperty,
   incrementViewCounter,
+  getBySlugAndSender,
 };
