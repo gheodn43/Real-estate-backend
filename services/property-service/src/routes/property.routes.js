@@ -1514,9 +1514,7 @@ router
             error: ['Property not created'],
           });
         }
-
         const propertyId = property.id;
-
         // Tạo location
         if (location) {
           try {

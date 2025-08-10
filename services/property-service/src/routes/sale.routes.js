@@ -7,6 +7,109 @@ import { getPublicAgentInfor } from '../helpers/authClient.js';
 
 /**
  * @openapi
+ * /prop/sale/list-agent-in-month:
+ *   get:
+ *     tags:
+ *       - Sale
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Lấy danh sách BĐS đã hoàn tất giao dịch trong tháng của một agent [ADMIN, AGENT]
+ *     description:
+ *       API dành cho Admin, trả về danh sách BĐS đã hoàn tất giao dịch trong khoảng thời gian (theo tháng lương hiện tại) của một agent.
+ *       Sử dụng hàm `getStartDateAndEndDateInThisMonth()` để xác định khoảng thời gian.
+ *     parameters:
+ *       - in: query
+ *         name: mooc_date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           example: "07/07/2025"
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Tìm kiếm thông tin user email, name, sđt
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Số trang (pagination).
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số bản ghi mỗi trang.
+ *     responses:
+ *       200:
+ *         description: Thành công - Trả về danh sách BĐS đã hoàn tất giao dịch trong tháng.
+ *       400:
+ *         description: Thiếu agent_id hoặc dữ liệu không hợp lệ.
+ *       401:
+ *         description: Unauthorized - Chưa đăng nhập hoặc không có quyền Admin.
+ *       500:
+ *         description: Server error.
+ */
+router
+  .route('/list-agent-in-month')
+  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { mooc_date, search, page = 1, limit = 10 } = req.query;
+    const bonusMonth = await getCustomCurrentMonth(mooc_date);
+    const { start_date, end_date } =
+      getStartDateAndEndDateByMonthString(bonusMonth);
+
+    try {
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+      };
+      const filters = {
+        bonusMonth,
+        start_date,
+        end_date,
+        search,
+      };
+      const { total, results, sentMailForAll } =
+        await saleService.getListAgentAndOverviewTransactionInMonth(
+          filters,
+          pagination
+        );
+      if (results.length === 0) {
+        return res.status(404).json({
+          data: null,
+          message: 'Not found',
+          error: [],
+        });
+      }
+      return res.status(200).json({
+        data: {
+          agents: results,
+          sent_mail_for_all: sentMailForAll,
+          pagination: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / Number(limit)),
+          },
+        },
+        message: 'Success',
+        error: [],
+      });
+    } catch (err) {
+      return res.status(500).json({
+        data: null,
+        message: 'Server error',
+        error: [err.message],
+      });
+    }
+  });
+
+/**
+ * @openapi
  * /prop/sale/of-agent-in-month:
  *   get:
  *     tags:
@@ -103,14 +206,7 @@ router
       }
     }
   );
-// router
-//   .route('/list-agent')
-//   .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
-//   const {mooc_date, search, page, limit } = req.query;
-//   const bonusMonth = await getCustomCurrentMonth(mooc_date);
-//     const { start_date, end_date } = getStartDateAndEndDateByMonthString(bonusMonth);
 
-// })
 /**
  * @openapi
  * /prop/sale/bonus:
@@ -129,7 +225,6 @@ router
  *           schema:
  *             type: object
  *             required:
- *               - image_url
  *               - agent_id
  *               - buying_quantity
  *               - rental_quantity
@@ -144,10 +239,6 @@ router
  *                 type: integer
  *                 example: 11
  *                 description: id của agent
- *               image_url:
- *                 type: string
- *                 example: "link ảnh"
- *                 description: Link ảnh screenshot component
  *               buying_quantity:
  *                 type: integer
  *                 example: 3
@@ -197,7 +288,6 @@ router
   .route('/bonus')
   .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
     const {
-      image_url,
       agent_id,
       buying_quantity,
       rental_quantity,
@@ -223,9 +313,8 @@ router
         bonus_of_month,
       });
       const agent = getPublicAgentInfor(Number(agent_id));
-      console.log('gọi hàm gửi mail cho agent kèm hình ảnh?', {
+      console.log('gọi hàm gửi mail cho agent?', {
         agent,
-        image_url,
       });
 
       return res.status(200).json({
@@ -474,8 +563,9 @@ const getCompleteTransactionOfAgentInMonth = async (
     start_date,
     end_date,
     search,
+    bonusMonth,
   };
-  const { total, results } =
+  const { total, results, sent_mail } =
     await saleService.getCompleteTransactionOfAgentInMonth(filters, pagination);
   if (results.length === 0) {
     return res.status(404).json({
@@ -491,6 +581,12 @@ const getCompleteTransactionOfAgentInMonth = async (
   );
   return res.status(200).json({
     data: {
+      bonus_time: {
+        month: bonusMonth,
+        from: start_date,
+        to: end_date,
+      },
+      sent_mail: sent_mail,
       agent,
       transaction: results,
       pagination: {

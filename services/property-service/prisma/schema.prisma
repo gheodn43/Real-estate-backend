@@ -184,10 +184,11 @@ model sale_bonus {
   rental_quantity    Int
   total_buying_commission Decimal @db.Decimal(15, 2)
   total_rental_commission Decimal @db.Decimal(15, 2)
-  bonus              Decimal @db.Decimal(15, 2) @default(0)
-  penalty            Decimal @db.Decimal(15, 2) @default(0)
+  bonus              Decimal? @db.Decimal(15, 2) @default(0)
+  penalty            Decimal? @db.Decimal(15, 2) @default(0)
   review             String?
   review_by          Int?
+  sent_mail          Boolean?   @default(true)
   bonus_of_month     String?
   created_at         DateTime  @default(now())
   updated_at         DateTime  @default(now())
