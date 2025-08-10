@@ -87,6 +87,11 @@ router
       }
       return res.status(200).json({
         data: {
+          bonus_time: {
+            month: bonusMonth,
+            from: start_date,
+            to: end_date,
+          },
           agents: results,
           sent_mail_for_all: sentMailForAll,
           pagination: {
@@ -107,6 +112,14 @@ router
       });
     }
   });
+
+// router
+//   .route('/mass-mailing-to-agent')
+//   .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+//     const { month } = req.body;
+//     const { start_date, end_date } = getStartDateAndEndDateByMonthString(month);
+
+//   });
 
 /**
  * @openapi

@@ -21,7 +21,7 @@ const roleGuard = require('../middleware/roleGuard');
 router.get(
   '/total-customer',
   authenticateToken,
-  roleGuard([roleGuard.RoleName.Admin]),
+  roleGuard([roleGuard.RoleName.Admin, roleGuard.RoleName.Agent]),
   authController.getTotalCustomer
 );
 
@@ -42,7 +42,7 @@ router.get(
 router.get(
   '/statistics-one-year',
   authenticateToken,
-  roleGuard([roleGuard.RoleName.Admin]),
+  roleGuard([roleGuard.RoleName.Admin, roleGuard.RoleName.Agent]),
   authController.getMonthlyNewCustomers
 );
 

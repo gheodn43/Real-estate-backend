@@ -36,19 +36,23 @@ import roleGuard, { RoleName } from '../middleware/roleGuard.js';
 
 router
   .route('/property-type')
-  .get(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
-    const { startDate, endDate } = req.query;
-    const filter = {
-      start_date: parseClientDate(startDate),
-      end_date: parseClientDate(endDate),
-    };
-    const propertyTypes = await dashboardService.getPropertyType(filter);
-    res.status(200).json({
-      data: propertyTypes,
-      message: 'Property types found',
-      error: [],
-    });
-  });
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      const { startDate, endDate } = req.query;
+      const filter = {
+        start_date: parseClientDate(startDate),
+        end_date: parseClientDate(endDate),
+      };
+      const propertyTypes = await dashboardService.getPropertyType(filter);
+      res.status(200).json({
+        data: propertyTypes,
+        message: 'Property types found',
+        error: [],
+      });
+    }
+  );
 
 const parseClientDate = (dateString) => {
   if (!dateString) return undefined;

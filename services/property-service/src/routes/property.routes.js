@@ -2150,145 +2150,6 @@ router
  *     responses:
  *       200:
  *         description: Thông tin bất động sản được tìm thấy
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Property found
- *                 error:
- *                   type: array
- *                   items: {}
- *                   example: []
- *                 data:
- *                   type: object
- *                   properties:
- *                     property:
- *                       type: object
- *                       properties:
- *                         id:
- *                           type: integer
- *                           example: 17
- *                         sender_id:
- *                           type: integer
- *                           nullable: true
- *                         title:
- *                           type: string
- *                           example: Bán nhà phố trung tâm Quận 1 upate
- *                         description:
- *                           type: string
- *                           example: Nhà phố sang trọng, tiện nghi đầy đủ, gần trung tâm thương mại.
- *                         before_price_tag:
- *                           type: string
- *                           example: Giá chỉ từ
- *                         price:
- *                           type: string
- *                           example: "50000000000.99"
- *                         after_price_tag:
- *                           type: string
- *                           example: VNĐ
- *                         stage:
- *                           type: string
- *                           example: post
- *                         request_status:
- *                           type: string
- *                           nullable: true
- *                         requestpost_status:
- *                           type: string
- *                           example: published
- *                         created_at:
- *                           type: string
- *                           format: date-time
- *                           example: 2025-06-21T07:43:46.769Z
- *                         updated_at:
- *                           type: string
- *                           format: date-time
- *                           example: 2025-06-21T08:20:58.307Z
- *                         locations:
- *                           type: object
- *                           properties:
- *                             addr_city:
- *                               type: string
- *                               example: Hồ Chí Minh
- *                             addr_district:
- *                               type: string
- *                               example: Quận 1
- *                             addr_street:
- *                               type: string
- *                               example: Nguyễn Huệ
- *                             addr_details:
- *                               type: string
- *                               example: Sát phố đi bộ
- *                             latitude:
- *                               type: number
- *                               format: float
- *                               example: 10.7769
- *                             longitude:
- *                               type: number
- *                               format: float
- *                               example: 106.7009
- *                         media:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               type:
- *                                 type: string
- *                                 example: image
- *                               url:
- *                                 type: string
- *                                 example: https://example.com/image1.jpg
- *                               order:
- *                                 type: integer
- *                                 example: 1
- *                         details:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               value:
- *                                 type: string
- *                                 example: "3"
- *                               category_detail:
- *                                 type: object
- *                                 properties:
- *                                   field_name:
- *                                     type: string
- *                                     example: string
- *                                   field_type:
- *                                     type: string
- *                                     example: number
- *                         amenities:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               amenity:
- *                                 type: object
- *                                 properties:
- *                                   name:
- *                                     type: string
- *                                     example: Thử nghiệm
- *                         assets:
- *                           type: object
- *                           properties:
- *                             name:
- *                               type: string
- *                               example: nhà phố hồ tây
- *                             type:
- *                               type: string
- *                               example: assets
- *                         needs:
- *                           type: object
- *                           properties:
- *                             name:
- *                               type: string
- *                               example: Đất nền
- *                             type:
- *                               type: string
- *                               example: assets
  */
 router.route('/:slug').get(async (req, res) => {
   try {
@@ -2328,6 +2189,63 @@ router.route('/:slug').get(async (req, res) => {
     });
   }
 });
+
+/**
+ * @swagger
+ * /prop/request/{slug}:
+ *   get:
+ *     summary: Lấy thông tin chi tiết bài đăng bất động sản từ ngừoi ký gửi [CUSTOMER]
+ *     tags:
+ *       - Property
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: slug
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: slug của bài đăng
+ *     responses:
+ *       200:
+ *         description: Thông tin bất động sản được tìm thấy
+ */
+router
+  .route('/request/:slug')
+  .get(authMiddleware, roleGuard([RoleName.Customer]), async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const senderId = req.user.userId;
+      const property = await propertyService.getBySlugAndSender(slug, senderId);
+      if (!property) {
+        return res.status(404).json({
+          data: null,
+          message: '',
+          error: ['Property not found'],
+        });
+      }
+      if (property.requestpost_status === RequestPostStatus.HIDDEN) {
+        return res.status(404).json({
+          data: null,
+          message: '',
+          error: ['Property not found'],
+        });
+      }
+      return res.status(200).json({
+        data: {
+          property: property,
+        },
+        message: 'Property found',
+        error: [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        message: '',
+        error: [error.message],
+      });
+    }
+  });
 
 // Cập nhật trạng thái của bài đăng
 /**
