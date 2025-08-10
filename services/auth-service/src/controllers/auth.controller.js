@@ -899,13 +899,30 @@ exports.getPublicCustomer = async (req, res) => {
     });
   }
 };
-
 exports.getPublicListAgent = async (req, res) => {
-  const agents = await prisma.user.findMany({
-    where: {
-      role_id: { in: [2, 4] },
-    },
-    select: {
+  try {
+    const { page, limit, search, onlyAgent } = req.query;
+    let where = {};
+
+    if (onlyAgent && onlyAgent === 'true') {
+      where = {
+        role_id: { in: [2] },
+      };
+    } else {
+      where = {
+        role_id: { in: [2, 4] },
+      };
+    }
+
+    if (search && search.trim() !== '') {
+      where.OR = [
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { number_phone: { contains: search } },
+      ];
+    }
+
+    const select = {
       id: true,
       email: true,
       name: true,
@@ -922,23 +939,61 @@ exports.getPublicListAgent = async (req, res) => {
       number_phone: true,
       created_at: true,
       updated_at: true,
-    },
-  });
-  if (agents.lenght == 0) {
-    return res.status(404).json({
-      data: null,
-      message: 'User not found.',
+    };
+
+    let agents, total;
+
+    if (page && limit) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const skip = (pageNum - 1) * limitNum;
+
+      [agents, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          select,
+          skip,
+          take: limitNum,
+          orderBy: { created_at: 'desc' },
+        }),
+        prisma.user.count({ where }),
+      ]);
+    } else {
+      [agents, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          select,
+          orderBy: { created_at: 'desc' },
+        }),
+        prisma.user.count({ where }),
+      ]);
+    }
+
+    if (!agents || agents.length === 0) {
+      return res.status(404).json({
+        data: null,
+        message: 'User not found.',
+        errors: [],
+      });
+    }
+
+    return res.json({
+      data: {
+        total,
+        agents,
+      },
+      message: 'Agent fetched successfully.',
       errors: [],
     });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: 'Internal server error.',
+      errors: [error.message],
+    });
   }
-  res.json({
-    data: {
-      agents: agents,
-    },
-    message: 'Agent fetched successfully.',
-    errors: [],
-  });
 };
+
 exports.getPublicListJournalist = async (req, res) => {
   const agents = await prisma.user.findMany({
     where: {

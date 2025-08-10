@@ -80,6 +80,21 @@ const getUsersFromListIds = async (userIds, search, token) => {
   return res.data;
 };
 
+const getPublicListAgent = async (page, limit, search, onlyAgent) => {
+  const res = await axios.get(
+    'http://auth-service:4001/auth/public-list-agent',
+    {
+      params: {
+        page,
+        limit,
+        search,
+        onlyAgent,
+      },
+    }
+  );
+  return res.data.data;
+};
+
 export {
   getProfile,
   getCustomerProfile,
@@ -88,4 +103,5 @@ export {
   getUsersFromListIds,
   getCustomerInfor,
   getPublicCustomerInfor,
+  getPublicListAgent,
 };
