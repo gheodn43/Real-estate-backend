@@ -402,12 +402,6 @@ router
             message: 'Amenity not found',
             error: [],
           });
-        } else if (amenities.children.length === 0) {
-          return res.status(404).json({
-            data: null,
-            message: 'Amenity has no children',
-            error: [],
-          });
         }
         return res.status(200).json({
           data: {

@@ -291,7 +291,7 @@ const getById = async (propertyId, userData) => {
         orderBy: { created_at: 'desc' },
         take: 1,
         where: {
-          type: { in: [AgentHistoryType.ASSIGNED] },
+          type: { in: [AgentHistoryType.ASSIGNED, AgentHistoryType.REQUEST] },
           ...(userData.userRole === RoleName.Agent
             ? {
                 agent_id: userData.userId,
@@ -311,19 +311,25 @@ const getById = async (propertyId, userData) => {
       ? property.agentHistory[0].agent_id
       : null;
   const assign = () => {
-    if (
-      userData.userRole === RoleName.Agent &&
-      property.agentHistory.length > 0
-    ) {
-      if (property.agentHistory[0].type === AgentHistoryType.ASSIGNED) {
+    if (userData.userRole === RoleName.Agent) {
+      if (
+        property.agentHistory.length > 0 &&
+        property.agentHistory[0].type === AgentHistoryType.ASSIGNED
+      ) {
         return 'assigned';
-      } else if (property.agentHistory[0].type === AgentHistoryType.REQUEST) {
+      } else if (
+        property.agentHistory.length > 0 &&
+        property.agentHistory[0].type === AgentHistoryType.REQUEST
+      ) {
         return 'request_assign';
       } else {
         return 'waiting_assign';
       }
     } else if (userData.userRole === RoleName.Admin) {
-      if (property.agentHistory.length > 0) {
+      if (
+        property.agentHistory.length > 0 &&
+        property.agentHistory[0].type === AgentHistoryType.ASSIGNED
+      ) {
         return 'assigned';
       } else {
         return 'not_assigned';

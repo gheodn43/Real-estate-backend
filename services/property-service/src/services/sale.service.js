@@ -294,10 +294,164 @@ function normalizeDateRange(start_date, end_date) {
   return { start_date: normalizedStart, end_date: normalizedEnd };
 }
 
+const getAgentAndThemTransactionInfoNeededSendMail = async (
+  month,
+  start_date,
+  end_date
+) => {
+  const page = 1;
+  const limit = 1000;
+  const search = '';
+  const onlyAgent = true;
+
+  // 1. Lấy danh sách agent đã gửi mail
+  const agentHadSentMail = await prisma.sale_bonus.findMany({
+    where: { bonus_of_month: month },
+    select: { agent_id: true },
+  });
+  const sentMailSet = new Set(agentHadSentMail.map((a) => a.agent_id));
+
+  // 2. Lấy tất cả agent
+  const { agents, total } = await getPublicListAgent(
+    page,
+    limit,
+    search,
+    onlyAgent
+  );
+
+  // 3. Filter agent chưa gửi mail
+  const agentsToSendMail = agents.filter((agent) => !sentMailSet.has(agent.id));
+
+  if (!agentsToSendMail.length) {
+    return { total, agentCommissions: [] };
+  }
+
+  // 4. Lấy danh sách agent_id để query commission
+  const agentIds = agentsToSendMail.map((a) => a.id);
+
+  const where = {
+    agent_commission_fee: {
+      some: {
+        agent_id: { in: agentIds },
+        status: {
+          in: [
+            AgentCommissionFeeStatus.CONFIRMED,
+            AgentCommissionFeeStatus.REJECTED,
+          ],
+        },
+      },
+    },
+  };
+  if (start_date && end_date) {
+    where.updated_at = {
+      gte: start_date,
+      lte: end_date,
+    };
+  }
+
+  // 5. Query commissions
+  const commissions = await prisma.commissions.findMany({
+    where,
+    select: {
+      type: true,
+      commission: true,
+      latest_price: true,
+      property: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          before_price_tag: true,
+          price: true,
+          after_price_tag: true,
+          locations: {
+            select: {
+              addr_details: true,
+              addr_street: true,
+              addr_district: true,
+              addr_city: true,
+            },
+          },
+        },
+      },
+      agent_commission_fee: {
+        select: {
+          agent_id: true,
+          commission_value: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  // 6. Nhóm commission theo agent_id và type
+  const commissionMap = {};
+  for (const c of commissions) {
+    for (const fee of c.agent_commission_fee) {
+      if (!commissionMap[fee.agent_id]) {
+        commissionMap[fee.agent_id] = {
+          rentalCommissionCompleted: [],
+          buyingCommissionCompleted: [],
+          bonus: 0,
+          penalty: 0,
+          review: null,
+        };
+      }
+
+      const commissionItem = {
+        propertyId: c.property.id,
+        propertyName: c.property.title,
+        propertyPrice: c.property.price,
+        propertyAddress: c.property.locations
+          ? `${c.property.locations.addr_details || ''}, ${c.property.locations.addr_street || ''}, ${c.property.locations.addr_district || ''}, ${c.property.locations.addr_city || ''}`
+          : null,
+        commission: `${c.commission}%`,
+        commissionValue: fee.commission_value,
+      };
+
+      if (
+        c.type === 'rental' &&
+        fee.status === AgentCommissionFeeStatus.CONFIRMED
+      ) {
+        commissionMap[fee.agent_id].rentalCommissionCompleted.push(
+          commissionItem
+        );
+      } else if (
+        c.type === 'buying' &&
+        fee.status === AgentCommissionFeeStatus.CONFIRMED
+      ) {
+        commissionMap[fee.agent_id].buyingCommissionCompleted.push(
+          commissionItem
+        );
+      }
+    }
+  }
+
+  // 7. Gắn commissionOfMonth vào agents
+  const enrichedAgents = agentsToSendMail.map((agent) => ({
+    agent: {
+      id: agent.id,
+      name: agent.name,
+      email: agent.email,
+      number_phone: agent.number_phone,
+    },
+    commissionOfMonth: commissionMap[agent.id] || {
+      rentalCommissionCompleted: [],
+      buyingCommissionCompleted: [],
+      bonus: 0,
+      penalty: 0,
+      review: null,
+    },
+  }));
+
+  return { total, agentCommissions: enrichedAgents };
+};
+
 export default {
   getCompleteTransactionOfAgentInMonth,
   initSaleBonus,
   getBonusHistoryOfAgent,
   getOneBonusHistoryOfAgent,
   getListAgentAndOverviewTransactionInMonth,
+  getAgentAndThemTransactionInfoNeededSendMail,
 };

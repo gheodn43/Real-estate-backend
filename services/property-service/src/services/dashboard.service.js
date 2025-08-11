@@ -1,9 +1,11 @@
 import prisma from '../middleware/prismaClient.js';
 import RequestStatus from '../enums/requestStatus.enum.js';
-// import AgentHistoryType from '../enums/agentHistoryType.enum.js';
+import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
-// import CommissionStatus from '../enums/commissionStatus.enum.js';
-const getPropertyType = async ({ start_date, end_date }) => {
+import { RoleName } from '../middleware/roleGuard.js';
+
+const getPropertyType = async (filter, userData) => {
+  const { start_date, end_date } = filter;
   const whereBase = {
     created_at: {
       gte: start_date,
@@ -11,15 +13,32 @@ const getPropertyType = async ({ start_date, end_date }) => {
     },
   };
 
-  // Lấy toàn bộ bản ghi trong khoảng thời gian
-  const properties = await prisma.properties.findMany({
+  let properties = await prisma.properties.findMany({
     where: whereBase,
     select: {
       sender_id: true,
       request_status: true,
       requestpost_status: true,
+      agentHistory: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        where: {
+          type: AgentHistoryType.ASSIGNED,
+        },
+        select: {
+          agent_id: true,
+          type: true,
+        },
+      },
     },
   });
+
+  // Nếu là agent thì filter lại theo agent_id
+  if (userData.userRole === RoleName.Agent) {
+    properties = properties.filter(
+      (p) => p.agentHistory[0]?.agent_id === userData.userId
+    );
+  }
 
   let consignmentTotal = 0;
   let consignmentCompleted = 0;
@@ -36,6 +55,7 @@ const getPropertyType = async ({ start_date, end_date }) => {
 
   for (const p of properties) {
     const isConsignment = p.sender_id !== null;
+
     if (isConsignment) {
       if (
         p.request_status !== RequestStatus.HIDDEN &&
@@ -82,14 +102,13 @@ const getPropertyType = async ({ start_date, end_date }) => {
   }
 
   return {
-    total_property: consignmentTotal + outsideTotal,
     consignment: {
       total: consignmentTotal,
+      completed: consignmentCompleted,
       pending: consignmentPending,
       negotiating: consignmentNegotiating,
       published: consignmentPublished,
       rejected: consignmentRejected,
-      completed: consignmentCompleted,
     },
     outside: {
       total: outsideTotal,
