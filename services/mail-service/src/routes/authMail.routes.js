@@ -412,6 +412,41 @@ router.post('/notifyNewAppointment', (req, res) => {
   });
 });
 
+router.post(
+  '/sendBulkCommissionEmails',
+  async (req, res) => {
+    try {
+      const { agentCommissions } = req.body;
+
+      // Kiểm tra đầu vào
+      if (!Array.isArray(agentCommissions) || agentCommissions.length === 0) {
+        return res.status(400).json({
+          data: null,
+          message: 'Invalid input',
+          error: ['agentCommissions must be a non-empty array'],
+        });
+      }
+
+      // Gọi service sendBulkCommissionEmails
+      const results = await authMailService.sendBulkCommissionEmails({ agentCommissions });
+
+      // Trả về kết quả
+      return res.status(200).json({
+        data: results,
+        message: 'Bulk commission emails processed successfully',
+        error: [],
+      });
+    } catch (error) {
+      console.error('Error in /sendBulkCommissionEmails:', error.message, error.stack);
+      return res.status(500).json({
+        data: null,
+        message: 'Failed to send bulk commission emails',
+        error: [error.message],
+      });
+    }
+  }
+);
+
 
 
 export default router;
