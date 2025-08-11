@@ -4,6 +4,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import roleGuard, { RoleName } from '../middleware/roleGuard.js';
 import saleService from '../services/sale.service.js';
 import { getPublicAgentInfor } from '../helpers/authClient.js';
+import { sendMailToAgents } from '../helpers/mailClient.js';
 
 /**
  * @openapi
@@ -113,13 +114,49 @@ router
     }
   });
 
-// router
-//   .route('/mass-mailing-to-agent')
-//   .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
-//     const { month } = req.body;
-//     const { start_date, end_date } = getStartDateAndEndDateByMonthString(month);
-
-//   });
+/**
+ * @openapi
+ * /prop/sale/send-to-all-agent:
+ *   post:
+ *     tags:
+ *       - Sale
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Gửi mail hàng loạt [ADMIN]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               month:
+ *                 type: string
+ *                 example: "07/2025"
+ *     responses:
+ *       200:
+ *         description: Thành công.
+ *       400:
+ *         description: Thiếu agent_id hoặc dữ liệu không hợp lệ.
+ *       401:
+ *         description: Unauthorized - Chưa đăng nhập hoặc không có quyền Admin.
+ *       500:
+ *         description: Server error.
+ */
+router
+  .route('/send-to-all-agent')
+  .post(authMiddleware, roleGuard([RoleName.Admin]), async (req, res) => {
+    const { month } = req.body;
+    const { start_date, end_date } = getStartDateAndEndDateByMonthString(month);
+    const { total, agentCommissions } =
+      await saleService.getAgentAndThemTransactionInfoNeededSendMail(
+        month,
+        start_date,
+        end_date
+      );
+    await sendMailToAgents(agentCommissions);
+    res.json({ total: total, agentCommissions });
+  });
 
 /**
  * @openapi

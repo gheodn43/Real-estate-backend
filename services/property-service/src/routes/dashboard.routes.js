@@ -45,7 +45,11 @@ router
         start_date: parseClientDate(startDate),
         end_date: parseClientDate(endDate),
       };
-      const propertyTypes = await dashboardService.getPropertyType(filter);
+      const userData = req.user;
+      const propertyTypes = await dashboardService.getPropertyType(
+        filter,
+        userData
+      );
       res.status(200).json({
         data: propertyTypes,
         message: 'Property types found',
