@@ -1096,6 +1096,165 @@ const notifyNewAppointment = (payload, callback) => {
   );
 };
 
+
+/**
+ * Gửi email hàng loạt báo cáo hoa hồng cho các agent
+ * @param {Object} param0
+ * @param {Array} param0.agentCommissions - mảng các object theo cấu trúc agentCommissions
+ * @returns {Array} results - mảng kết quả gửi { agentId, email, status, error? }
+ */
+const sendBulkCommissionEmails = async ({ agentCommissions }) => {
+  if (!Array.isArray(agentCommissions) || agentCommissions.length === 0) {
+    throw new Error('agentCommissions must be a non-empty array');
+  }
+
+  const batchSize = 10; // Kích thước batch giống notifyAgentAssignedToProject
+  const results = [];
+
+  // Hàm renderRows để tạo bảng HTML cho rental và buying commissions
+  const renderRows = (arr) => {
+    // Tính tổng comissionValue
+    const totalCommission = Array.isArray(arr) && arr.length
+      ? arr.reduce((sum, item) => sum + (Number(item.comissionValue) || 0), 0)
+      : 0;
+
+    // Tạo các hàng dữ liệu
+    const rows = Array.isArray(arr) && arr.length
+      ? arr
+          .map(
+            (item) => `
+        <tr>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyId || ''}</td>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyName || ''}</td>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyPrice ? Number(item.propertyPrice).toLocaleString('vi-VN') + ' VNĐ' : ''}</td>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyAddress || ''}</td>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.comission || ''}</td>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.comissionValue ? Number(item.comissionValue).toLocaleString('vi-VN') + ' VNĐ' : ''}</td>
+        </tr>`
+          )
+          .join('')
+      : `<tr><td colspan="6" style="padding:8px;border:1px solid #e0e0e0">Không có bản ghi</td></tr>`;
+
+    // Thêm hàng tổng
+    const totalRow = `
+      <tr style="background:#f4f7f6;font-weight:bold">
+        <td colspan="5" style="padding:8px;border:1px solid #e0e0e0;text-align:right">Tổng cộng:</td>
+        <td style="padding:8px;border:1px solid #e0e0e0">${totalCommission.toLocaleString('vi-VN')} VNĐ</td>
+      </tr>`;
+
+    return rows + totalRow;
+  };
+
+  // Xử lý gửi email theo batch
+  for (let i = 0; i < agentCommissions.length; i += batchSize) {
+    const batch = agentCommissions.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(async (ac) => {
+        const agent = ac.agent || {};
+        const email = agent.email;
+        const agentId = agent.id ?? null;
+
+        if (!email) {
+          return { agentId, email: null, status: 'failed', error: 'Missing agent email' };
+        }
+
+        const commissionOfMonth = ac.commissionOfMonth || {};
+        const rental = commissionOfMonth.rentalCommissionCompleted || [];
+        const buying = commissionOfMonth.buyingCommissionCompleted || [];
+
+        const infoSections = `
+          <div class="highlight-section">
+            <h3>Hoa hồng cho thuê</h3>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:#f4f7f6">
+                  <th style="padding:8px;border:1px solid #e0e0e0">ID</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Tên BĐS</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Giá</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Địa chỉ</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">% Hoa hồng</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Giá trị</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${renderRows(rental)}
+              </tbody>
+            </table>
+          </div>
+          <div class="highlight-section">
+            <h3>Hoa hồng mua bán</h3>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:#f4f7f6">
+                  <th style="padding:8px;border:1px solid #e0e0e0">ID</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Tên BĐS</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Giá</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Địa chỉ</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">% Hoa hồng</th>
+                  <th style="padding:8px;border:1px solid #e0e0e0">Giá trị</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${renderRows(buying)}
+              </tbody>
+            </table>
+          </div>
+          <div class="highlight-section">
+            <h3>Thông tin khác</h3>
+            <ul style="font-family: 'Roboto', Arial, Helvetica, sans-serif; font-size: 16px; line-height: 1.5;">
+              <li><b>Thưởng thêm(+):</b> ${commissionOfMonth.bonus ? Number(commissionOfMonth.bonus).toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}</li>
+              <li><b>Phạt(-):</b> ${commissionOfMonth.penalty ? Number(commissionOfMonth.penalty).toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}</li>
+              <li><b>Đánh giá trung bình:</b> ${commissionOfMonth.review?.averageRating || 'Không có'}</li>
+              <li><b>Tổng số đánh giá:</b> ${commissionOfMonth.review?.totalReviews || '0'}</li>
+            </ul>
+          </div>
+          <div class="info-section">
+            <h3>Hành động tiếp theo</h3>
+            <ul>
+              <li>Kiểm tra chi tiết báo cáo trên hệ thống HomiHub.</li>
+              <li>Liên hệ hotline 0123 456 789 nếu có thắc mắc.</li>
+            </ul>
+          </div>
+        `;
+
+        const htmlContent = getEmailTemplate({
+          title: 'Báo cáo hoa hồng HomiHub',
+          greeting: agent.name ? `Kính gửi ${agent.name},` : 'Kính gửi Quý Đại lý,',
+          mainMessage: 'Đây là báo cáo hoa hồng của bạn trong tháng. Vui lòng kiểm tra chi tiết bên dưới.',
+          infoSections,
+        });
+
+        try {
+          await transporter.sendMail({
+            from: process.env.MAIL_USER,
+            to: email,
+            subject: `Báo cáo hoa hồng - HomiHub`,
+            html: htmlContent,
+            attachments: [
+              {
+                filename: 'homihub.png',
+                path: imagePath,
+                cid: 'companylogo',
+              },
+            ],
+          });
+          return { agentId, email, status: 'sent' };
+        } catch (err) {
+          return { agentId, email, status: 'failed', error: err.message };
+        }
+      })
+    );
+
+    results.push(...batchResults);
+    // Thêm độ trễ 2 giây giữa các batch, giống notifyAgentAssignedToProject
+    if (i + batchSize < agentCommissions.length) {
+      await new Promise((res) => setTimeout(res, 2000));
+    }
+  }
+
+  return results;
+};
+
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
@@ -1120,5 +1279,7 @@ export default {
   notifyJournalistBlogApproved,
   notifyJournalistBlogRejected,
 
-  notifyNewAppointment
+  notifyNewAppointment,
+
+  sendBulkCommissionEmails
 };
