@@ -171,7 +171,12 @@ router.post('/notifyAgentNewReview', async (req, res) => {
 router.post('/notifyAgentReviewUpdated', async (req, res) => {
   const { agentEmail, agentName, review, reviewer } = req.body;
   try {
-    await authMailService.sendAgentReviewUpdatedNotify({ agentEmail, agentName, review, reviewer });
+    await authMailService.sendAgentReviewUpdatedNotify({
+      agentEmail,
+      agentName,
+      review,
+      reviewer,
+    });
     res.status(200).json({
       data: {},
       message: 'Agent notified of review updated',
@@ -189,7 +194,13 @@ router.post('/notifyAgentReviewUpdated', async (req, res) => {
 router.post('/notifyAdminAgentReply', async (req, res) => {
   const { adminEmail, adminName, reply, agent, review } = req.body;
   try {
-    await authMailService.sendAgentReplyAdminNotify({ adminEmail, adminName, reply, agent, review });
+    await authMailService.sendAgentReplyAdminNotify({
+      adminEmail,
+      adminName,
+      reply,
+      agent,
+      review,
+    });
     res.status(200).json({
       data: {},
       message: 'Admin notified of agent reply',
@@ -207,16 +218,23 @@ router.post('/notifyAdminAgentReply', async (req, res) => {
 router.post('/notifyAgentReplyApproved', async (req, res) => {
   const { agentEmail, agentName, reply, review } = req.body;
   try {
-    await authMailService.sendAgentReplyApproved({ agentEmail, agentName, reply, review });
-    res.status(200).json({ 
-      data: {}, 
-      message: 'Agent notified of reply approval', 
-      error: [] });
+    await authMailService.sendAgentReplyApproved({
+      agentEmail,
+      agentName,
+      reply,
+      review,
+    });
+    res.status(200).json({
+      data: {},
+      message: 'Agent notified of reply approval',
+      error: [],
+    });
   } catch (error) {
-    res.status(500).json({ 
-      data: {}, 
-      message: 'Failed to notify agent', 
-      error: [error.message] });
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify agent',
+      error: [error.message],
+    });
   }
 });
 
@@ -224,19 +242,29 @@ router.post('/notifyAgentReplyRejected', async (req, res) => {
   try {
     console.log('Raw request body:', JSON.stringify(req.body, null, 2));
     const { agentEmail, agentName, reply, review } = req.body;
-    console.log('Parsed request body:', { agentEmail, agentName, reply, review });
-    await authMailService.sendAgentReplyRejected({ agentEmail, agentName, reply, review });
-    res.status(200).json({ 
-      data: {}, 
-      message: 'Agent notified of reply rejection', 
-      error: [] 
+    console.log('Parsed request body:', {
+      agentEmail,
+      agentName,
+      reply,
+      review,
+    });
+    await authMailService.sendAgentReplyRejected({
+      agentEmail,
+      agentName,
+      reply,
+      review,
+    });
+    res.status(200).json({
+      data: {},
+      message: 'Agent notified of reply rejection',
+      error: [],
     });
   } catch (error) {
     console.error('Error in notifyAgentReplyRejected:', error.message);
-    res.status(500).json({ 
-      data: {}, 
-      message: 'Failed to notify agent', 
-      error: [error.message] 
+    res.status(500).json({
+      data: {},
+      message: 'Failed to notify agent',
+      error: [error.message],
     });
   }
 });
@@ -244,7 +272,13 @@ router.post('/notifyAgentReplyRejected', async (req, res) => {
 router.post('/notifyUserAdminReply', async (req, res) => {
   const { userEmail, userName, reply, review, admin } = req.body;
   try {
-    await authMailService.sendAdminReplyUserNotify({ userEmail, userName, comment: reply.comment, admin: { name: admin.name, email: admin.email }, review });
+    await authMailService.sendAdminReplyUserNotify({
+      userEmail,
+      userName,
+      comment: reply.comment,
+      admin: { name: admin.name, email: admin.email },
+      review,
+    });
     res.status(200).json({
       data: {},
       message: 'User notified of admin reply',
@@ -262,7 +296,11 @@ router.post('/notifyUserAdminReply', async (req, res) => {
 router.post('/notifyJournalistNewBlog', async (req, res) => {
   const { journalistEmail, journalistName, blog } = req.body;
   try {
-    await authMailService.notifyJournalistNewBlog({ journalistEmail, journalistName, blog });
+    await authMailService.notifyJournalistNewBlog({
+      journalistEmail,
+      journalistName,
+      blog,
+    });
     res.status(200).json({
       data: {},
       message: 'Journalist notified of new blog',
@@ -280,7 +318,11 @@ router.post('/notifyJournalistNewBlog', async (req, res) => {
 router.post('/notifyJournalistDraftBlog', async (req, res) => {
   const { journalistEmail, journalistName, blog } = req.body;
   try {
-    await authMailService.notifyJournalistDraftBlog({ journalistEmail, journalistName, blog });
+    await authMailService.notifyJournalistDraftBlog({
+      journalistEmail,
+      journalistName,
+      blog,
+    });
     res.status(200).json({
       data: {},
       message: 'Journalist notified of draft blog',
@@ -298,7 +340,12 @@ router.post('/notifyJournalistDraftBlog', async (req, res) => {
 router.post('/notifyAdminBlogSubmitted', async (req, res) => {
   const { adminEmail, adminName, blog, journalist } = req.body;
   try {
-    await authMailService.notifyAdminBlogSubmitted({ adminEmail, adminName, blog, journalist });
+    await authMailService.notifyAdminBlogSubmitted({
+      adminEmail,
+      adminName,
+      blog,
+      journalist,
+    });
     res.status(200).json({
       data: {},
       message: 'Admin notified of blog submission',
@@ -316,7 +363,13 @@ router.post('/notifyAdminBlogSubmitted', async (req, res) => {
 router.post('/notifyJournalistNewReview', async (req, res) => {
   const { journalistEmail, journalistName, review, user, blog } = req.body;
   try {
-    await authMailService.notifyJournalistNewReview({ journalistEmail, journalistName, review, user, blog });
+    await authMailService.notifyJournalistNewReview({
+      journalistEmail,
+      journalistName,
+      review,
+      user,
+      blog,
+    });
     res.status(200).json({
       data: {},
       message: 'Journalist notified of new review',
@@ -334,7 +387,13 @@ router.post('/notifyJournalistNewReview', async (req, res) => {
 router.post('/notifyJournalistNewReact', async (req, res) => {
   const { journalistEmail, journalistName, react, user, blog } = req.body;
   try {
-    await authMailService.notifyJournalistNewReact({ journalistEmail, journalistName, react, user, blog });
+    await authMailService.notifyJournalistNewReact({
+      journalistEmail,
+      journalistName,
+      react,
+      user,
+      blog,
+    });
     res.status(200).json({
       data: {},
       message: 'Journalist notified of new react',
@@ -370,7 +429,11 @@ router.post('/shareBlog', async (req, res) => {
 router.post('/notifyJournalistBlogApproved', async (req, res) => {
   const { journalistEmail, journalistName, blog } = req.body;
   try {
-    await authMailService.notifyJournalistBlogApproved({ journalistEmail, journalistName, blog });
+    await authMailService.notifyJournalistBlogApproved({
+      journalistEmail,
+      journalistName,
+      blog,
+    });
     res.status(200).json({
       data: {},
       message: 'Journalist notified of blog approval',
@@ -388,7 +451,11 @@ router.post('/notifyJournalistBlogApproved', async (req, res) => {
 router.post('/notifyJournalistBlogRejected', async (req, res) => {
   const { journalistEmail, journalistName, blog } = req.body;
   try {
-    await authMailService.notifyJournalistBlogRejected({ journalistEmail, journalistName, blog });
+    await authMailService.notifyJournalistBlogRejected({
+      journalistEmail,
+      journalistName,
+      blog,
+    });
     res.status(200).json({
       data: {},
       message: 'Journalist notified of blog rejection',
@@ -406,47 +473,41 @@ router.post('/notifyJournalistBlogRejected', async (req, res) => {
 router.post('/notifyNewAppointment', (req, res) => {
   authMailService.notifyNewAppointment(req.body, (error, result) => {
     if (error) {
-      return res.status(500).json({ data: {}, message: 'Failed to notify user', error: [error.message] });
+      return res.status(500).json({
+        data: {},
+        message: 'Failed to notify user',
+        error: [error.message],
+      });
     }
     res.status(200).json(result);
   });
 });
 
-router.post(
-  '/sendBulkCommissionEmails',
-  async (req, res) => {
-    try {
-      const { agentCommissions } = req.body;
-
-      // Kiểm tra đầu vào
-      if (!Array.isArray(agentCommissions) || agentCommissions.length === 0) {
-        return res.status(400).json({
-          data: null,
-          message: 'Invalid input',
-          error: ['agentCommissions must be a non-empty array'],
-        });
-      }
-
-      // Gọi service sendBulkCommissionEmails
-      const results = await authMailService.sendBulkCommissionEmails({ agentCommissions });
-
-      // Trả về kết quả
-      return res.status(200).json({
-        data: results,
-        message: 'Bulk commission emails processed successfully',
-        error: [],
-      });
-    } catch (error) {
-      console.error('Error in /sendBulkCommissionEmails:', error.message, error.stack);
-      return res.status(500).json({
+router.post('/sendBulkCommissionEmails', async (req, res) => {
+  try {
+    const { agentCommissions } = req.body;
+    if (!Array.isArray(agentCommissions) || agentCommissions.length === 0) {
+      return res.status(400).json({
         data: null,
-        message: 'Failed to send bulk commission emails',
-        error: [error.message],
+        message: 'Invalid input',
+        error: ['agentCommissions must be a non-empty array'],
       });
     }
+    const results =
+      await authMailService.sendBulkCommissionEmails(agentCommissions);
+
+    return res.status(200).json({
+      data: results,
+      message: 'Bulk commission emails processed successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: 'Failed to send bulk commission emails',
+      error: [error.message],
+    });
   }
-);
-
-
+});
 
 export default router;
