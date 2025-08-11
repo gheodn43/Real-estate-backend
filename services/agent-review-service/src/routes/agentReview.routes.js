@@ -213,6 +213,19 @@ router.get('/', agentReviewController.getAgentReviews);
  *           type: integer
  *           default: 10
  *         description: Số lượng comment mỗi trang
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           default: ''
+ *         description: Từ khóa tìm kiếm theo nội dung comment hoặc tên người dùng
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [unreplied, replied, all]
+ *           default: all
+ *         description: Lọc comment theo trạng thái trả lời (unreplied, replied, all)
  *     responses:
  *       200:
  *         description: Lấy danh sách thành công
@@ -223,7 +236,7 @@ router.get(
   '/agent/comments-needing-reply',
   authenticateToken,
   roleGuard([RoleName.Agent]),
-  agentReviewController.getCommentsAgentNeedingReply,
+  agentReviewController.getCommentsAgentNeedingReply
 );
 
 

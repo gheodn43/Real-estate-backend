@@ -291,29 +291,31 @@ class AgentReviewController {
   }
 
   async getCommentsAgentNeedingReply(req, res) {
-    try {
-      const agent_id = Number(req.user.userId);
-      const { page = 1, limit = 10 } = req.query;
+  try {
+    const agent_id = Number(req.user.userId);
+    const { page, limit, search = '', filter = 'all' } = req.query;
 
-      const result = await agentReviewService.getCommentsAgentNeedingReply(
-        agent_id,
-        Number(page),
-        Number(limit)
-      );
+    const result = await agentReviewService.getCommentsAgentNeedingReply(
+      agent_id,
+      Number(page),
+      Number(limit),
+      String(search),
+      String(filter)
+    );
 
-      res.status(200).json({
-        data: result,
-        message: 'Get comments needing reply successfully',
-        errors: [],
-      });
-    } catch (err) {
-      return res.status(403).json({
-        data: null,
-        message: 'Get comments needing reply failed',
-        errors: [err.message],
-      });
-    }
+    res.status(200).json({
+      data: result,
+      message: 'Get comments needing reply successfully',
+      errors: [],
+    });
+  } catch (err) {
+    return res.status(403).json({
+      data: null,
+      message: 'Get comments needing reply failed',
+      errors: [err.message],
+    });
   }
+}
 
 }
 
