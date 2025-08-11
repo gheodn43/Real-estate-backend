@@ -154,7 +154,10 @@ router
         start_date,
         end_date
       );
-    await sendMailToAgents(agentCommissions);
+    if (agentCommissions.length > 0) {
+      await sendMailToAgents(agentCommissions);
+    }
+
     res.json({ total: total, agentCommissions });
   });
 

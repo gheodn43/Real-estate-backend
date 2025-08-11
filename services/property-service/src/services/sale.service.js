@@ -444,6 +444,40 @@ const getAgentAndThemTransactionInfoNeededSendMail = async (
     },
   }));
 
+  const saleBonusData = enrichedAgents.map(({ agent, commissionOfMonth }) => {
+    const rentalQuantity = commissionOfMonth.rentalCommissionCompleted.length;
+    const buyingQuantity = commissionOfMonth.buyingCommissionCompleted.length;
+
+    const totalRentalCommission =
+      commissionOfMonth.rentalCommissionCompleted.reduce(
+        (sum, item) => sum + (Number(item.commissionValue) || 0),
+        0
+      );
+
+    const totalBuyingCommission =
+      commissionOfMonth.buyingCommissionCompleted.reduce(
+        (sum, item) => sum + (Number(item.commissionValue) || 0),
+        0
+      );
+
+    return {
+      agent_id: agent.id,
+      buying_quantity: buyingQuantity,
+      rental_quantity: rentalQuantity,
+      total_buying_commission: totalBuyingCommission,
+      total_rental_commission: totalRentalCommission,
+      bonus: commissionOfMonth.bonus || 0,
+      penalty: commissionOfMonth.penalty || 0,
+      review: commissionOfMonth.review || null,
+      bonus_of_month: month,
+    };
+  });
+
+  // Insert nhiều record cùng lúc
+  await prisma.sale_bonus.createMany({
+    data: saleBonusData,
+  });
+
   return { total, agentCommissions: enrichedAgents };
 };
 

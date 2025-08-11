@@ -377,8 +377,12 @@ async function sendConsignmentRequestToAdmins({ propertyInfo, customerInfo }) {
   }
 }
 
-
-const notifyAgentNewReview = async ({ agentEmail, agentName, review, reviewer }) => {
+const notifyAgentNewReview = async ({
+  agentEmail,
+  agentName,
+  review,
+  reviewer,
+}) => {
   // Kiểm tra đầu vào (tương tự các hàm auth-service)
   if (!agentEmail || !review?.rating || !reviewer?.name) {
     return {
@@ -410,63 +414,91 @@ const notifyAgentNewReview = async ({ agentEmail, agentName, review, reviewer })
       },
     ],
   });
-}
+};
 
-const sendAgentReviewUpdatedNotify = async ({ agentEmail, agentName, review, reviewer }) => {
-  if (!agentEmail || !review?.comment || !review?.id || !review?.rating || !agentName) {
-    throw new Error('agentEmail, review.comment, review.id, review.rating, and agentName are required');
+const sendAgentReviewUpdatedNotify = async ({
+  agentEmail,
+  agentName,
+  review,
+  reviewer,
+}) => {
+  if (
+    !agentEmail ||
+    !review?.comment ||
+    !review?.id ||
+    !review?.rating ||
+    !agentName
+  ) {
+    throw new Error(
+      'agentEmail, review.comment, review.id, review.rating, and agentName are required'
+    );
   }
-
 
   const htmlContent = getEmailTemplate({
     title: 'Đánh giá đã được cập nhật',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Agent,',
-    mainMessage: `Khách hàng <b>${reviewer.name}</b> vừa cập nhật đánh giá.<br><br>` +
-                 `Nội dung đánh giá: <i>${review.comment}</i><br>` +
-                 `Đánh giá ID: ${review.id}<br>Số sao: ${review.rating}<br>` +
-                 `Ảnh đính kèm: ${review.images?.length ? review.images.join('<br>') : 'Không có ảnh'}`,
-    infoSections: ''
+    mainMessage:
+      `Khách hàng <b>${reviewer.name}</b> vừa cập nhật đánh giá.<br><br>` +
+      `Nội dung đánh giá: <i>${review.comment}</i><br>` +
+      `Đánh giá ID: ${review.id}<br>Số sao: ${review.rating}<br>` +
+      `Ảnh đính kèm: ${review.images?.length ? review.images.join('<br>') : 'Không có ảnh'}`,
+    infoSections: '',
   });
-
 
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: agentEmail,
     subject: 'Đánh giá đã được cập nhật',
     html: htmlContent,
-    attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+    attachments: [
+      { filename: 'homihub.png', path: imagePath, cid: 'companylogo' },
+    ],
   });
-
 };
 
-
-
-const sendAgentReplyAdminNotify = async ({ adminEmail, adminName, reply, agent, review }) => {
-  if (!adminEmail || !reply?.comment || !agent?.name || !review?.id || !review.rating) {
-    throw new Error('adminEmail, reply.comment, agent.name, review.id, and review.rating are required');
+const sendAgentReplyAdminNotify = async ({
+  adminEmail,
+  adminName,
+  reply,
+  agent,
+  review,
+}) => {
+  if (
+    !adminEmail ||
+    !reply?.comment ||
+    !agent?.name ||
+    !review?.id ||
+    !review.rating
+  ) {
+    throw new Error(
+      'adminEmail, reply.comment, agent.name, review.id, and review.rating are required'
+    );
   }
-
 
   const htmlContent = getEmailTemplate({
     title: 'Agent vừa trả lời đánh giá',
     greeting: adminName ? `Kính gửi ${adminName},` : 'Kính gửi Quản trị viên,',
     mainMessage: `Agent <b>${agent.name}</b> vừa trả lời một đánh giá của khách hàng.<br><br>Nội dung trả lời: <i>${reply.comment}</i><br><br>Thông tin đánh giá gốc:<br>Đánh giá ID: ${review.id}<br>Số sao: ${review.rating}<br>Nội dung: <i>${review.comment || ''}</i>`,
-    infoSections: ''
+    infoSections: '',
   });
-
 
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to: adminEmail,
     subject: 'Agent vừa trả lời đánh giá',
     html: htmlContent,
-    attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+    attachments: [
+      { filename: 'homihub.png', path: imagePath, cid: 'companylogo' },
+    ],
   });
-
 };
 
-const sendAgentReplyApproved = async ({ agentEmail, agentName, reply, review }) => {
-
+const sendAgentReplyApproved = async ({
+  agentEmail,
+  agentName,
+  reply,
+  review,
+}) => {
   if (!agentEmail) {
     throw new Error('Agent email is required');
   }
@@ -478,14 +510,15 @@ const sendAgentReplyApproved = async ({ agentEmail, agentName, reply, review }) 
     `<b>Trạng thái phản hồi:</b> ${reply?.status || 'Không có'}`,
     `<b>Mã đánh giá gốc:</b> ${review?.id || 'Không có'}`,
     `<b>Điểm đánh giá:</b> ${review?.rating || 'Không có'}`,
-    `<b>Nội dung đánh giá:</b> ${review?.comment || 'Không có'}`
+    `<b>Nội dung đánh giá:</b> ${review?.comment || 'Không có'}`,
   ].join('<br>');
 
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn đã được duyệt',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Nhà Môi Giới,',
-    mainMessage: 'Phản hồi của bạn cho đánh giá khách hàng đã được quản trị viên duyệt và hiển thị công khai.',
-    infoSections
+    mainMessage:
+      'Phản hồi của bạn cho đánh giá khách hàng đã được quản trị viên duyệt và hiển thị công khai.',
+    infoSections,
   });
 
   await transporter.sendMail({
@@ -493,12 +526,18 @@ const sendAgentReplyApproved = async ({ agentEmail, agentName, reply, review }) 
     to: agentEmail,
     subject: 'Phản hồi của bạn đã được duyệt',
     html: htmlContent,
-    attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+    attachments: [
+      { filename: 'homihub.png', path: imagePath, cid: 'companylogo' },
+    ],
   });
 };
 
-const sendAgentReplyRejected = async ({ agentEmail, agentName, reply, review }) => {
-
+const sendAgentReplyRejected = async ({
+  agentEmail,
+  agentName,
+  reply,
+  review,
+}) => {
   if (!agentEmail) {
     throw new Error('Agent email is required');
   }
@@ -510,14 +549,15 @@ const sendAgentReplyRejected = async ({ agentEmail, agentName, reply, review }) 
     `<b>Trạng thái phản hồi:</b> ${reply?.status || 'Không có'}`,
     `<b>Mã đánh giá gốc:</b> ${review?.id || 'Không có'}`,
     `<b>Điểm đánh giá:</b> ${review?.rating || 'Không có'}`,
-    `<b>Nội dung đánh giá:</b> ${review?.comment || 'Không có'}`
+    `<b>Nội dung đánh giá:</b> ${review?.comment || 'Không có'}`,
   ].join('<br>');
 
   const htmlContent = getEmailTemplate({
     title: 'Phản hồi của bạn bị từ chối',
     greeting: agentName ? `Kính gửi ${agentName},` : 'Kính gửi Nhà Môi Giới,',
-    mainMessage: 'Phản hồi của bạn cho đánh giá khách hàng đã bị quản trị viên từ chối. Vui lòng kiểm tra lại nội dung và gửi lại nếu cần.',
-    infoSections
+    mainMessage:
+      'Phản hồi của bạn cho đánh giá khách hàng đã bị quản trị viên từ chối. Vui lòng kiểm tra lại nội dung và gửi lại nếu cần.',
+    infoSections,
   });
 
   try {
@@ -526,7 +566,9 @@ const sendAgentReplyRejected = async ({ agentEmail, agentName, reply, review }) 
       to: agentEmail,
       subject: 'Phản hồi của bạn bị từ chối',
       html: htmlContent,
-      attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+      attachments: [
+        { filename: 'homihub.png', path: imagePath, cid: 'companylogo' },
+      ],
     });
   } catch (mailErr) {
     throw new Error('Failed to send email notification');
@@ -542,7 +584,7 @@ const sendAdminReplyUserNotify = async ({ userEmail, userName, comment }) => {
     title: 'Quản trị viên đã trả lời đánh giá của bạn',
     greeting: userName ? `Kính gửi ${userName},` : 'Kính gửi Quý khách,',
     mainMessage: `Quản trị viên đã trả lời đánh giá của bạn với nội dung: <i>${comment}</i>`,
-    infoSections: ''
+    infoSections: '',
   });
 
   await transporter.sendMail({
@@ -550,11 +592,17 @@ const sendAdminReplyUserNotify = async ({ userEmail, userName, comment }) => {
     to: userEmail,
     subject: 'Quản trị viên đã trả lời đánh giá của bạn',
     html: htmlContent,
-    attachments: [{ filename: 'homihub.png', path: imagePath, cid: 'companylogo' }],
+    attachments: [
+      { filename: 'homihub.png', path: imagePath, cid: 'companylogo' },
+    ],
   });
 };
 
-const notifyJournalistNewBlog = async ({ journalistEmail, journalistName, blog }) => {
+const notifyJournalistNewBlog = async ({
+  journalistEmail,
+  journalistName,
+  blog,
+}) => {
   if (!journalistEmail) {
     throw new Error('journalistEmail is required');
   }
@@ -590,9 +638,12 @@ const notifyJournalistNewBlog = async ({ journalistEmail, journalistName, blog }
 
   const htmlContent = getEmailTemplate({
     title: 'Bài viết mới của bạn đã được đăng',
-    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
-    mainMessage: 'Chúc mừng bạn đã đăng một bài viết mới trên HomiHub! Bài viết đã được xuất bản thành công và hiện đang hiển thị công khai trên nền tảng của chúng tôi.',
-    infoSections
+    greeting: journalistName
+      ? `Kính gửi ${journalistName},`
+      : 'Kính gửi Nhà báo,',
+    mainMessage:
+      'Chúc mừng bạn đã đăng một bài viết mới trên HomiHub! Bài viết đã được xuất bản thành công và hiện đang hiển thị công khai trên nền tảng của chúng tôi.',
+    infoSections,
   });
 
   const attachments = [
@@ -610,10 +661,13 @@ const notifyJournalistNewBlog = async ({ journalistEmail, journalistName, blog }
     html: htmlContent,
     attachments,
   });
-
 };
 
-const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog }) => {
+const notifyJournalistDraftBlog = async ({
+  journalistEmail,
+  journalistName,
+  blog,
+}) => {
   if (!journalistEmail) {
     throw new Error('journalistEmail is required');
   }
@@ -649,9 +703,12 @@ const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog
 
   const htmlContent = getEmailTemplate({
     title: 'Bài viết nháp của bạn đã được lưu',
-    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
-    mainMessage: 'Bài viết nháp của bạn đã được lưu thành công trên HomiHub. Bạn có thể tiếp tục chỉnh sửa hoặc gửi bài viết để duyệt bất kỳ lúc nào.',
-    infoSections
+    greeting: journalistName
+      ? `Kính gửi ${journalistName},`
+      : 'Kính gửi Nhà báo,',
+    mainMessage:
+      'Bài viết nháp của bạn đã được lưu thành công trên HomiHub. Bạn có thể tiếp tục chỉnh sửa hoặc gửi bài viết để duyệt bất kỳ lúc nào.',
+    infoSections,
   });
 
   const attachments = [
@@ -669,10 +726,14 @@ const notifyJournalistDraftBlog = async ({ journalistEmail, journalistName, blog
     html: htmlContent,
     attachments,
   });
-
 };
 
-const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalist }) => {
+const notifyAdminBlogSubmitted = async ({
+  adminEmail,
+  adminName,
+  blog,
+  journalist,
+}) => {
   if (!adminEmail || !journalist?.id) {
     throw new Error('adminEmail and journalist.id are required');
   }
@@ -717,8 +778,9 @@ const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalis
   const htmlContent = getEmailTemplate({
     title: 'Bài viết mới được gửi duyệt',
     greeting: adminName ? `Kính gửi ${adminName},` : 'Kính gửi Quản trị viên,',
-    mainMessage: 'Một bài viết mới vừa được gửi lên hệ thống HomiHub để duyệt. Vui lòng xem xét thông tin bài viết và thực hiện các bước duyệt hoặc từ chối trong thời gian sớm nhất.',
-    infoSections
+    mainMessage:
+      'Một bài viết mới vừa được gửi lên hệ thống HomiHub để duyệt. Vui lòng xem xét thông tin bài viết và thực hiện các bước duyệt hoặc từ chối trong thời gian sớm nhất.',
+    infoSections,
   });
 
   const attachments = [
@@ -736,12 +798,19 @@ const notifyAdminBlogSubmitted = async ({ adminEmail, adminName, blog, journalis
     html: htmlContent,
     attachments,
   });
-
 };
 
-const notifyJournalistNewReview = async ({ journalistEmail, journalistName, review, user, blog }) => {
+const notifyJournalistNewReview = async ({
+  journalistEmail,
+  journalistName,
+  review,
+  user,
+  blog,
+}) => {
   if (!journalistEmail || !review?.id || !user?.id || !blog?.id) {
-    throw new Error('journalistEmail, review.id, user.id, and blog.id are required');
+    throw new Error(
+      'journalistEmail, review.id, user.id, and blog.id are required'
+    );
   }
 
   const infoSections = `
@@ -780,9 +849,12 @@ const notifyJournalistNewReview = async ({ journalistEmail, journalistName, revi
 
   const htmlContent = getEmailTemplate({
     title: 'Bài viết của bạn nhận được bình luận mới',
-    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
-    mainMessage: 'Bài viết của bạn trên HomiHub vừa nhận được một bình luận mới từ người dùng. Vui lòng kiểm tra chi tiết dưới đây.',
-    infoSections
+    greeting: journalistName
+      ? `Kính gửi ${journalistName},`
+      : 'Kính gửi Nhà báo,',
+    mainMessage:
+      'Bài viết của bạn trên HomiHub vừa nhận được một bình luận mới từ người dùng. Vui lòng kiểm tra chi tiết dưới đây.',
+    infoSections,
   });
 
   await transporter.sendMail({
@@ -798,12 +870,19 @@ const notifyJournalistNewReview = async ({ journalistEmail, journalistName, revi
       },
     ],
   });
-
 };
 
-const notifyJournalistNewReact = async ({ journalistEmail, journalistName, react, user, blog }) => {
+const notifyJournalistNewReact = async ({
+  journalistEmail,
+  journalistName,
+  react,
+  user,
+  blog,
+}) => {
   if (!journalistEmail || !react?.id || !user?.id || !blog?.id) {
-    throw new Error('journalistEmail, react.id, user.id, and blog.id are required');
+    throw new Error(
+      'journalistEmail, react.id, user.id, and blog.id are required'
+    );
   }
 
   const infoSections = `
@@ -840,9 +919,12 @@ const notifyJournalistNewReact = async ({ journalistEmail, journalistName, react
 
   const htmlContent = getEmailTemplate({
     title: 'Bài viết của bạn nhận được lượt thích mới',
-    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
-    mainMessage: 'Bài viết của bạn trên HomiHub vừa nhận được một lượt thích mới từ người dùng. Vui lòng kiểm tra chi tiết dưới đây.',
-    infoSections
+    greeting: journalistName
+      ? `Kính gửi ${journalistName},`
+      : 'Kính gửi Nhà báo,',
+    mainMessage:
+      'Bài viết của bạn trên HomiHub vừa nhận được một lượt thích mới từ người dùng. Vui lòng kiểm tra chi tiết dưới đây.',
+    infoSections,
   });
 
   await transporter.sendMail({
@@ -858,9 +940,7 @@ const notifyJournalistNewReact = async ({ journalistEmail, journalistName, react
       },
     ],
   });
-
 };
-
 
 const shareBlog = async ({ recipientEmail, blog, user }) => {
   if (!recipientEmail || !blog?.id) {
@@ -905,7 +985,7 @@ const shareBlog = async ({ recipientEmail, blog, user }) => {
     title: 'Một bài viết thú vị được chia sẻ với bạn',
     greeting: 'Kính gửi Quý khách,',
     mainMessage: `Người dùng <b>${user?.name || 'Không xác định'}</b> đã chia sẻ một bài viết từ HomiHub với bạn. Vui lòng xem chi tiết bài viết dưới đây.`,
-    infoSections
+    infoSections,
   });
 
   const attachments = [
@@ -923,10 +1003,13 @@ const shareBlog = async ({ recipientEmail, blog, user }) => {
     html: htmlContent,
     attachments,
   });
-
 };
 
-const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, blog }) => {
+const notifyJournalistBlogApproved = async ({
+  journalistEmail,
+  journalistName,
+  blog,
+}) => {
   if (!journalistEmail) {
     throw new Error('journalistEmail is required');
   }
@@ -936,7 +1019,6 @@ const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, b
     status: blog?.status || 'published',
     updated_at: blog?.updated_at || new Date().toISOString(),
   };
-
 
   const infoSections = `
     <div class="highlight-section">
@@ -960,9 +1042,12 @@ const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, b
 
   const htmlContent = getEmailTemplate({
     title: 'Bài viết của bạn đã được duyệt',
-    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
-    mainMessage: 'Chúc mừng! Bài viết của bạn trên HomiHub đã được quản trị viên duyệt và hiện đang hiển thị công khai trên nền tảng của chúng tôi.',
-    infoSections
+    greeting: journalistName
+      ? `Kính gửi ${journalistName},`
+      : 'Kính gửi Nhà báo,',
+    mainMessage:
+      'Chúc mừng! Bài viết của bạn trên HomiHub đã được quản trị viên duyệt và hiện đang hiển thị công khai trên nền tảng của chúng tôi.',
+    infoSections,
   });
 
   await transporter.sendMail({
@@ -978,10 +1063,13 @@ const notifyJournalistBlogApproved = async ({ journalistEmail, journalistName, b
       },
     ],
   });
-
 };
 
-const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, blog }) => {
+const notifyJournalistBlogRejected = async ({
+  journalistEmail,
+  journalistName,
+  blog,
+}) => {
   if (!journalistEmail) {
     throw new Error('journalistEmail is required');
   }
@@ -991,7 +1079,6 @@ const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, b
     status: blog?.status || 'rejected',
     updated_at: blog?.updated_at || new Date().toISOString(),
   };
-
 
   const infoSections = `
     <div class="highlight-section">
@@ -1015,9 +1102,12 @@ const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, b
 
   const htmlContent = getEmailTemplate({
     title: 'Bài viết của bạn bị từ chối',
-    greeting: journalistName ? `Kính gửi ${journalistName},` : 'Kính gửi Nhà báo,',
-    mainMessage: 'Bài viết của bạn trên HomiHub đã bị từ chối bởi quản trị viên. Vui lòng kiểm tra chi tiết dưới đây và thực hiện chỉnh sửa nếu cần.',
-    infoSections
+    greeting: journalistName
+      ? `Kính gửi ${journalistName},`
+      : 'Kính gửi Nhà báo,',
+    mainMessage:
+      'Bài viết của bạn trên HomiHub đã bị từ chối bởi quản trị viên. Vui lòng kiểm tra chi tiết dưới đây và thực hiện chỉnh sửa nếu cần.',
+    infoSections,
   });
 
   await transporter.sendMail({
@@ -1033,17 +1123,27 @@ const notifyJournalistBlogRejected = async ({ journalistEmail, journalistName, b
       },
     ],
   });
-
 };
 
 const notifyNewAppointment = (payload, callback) => {
   if (!payload || !payload.appointment || !payload.appointment.user) {
-    const error = new Error('payload.appointment and payload.appointment.user are required');
+    const error = new Error(
+      'payload.appointment and payload.appointment.user are required'
+    );
     return callback(error);
   }
 
   const { appointment, recipient_email } = payload;
-  const { user, property, date, time, message, type, customer_name, customer_email } = appointment;
+  const {
+    user,
+    property,
+    date,
+    time,
+    message,
+    type,
+    customer_name,
+    customer_email,
+  } = appointment;
   const recipientEmail = recipient_email || user.email;
   const userName = user.name || 'N/A';
   const userPhone = user.number_phone || 'N/A';
@@ -1051,7 +1151,10 @@ const notifyNewAppointment = (payload, callback) => {
   const propertyName = property?.name || 'N/A';
   const appointmentType = type || 'N/A';
   const appointmentMessage = message || 'N/A';
-  const startTime = date && time ? `${time} ${new Date(date).toLocaleDateString('vi-VN')}` : 'N/A';
+  const startTime =
+    date && time
+      ? `${time} ${new Date(date).toLocaleDateString('vi-VN')}`
+      : 'N/A';
 
   if (!recipientEmail) {
     const error = new Error('No valid recipient email provided');
@@ -1061,7 +1164,8 @@ const notifyNewAppointment = (payload, callback) => {
   const htmlContent = getEmailTemplate({
     title: 'Lịch Hẹn Mới',
     greeting: userName ? `Kính gửi ${userName},` : 'Kính gửi Người dùng,',
-    mainMessage: 'Bạn đã được gán vào một cuộc họp mới. Vui lòng kiểm tra thông tin chi tiết dưới đây:',
+    mainMessage:
+      'Bạn đã được gán vào một cuộc họp mới. Vui lòng kiểm tra thông tin chi tiết dưới đây:',
     infoSections: `
       <div class="highlight-section">
         <h3>Thông tin cuộc họp</h3>
@@ -1087,15 +1191,22 @@ const notifyNewAppointment = (payload, callback) => {
       html: htmlContent,
       attachments: [],
     },
-    (error, info) => {
+    (error) => {
       if (error) {
-        return callback(new Error(`Failed to send email to ${recipientEmail}: ${error.message}`));
+        return callback(
+          new Error(
+            `Failed to send email to ${recipientEmail}: ${error.message}`
+          )
+        );
       }
-      callback(null, { data: {}, message: 'User notified of new appointment', error: [] });
+      callback(null, {
+        data: {},
+        message: 'User notified of new appointment',
+        error: [],
+      });
     }
   );
 };
-
 
 /**
  * Gửi email hàng loạt báo cáo hoa hồng cho các agent
@@ -1103,7 +1214,7 @@ const notifyNewAppointment = (payload, callback) => {
  * @param {Array} param0.agentCommissions - mảng các object theo cấu trúc agentCommissions
  * @returns {Array} results - mảng kết quả gửi { agentId, email, status, error? }
  */
-const sendBulkCommissionEmails = async ({ agentCommissions }) => {
+const sendBulkCommissionEmails = async (agentCommissions) => {
   if (!Array.isArray(agentCommissions) || agentCommissions.length === 0) {
     throw new Error('agentCommissions must be a non-empty array');
   }
@@ -1113,27 +1224,32 @@ const sendBulkCommissionEmails = async ({ agentCommissions }) => {
 
   // Hàm renderRows để tạo bảng HTML cho rental và buying commissions
   const renderRows = (arr) => {
-    // Tính tổng comissionValue
-    const totalCommission = Array.isArray(arr) && arr.length
-      ? arr.reduce((sum, item) => sum + (Number(item.comissionValue) || 0), 0)
-      : 0;
+    // Tính tổng commissionValue
+    const totalCommission =
+      Array.isArray(arr) && arr.length
+        ? arr.reduce(
+            (sum, item) => sum + (Number(item.commissionValue) || 0),
+            0
+          )
+        : 0;
 
     // Tạo các hàng dữ liệu
-    const rows = Array.isArray(arr) && arr.length
-      ? arr
-          .map(
-            (item) => `
+    const rows =
+      Array.isArray(arr) && arr.length
+        ? arr
+            .map(
+              (item) => `
         <tr>
           <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyId || ''}</td>
           <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyName || ''}</td>
           <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyPrice ? Number(item.propertyPrice).toLocaleString('vi-VN') + ' VNĐ' : ''}</td>
           <td style="padding:8px;border:1px solid #e0e0e0">${item.propertyAddress || ''}</td>
-          <td style="padding:8px;border:1px solid #e0e0e0">${item.comission || ''}</td>
-          <td style="padding:8px;border:1px solid #e0e0e0">${item.comissionValue ? Number(item.comissionValue).toLocaleString('vi-VN') + ' VNĐ' : ''}</td>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.commission || ''}</td>
+          <td style="padding:8px;border:1px solid #e0e0e0">${item.commissionValue ? Number(item.commissionValue).toLocaleString('vi-VN') + ' VNĐ' : ''}</td>
         </tr>`
-          )
-          .join('')
-      : `<tr><td colspan="6" style="padding:8px;border:1px solid #e0e0e0">Không có bản ghi</td></tr>`;
+            )
+            .join('')
+        : `<tr><td colspan="6" style="padding:8px;border:1px solid #e0e0e0">Không có giao dịch trong tháng</td></tr>`;
 
     // Thêm hàng tổng
     const totalRow = `
@@ -1155,7 +1271,12 @@ const sendBulkCommissionEmails = async ({ agentCommissions }) => {
         const agentId = agent.id ?? null;
 
         if (!email) {
-          return { agentId, email: null, status: 'failed', error: 'Missing agent email' };
+          return {
+            agentId,
+            email: null,
+            status: 'failed',
+            error: 'Missing agent email',
+          };
         }
 
         const commissionOfMonth = ac.commissionOfMonth || {};
@@ -1204,8 +1325,7 @@ const sendBulkCommissionEmails = async ({ agentCommissions }) => {
             <ul style="font-family: 'Roboto', Arial, Helvetica, sans-serif; font-size: 16px; line-height: 1.5;">
               <li><b>Thưởng thêm(+):</b> ${commissionOfMonth.bonus ? Number(commissionOfMonth.bonus).toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}</li>
               <li><b>Phạt(-):</b> ${commissionOfMonth.penalty ? Number(commissionOfMonth.penalty).toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}</li>
-              <li><b>Đánh giá trung bình:</b> ${commissionOfMonth.review?.averageRating || 'Không có'}</li>
-              <li><b>Tổng số đánh giá:</b> ${commissionOfMonth.review?.totalReviews || '0'}</li>
+              <li><b>Đánh giá:</b> ${commissionOfMonth.review?.averageRating || 'Không có'}</li>
             </ul>
           </div>
           <div class="info-section">
@@ -1219,8 +1339,11 @@ const sendBulkCommissionEmails = async ({ agentCommissions }) => {
 
         const htmlContent = getEmailTemplate({
           title: 'Báo cáo hoa hồng HomiHub',
-          greeting: agent.name ? `Kính gửi ${agent.name},` : 'Kính gửi Quý Đại lý,',
-          mainMessage: 'Đây là báo cáo hoa hồng của bạn trong tháng. Vui lòng kiểm tra chi tiết bên dưới.',
+          greeting: agent.name
+            ? `Kính gửi ${agent.name},`
+            : 'Kính gửi Quý Đại lý,',
+          mainMessage:
+            'Đây là báo cáo hoa hồng của bạn trong tháng. Vui lòng kiểm tra chi tiết bên dưới.',
           infoSections,
         });
 
@@ -1281,5 +1404,5 @@ export default {
 
   notifyNewAppointment,
 
-  sendBulkCommissionEmails
+  sendBulkCommissionEmails,
 };
