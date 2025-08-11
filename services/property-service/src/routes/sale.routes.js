@@ -628,13 +628,6 @@ const getCompleteTransactionOfAgentInMonth = async (
   };
   const { total, results, sent_mail } =
     await saleService.getCompleteTransactionOfAgentInMonth(filters, pagination);
-  if (results.length === 0) {
-    return res.status(404).json({
-      data: null,
-      message: 'Not found',
-      error: [],
-    });
-  }
   const agent = await getPublicAgentInfor(agent_id);
   console.log(
     'gọi hàm kiểm tra trạng thái đã khởi tạo thưởng/phạt chưa?',
