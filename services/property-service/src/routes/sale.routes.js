@@ -155,10 +155,18 @@ router
         end_date
       );
     if (agentCommissions.length > 0) {
-      await sendMailToAgents(agentCommissions);
+      sendMailToAgents(agentCommissions);
+      return res.status(200).json({
+        data: { total, agentCommissions },
+        message: '',
+        error: ['Oke! thành công'],
+      });
     }
-
-    res.json({ total: total, agentCommissions });
+    return res.status(400).json({
+      data: null,
+      message: '',
+      error: ['Đã gửi tất cả mail trước đó'],
+    });
   });
 
 /**
