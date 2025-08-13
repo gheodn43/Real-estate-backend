@@ -3,6 +3,8 @@ import RequestStatus from '../enums/requestStatus.enum.js';
 import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 import { RoleName } from '../middleware/roleGuard.js';
+import AgentCommissionFeeStatus from '../enums/AgentCommissionFeeStatus.js';
+import CommissionType from '../enums/commissionType.enum.js';
 
 const getPropertyType = async (filter, userData) => {
   const { start_date, end_date } = filter;
@@ -120,6 +122,82 @@ const getPropertyType = async (filter, userData) => {
   };
 };
 
+async function getRevenueWithType(filter) {
+  const { mooc_date } = filter;
+  const moocDate = mooc_date;
+
+  // Lấy ngày đầu tháng của moocDate
+  const baseDate = new Date(moocDate.getFullYear(), moocDate.getMonth(), 1);
+
+  // Tạo mảng 12 tháng gần nhất
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const date = new Date(baseDate);
+    date.setMonth(baseDate.getMonth() - (11 - i));
+
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+
+    const monthStr = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+
+    return { month: monthStr, start, end };
+  });
+  const startDate = months[0].start;
+  const endDate = months[months.length - 1].end;
+  const commissions = await prisma.commissions.findMany({
+    where: {
+      created_at: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    include: {
+      agent_commission_fee: {
+        where: {
+          status: AgentCommissionFeeStatus.CONFIRMED,
+        },
+      },
+    },
+  });
+  const result = months.map(({ month, start, end }) => {
+    const monthCommissions = commissions.filter(
+      (c) => c.updated_at >= start && c.updated_at <= end
+    );
+
+    let rentalCommissionValue = 0;
+    let buyingCommissionValue = 0;
+
+    monthCommissions.forEach((c) => {
+      const totalValue = c.agent_commission_fee.reduce(
+        (sum, fee) => sum + Number(fee.commission_value),
+        0
+      );
+
+      if (c.type === CommissionType.RENTAL) {
+        rentalCommissionValue += totalValue;
+      } else if (c.type === CommissionType.BUYING) {
+        buyingCommissionValue += totalValue;
+      }
+    });
+
+    return {
+      month,
+      rentalCommissionValue,
+      buyingCommissionValue,
+    };
+  });
+
+  return result;
+}
+
 export default {
   getPropertyType,
+  getRevenueWithType,
 };

@@ -9,21 +9,27 @@ const app = express();
 
 app.get('/swagger.json', async (req, res) => {
   try {
-    const [auth, property, agentReview, blog, agentChat] = await Promise.all([
-      axios.get('http://auth-service:4001/swagger.json'),
-      axios.get('http://property-service:4002/swagger.json'),
-      axios.get('http://agent-review-service:4004/swagger.json'),
-      axios.get('http://blog-service:4005/swagger.json'),
-      axios.get('http://agent-chat-service:3000/swagger.json'),
-    ]);
-    const mergedSpec = mergeSpecs([
-      auth.data,
-      property.data,
-      agentReview.data,
-      blog.data,
-      agentChat.data,
-    ]);
+    const serviceUrls = [
+      'http://auth-service:4001/swagger.json',
+      'http://property-service:4002/swagger.json',
+      'http://agent-review-service:4004/swagger.json',
+      'http://blog-service:4005/swagger.json',
+      'http://agent-chat-service:3000/swagger.json',
+    ];
 
+    const results = await Promise.allSettled(
+      serviceUrls.map((url) => axios.get(url).catch(() => null))
+    );
+
+    const specs = results
+      .filter((r) => r.status === 'fulfilled' && r.value?.data)
+      .map((r) => r.value.data);
+
+    if (specs.length === 0) {
+      return res.status(500).json({ error: 'No available Swagger specs' });
+    }
+
+    const mergedSpec = mergeSpecs(specs);
     mergedSpec.info = {
       title: 'Merged API Documentation',
       version: '1.0.0',
@@ -32,12 +38,12 @@ app.get('/swagger.json', async (req, res) => {
     mergedSpec.servers = [
       {
         url: process.env.SERVER_URL,
-        description: 'Propintel  server',
+        description: 'Propintel server',
       },
     ];
     res.json(mergedSpec);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch specs ' });
+    res.status(500).json({ error: 'Failed to fetch specs' });
   }
 });
 

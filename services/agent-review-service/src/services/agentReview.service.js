@@ -545,100 +545,159 @@ class AgentReviewService {
     }
   }
 
-  async getCommentsAgentNeedingReply(agent_id, page = 1, limit = 10) {
-    if (!Number.isInteger(Number(agent_id)) || agent_id <= 0) {
-      throw new Error('Invalid agent_id: Must be a positive integer');
-    }
-    if (!Number.isInteger(page) || page < 1) {
-      throw new Error('Invalid page number: Must be a positive integer');
-    }
-    if (!Number.isInteger(limit) || limit < 1) {
-      throw new Error('Invalid limit: Must be a positive integer');
-    }
-
-    try {
-      // Lấy tất cả comment chưa có reply của agent này
-      const comments = await prisma.agent_reviews.findMany({
-        where: {
-          agent_id: Number(agent_id),
-          type: 'comment',
-          status: 'showing',
-          // Không tồn tại reply từ chính agent này
-
-        },
-        orderBy: { created_at: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-          replies: true, // Nếu muốn xem có reply khác không
-        }
-      });
-
-      // Đếm tổng số comment cần trả lời
-      const total = await prisma.agent_reviews.count({
-        where: {
-          agent_id: Number(agent_id),
-          type: 'comment',
-          status: 'showing',
-          replies: {
-            none: {
-              type: 'repcomment',
-              agent_id: Number(agent_id)
-            }
-          }
-        }
-      });
-
-      // Map user info vào reviews và replies
-      // --- build set các user_id (reviews + replies) ---
-      const userIdsSet = new Set();
-      comments.forEach(r => {
-
-        if (r.user_id != null) userIdsSet.add(Number(r.user_id));
-        if (Array.isArray(r.replies)) {
-          r.replies.forEach(rep => { if (rep.user_id != null) userIdsSet.add(Number(rep.user_id)); });
-        }
-      });
-      const userIds = Array.from(userIdsSet);
-
-      // --- fetch tất cả users song song, chịu lỗi từng request ---
-      const settled = await Promise.allSettled(userIds.map(id => getPublicCustomerInfor(id)));
-
-      const usersById = {};
-      userIds.forEach((id, idx) => {
-        const res = settled[idx];
-        usersById[id] = (res.status === 'fulfilled' && res.value) ? res.value : {};
-      });
-
-      // --- map reviews & replies: thay user_id bằng user object ---
-      const reviewsWithUser = comments.map(review => {
-
-        const { user_id, replies, ...restReview } = review;
-        const user = usersById[Number(user_id)] || {};
-
-        const repliesWithUser = (Array.isArray(replies) ? replies : []).map(reply => {
-          const { user_id: r_uid, ...restReply } = reply;
-          const replyUser = usersById[Number(r_uid)] || {};
-          return { ...restReply, user: replyUser };
-        });
-        const firstReplyWithUser = repliesWithUser.length > 0 ? repliesWithUser[0] : null;
-        return { ...restReview, user, reply: firstReplyWithUser };
-      });
-
-
-      return {
-        comments: reviewsWithUser,
-        pagination: {
-          total,
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Math.ceil(total / limit),
-        }
-      };
-    } catch (err) {
-      throw new Error(`Failed to fetch comments needing reply: ${err.message}`);
-    }
+  /**
+ * Lấy danh sách comment mà Agent cần trả lời
+ * @param {number} agent_id - ID của agent
+ * @param {number} page - Trang hiện tại
+ * @param {number} limit - Số lượng comment mỗi trang
+ * @param {string} [search] - Từ khóa tìm kiếm (theo agent_reviews.comment, replies.comment hoặc user.name)
+ * @param {string} [filter] - Lọc theo trạng thái reply ('unreplied', 'replied', 'all')
+ * @returns {Promise<{ comments: Array, pagination: Object }>}
+ */
+async getCommentsAgentNeedingReply(agent_id, page = 1, limit = 10, search = '', filter = 'all') {
+  if (!Number.isInteger(Number(agent_id)) || agent_id <= 0) {
+    throw new Error('Invalid agent_id: Must be a positive integer');
   }
+  if (!Number.isInteger(page) || page < 1) {
+    throw new Error('Invalid page number: Must be a positive integer');
+  }
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error('Invalid limit: Must be a positive integer');
+  }
+  if (filter && !['unreplied', 'replied', 'all'].includes(filter)) {
+    throw new Error("Invalid filter: Must be 'unreplied', 'replied', or 'all'");
+  }
+
+  try {
+    // Điều kiện tìm kiếm trên agent_reviews.comment
+    const searchCondition = search
+      ? {
+          OR: [
+            { comment: { contains: search } }, // Loại bỏ mode: 'insensitive' do phiên bản Prisma cũ
+          ],
+        }
+      : {};
+
+    // Điều kiện lọc theo trạng thái reply
+    const replyCondition =
+      filter === 'unreplied'
+        ? {
+            replies: {
+              none: {
+                type: 'repcomment',
+                agent_id: Number(agent_id),
+              },
+            },
+          }
+        : filter === 'replied'
+        ? {
+            replies: {
+              some: {
+                type: 'repcomment',
+                agent_id: Number(agent_id),
+              },
+            },
+          }
+        : {};
+
+    // Lấy danh sách comment
+    const comments = await prisma.agent_reviews.findMany({
+      where: {
+        agent_id: Number(agent_id),
+        type: 'comment',
+        status: 'showing',
+        ...searchCondition,
+        ...replyCondition,
+      },
+      orderBy: { created_at: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        replies: true,
+      },
+    });
+
+    // Đếm tổng số comment
+    const total = await prisma.agent_reviews.count({
+      where: {
+        agent_id: Number(agent_id),
+        type: 'comment',
+        status: 'showing',
+        ...searchCondition,
+        ...replyCondition,
+      },
+    });
+
+    // Lấy user info
+    const userIdsSet = new Set();
+    comments.forEach((r) => {
+      if (r.user_id != null) userIdsSet.add(Number(r.user_id));
+      if (Array.isArray(r.replies)) {
+        r.replies.forEach((rep) => {
+          if (rep.user_id != null) userIdsSet.add(Number(rep.user_id));
+        });
+      }
+    });
+    const userIds = Array.from(userIdsSet);
+
+    const settled = await Promise.allSettled(userIds.map((id) => getPublicCustomerInfor(id)));
+    const usersById = {};
+    userIds.forEach((id, idx) => {
+      const res = settled[idx];
+      usersById[id] = res.status === 'fulfilled' && res.value ? res.value : {};
+    });
+
+    // Chuẩn hóa chuỗi tìm kiếm để xử lý dấu tiếng Việt
+    const normalizeString = (str) => {
+      if (typeof str !== 'string') return '';
+      return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    };
+
+    // Lọc comment theo agent_reviews.comment, replies.comment và user.name
+    let reviewsWithUser = comments.map((review) => {
+      const { user_id, replies, comment, ...restReview } = review;
+      const user = usersById[Number(user_id)] || {};
+      const repliesWithUser = (Array.isArray(replies) ? replies : []).map((reply) => {
+        const { user_id: r_uid, ...restReply } = reply;
+        const replyUser = usersById[Number(r_uid)] || {};
+        return { ...restReply, user: replyUser };
+      });
+      const firstReplyWithUser = repliesWithUser.length > 0 ? repliesWithUser[0] : null;
+      return { ...restReview, content: comment, user, reply: firstReplyWithUser };
+    });
+
+    // Lọc theo search (không phân biệt hoa thường và dấu)
+    if (search) {
+      const searchNormalized = normalizeString(search);
+      reviewsWithUser = reviewsWithUser.filter((review) => {
+        const contentNormalized = normalizeString(review.content);
+        const nameNormalized = normalizeString(review.user.name);
+        const replyCommentNormalized = review.reply && typeof review.reply.comment === 'string' 
+          ? normalizeString(review.reply.comment) 
+          : '';
+        const matchesContent = contentNormalized.includes(searchNormalized);
+        const matchesName = nameNormalized && nameNormalized.includes(searchNormalized);
+        const matchesReplyComment = replyCommentNormalized && replyCommentNormalized.includes(searchNormalized);
+        return matchesContent || matchesName || matchesReplyComment;
+      });
+    }
+
+    return {
+      comments: reviewsWithUser,
+      pagination: {
+        total: search ? reviewsWithUser.length : total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((search ? reviewsWithUser.length : total) / limit),
+      },
+    };
+  } catch (err) {
+    throw new Error(`Failed to fetch comments needing reply: ${err.message}`);
+  }
+}
 
 }
 

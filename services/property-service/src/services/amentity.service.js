@@ -111,13 +111,15 @@ const getActiveAmenities = async () => {
 
 const updateAmenity = async (id, { name, parentAmenityId, isActive }) => {
   // 1️⃣ Kiểm tra amenity cần cập nhật có tồn tại không
-  const currentAmenity = await prisma.amenities.findUnique({ where: { id } });
+  const currentAmenity = await prisma.amenities.findUnique({
+    where: { id: Number(id) },
+  });
   if (!currentAmenity) {
     throw new Error('Amenity not found');
   }
-  if (parentAmenityId) {
+  if (Number(parentAmenityId)) {
     const parentAmenity = await prisma.amenities.findUnique({
-      where: { id: parentAmenityId },
+      where: { id: Number(parentAmenityId) },
     });
     if (!parentAmenity) {
       throw new Error('Parent amenity not found');
@@ -127,16 +129,16 @@ const updateAmenity = async (id, { name, parentAmenityId, isActive }) => {
       throw new Error('Cannot set parent deeper than 2 levels');
     }
 
-    if (parentAmenity.id === id) {
+    if (parentAmenity.id === Number(id)) {
       throw new Error('Amenity cannot be its own parent');
     }
   }
   const duplicate = await prisma.amenities.findFirst({
     where: {
       name,
-      parent_amentity_id: parentAmenityId || null,
+      parent_amentity_id: Number(parentAmenityId) || null,
       deleted_at: null,
-      id: { not: id },
+      id: { not: Number(id) },
     },
   });
 
@@ -147,7 +149,7 @@ const updateAmenity = async (id, { name, parentAmenityId, isActive }) => {
     where: { id },
     data: {
       name,
-      parent_amentity_id: parentAmenityId,
+      parent_amentity_id: Number(parentAmenityId) || undefined,
       is_active: isActive,
     },
   });

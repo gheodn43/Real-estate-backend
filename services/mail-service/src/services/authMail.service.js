@@ -29,7 +29,7 @@ const getEmailTemplate = ({ title, greeting, mainMessage, infoSections }) => `
       <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
       <style>
         body { margin: 0; padding: 0; background-color: #f5f7fa; font-family: 'Roboto', Arial, sans-serif; }
-        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; overflow: hidden; }
+        .container { max-width: 80vw; margin: 20px auto; background-color: #ffffff; overflow: hidden; }
         .header { background-color: #27ae60; padding: 20px; text-align: center; }
         .header img { max-width: 120px; height: auto; }
         .header h1 { color: #ffffff; font-size: 24px; font-weight: 700; margin: 10px 0 0; }

@@ -58,14 +58,14 @@ const getDetailByCategoryId = async (categoryId) => {
 
 const updateDetail = async (id, data) => {
   const currentDetail = await prisma.property_category_detail.findUnique({
-    where: { id },
+    where: { id: Number(id) },
   });
   if (!currentDetail || currentDetail.deleted_at !== null) {
     throw new Error('Detail not found or has been deleted');
   }
   const duplicate = await prisma.property_category_detail.findFirst({
     where: {
-      id: { not: id }, // bỏ qua chính nó
+      id: { not: Number(id) },
       category_id: data.categoryId,
       field_name: data.fieldName,
       deleted_at: null,
@@ -76,7 +76,7 @@ const updateDetail = async (id, data) => {
     throw new Error('Field name already exists in this category');
   }
   const categoryDetail = await prisma.property_category_detail.update({
-    where: { id },
+    where: { id: Number(id) },
     data: {
       category_id: data.categoryId,
       field_name: data.fieldName,
