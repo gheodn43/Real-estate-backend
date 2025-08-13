@@ -616,7 +616,6 @@ async getCommentsAgentNeedingReply(agent_id, page = 1, limit = 10, search = '', 
         replies: true,
       },
     });
-    console.log('Prisma comments:', JSON.stringify(comments, null, 2));
 
     // Đếm tổng số comment
     const total = await prisma.agent_reviews.count({
@@ -628,7 +627,6 @@ async getCommentsAgentNeedingReply(agent_id, page = 1, limit = 10, search = '', 
         ...replyCondition,
       },
     });
-    console.log('Total comments (Prisma count):', total);
 
     // Lấy user info
     const userIdsSet = new Set();
@@ -641,16 +639,13 @@ async getCommentsAgentNeedingReply(agent_id, page = 1, limit = 10, search = '', 
       }
     });
     const userIds = Array.from(userIdsSet);
-    console.log('User IDs:', userIds);
 
     const settled = await Promise.allSettled(userIds.map((id) => getPublicCustomerInfor(id)));
-    console.log('getPublicCustomerInfor results:', JSON.stringify(settled, null, 2));
     const usersById = {};
     userIds.forEach((id, idx) => {
       const res = settled[idx];
       usersById[id] = res.status === 'fulfilled' && res.value ? res.value : {};
     });
-    console.log('usersById:', JSON.stringify(usersById, null, 2));
 
     // Chuẩn hóa chuỗi tìm kiếm để xử lý dấu tiếng Việt
     const normalizeString = (str) => {
@@ -686,14 +681,6 @@ async getCommentsAgentNeedingReply(agent_id, page = 1, limit = 10, search = '', 
         const matchesContent = contentNormalized.includes(searchNormalized);
         const matchesName = nameNormalized && nameNormalized.includes(searchNormalized);
         const matchesReplyComment = replyCommentNormalized && replyCommentNormalized.includes(searchNormalized);
-        console.log(
-          `Review ID ${review.id}: ` +
-          `content="${review.content}", user.name="${review.user.name || 'undefined'}", ` +
-          `reply.comment="${review.reply ? review.reply.comment : 'null'}", ` +
-          `contentNormalized="${contentNormalized}", nameNormalized="${nameNormalized}", ` +
-          `replyCommentNormalized="${replyCommentNormalized}", ` +
-          `matchesContent=${matchesContent}, matchesName=${matchesName}, matchesReplyComment=${matchesReplyComment}`
-        );
         return matchesContent || matchesName || matchesReplyComment;
       });
     }

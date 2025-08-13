@@ -1175,3 +1175,170 @@ exports.getMonthlyNewCustomers = async (req, res) => {
     });
   }
 };
+
+// Lấy danh sách người dùng
+exports.getListUsers = async (req, res) => {
+  try {
+    const { page, limit, search, roleId } = req.query;
+
+    let where = {};
+    if (search && search.trim() !== '') {
+      where.OR = [
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { number_phone: { contains: search } },
+      ];
+    }
+    if (roleId) {
+      where.role_id = Number(roleId);
+    }
+
+    const select = {
+      id: true,
+      email: true,
+      name: true,
+      role_id: true,
+      avatar: true,
+      latitude: true,
+      longitude: true,
+      dateOfBirth: true,
+      gender: true,
+      addr_city: true,
+      addr_district: true,
+      addr_street: true,
+      addr_detail: true,
+      number_phone: true,
+      created_at: true,
+      updated_at: true,
+      role: {
+        select: {
+          rolename: true,
+        },
+      },
+    };
+
+    let users, total;
+    if (page && limit) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const skip = (pageNum - 1) * limitNum;
+
+      [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          select,
+          skip,
+          take: limitNum,
+          orderBy: { created_at: 'desc' },
+        }),
+        prisma.user.count({ where }),
+      ]);
+    } else {
+      [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          select,
+          orderBy: { created_at: 'desc' },
+        }),
+        prisma.user.count({ where }),
+      ]);
+    }
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({
+        data: null,
+        message: 'No users found.',
+        errors: [],
+      });
+    }
+
+    res.json({
+      data: {
+        total,
+        users,
+        pagination: {
+          total: search ? users.length : total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil((search ? users.length : total) / limit),
+        },
+      },
+      message: 'Users fetched successfully.',
+      errors: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: null,
+      message: 'Error fetching users.',
+      errors: [error.message],
+    });
+  }
+};
+
+// Lấy chi tiết người dùng theo ID
+exports.getDetailUser = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    if (!userId) {
+      return res.status(400).json({
+        data: null,
+        message: 'Invalid user ID.',
+        errors: ['Invalid user ID.'],
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          select: {
+            rolename: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        data: null,
+        message: 'User not found.',
+        errors: [],
+      });
+    }
+
+    res.json({
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          avatar: user.avatar,
+          role: user.role,
+          addr_city: user.addr_city,
+          addr_district: user.addr_district,
+          addr_street: user.addr_street,
+          addr_detail: user.addr_detail,
+          number_phone: user.number_phone,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+        },
+        pagination: {
+          total: 1,
+          page: 1,
+          limit: 1,
+          totalPages: 1,
+        },
+      },
+      message: 'User details fetched successfully.',
+      errors: [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: null,
+      message: 'Server error',
+      errors: [err.message],
+    });
+  }
+};
