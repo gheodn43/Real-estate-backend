@@ -64,4 +64,27 @@ const parseClientDate = (dateString) => {
   return new Date(year, month - 1, day, 0, 0, 0);
 };
 
+router
+  .route('/revenue')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      const { moocDate } = req.query;
+      const filter = {
+        mooc_date: parseClientDate(moocDate),
+      };
+      const userData = req.user;
+      const propertyTypes = await dashboardService.getRevenueWithType(
+        filter,
+        userData
+      );
+      res.status(200).json({
+        data: propertyTypes,
+        message: 'Property types found',
+        error: [],
+      });
+    }
+  );
+
 export default router;
