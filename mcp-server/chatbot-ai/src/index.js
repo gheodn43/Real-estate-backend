@@ -6,6 +6,7 @@ import swaggerSpec from './swagger.js';
 
 import chatRoutes from './routes/chat.js';
 import googleMapRoutes from './routes/googleMap.js';
+import kiemDuyetRoutes from './routes/kiemDuyet.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.get('/swagger.json', (req, res) => {
 
 app.use('/agent-chat', chatRoutes);
 app.use('/agent-chat/map', googleMapRoutes);
+app.use('/agent-chat/censorship', kiemDuyetRoutes);
 
 const MONGO_URL = process.env.DATABASE_URL;
 
