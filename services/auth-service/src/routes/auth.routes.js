@@ -447,34 +447,7 @@ router.post(
   authenticateToken,
   authController.getPublicListProperty
 );
-/**
- * @swagger
- * /auth/get-list-property-of-user/{id}:
- *   get:
- *     summary: Lấy danh sách property của user [ALL ROLE]
- *     tags: [Auth]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: User ID
- *     responses:
- *       200:
- *         description: User profile
- *       400:
- *         description: Invalid user id
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: User not found
- */
-router.get(
-  '/get-list-property-of-user/:id',
-  authenticateToken,
-  authController.getListPropOfUser
-);
+
 
 
 module.exports = router;
