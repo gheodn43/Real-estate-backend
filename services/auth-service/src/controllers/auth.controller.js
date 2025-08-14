@@ -1342,3 +1342,71 @@ exports.getDetailUser = async (req, res) => {
     });
   }
 };
+
+
+export const getListPropOfUser = async (req, res) => {
+  try {
+    const { userId, roleId } = req.body;
+
+    // 1. Kiểm tra input
+    if (!userId || !roleId || isNaN(userId) || isNaN(roleId)) {
+      return res.status(400).json({
+        message: 'userId và roleId phải là số hợp lệ'
+      });
+    }
+
+    // 2. Kiểm tra user có tồn tại và đúng role không
+    const user = await prisma.user.findFirst({
+      where: {
+        id: Number(userId),
+        role_id: Number(roleId),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role_id: true,
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'Không tìm thấy user với role tương ứng'
+      });
+    }
+
+    // 3. Lấy danh sách property của user
+    const properties = await prisma.properties.findMany({
+      where: { user_id: Number(userId) },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        status: true,
+        created_at: true,
+        updated_at: true,
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    // 4. Trả kết quả
+    return res.status(200).json({
+      message: 'Lấy danh sách property thành công',
+      user,
+      total: properties.length,
+      properties
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Lỗi server',
+      error: error.message
+    });
+  }
+};
+
+
+
+
+

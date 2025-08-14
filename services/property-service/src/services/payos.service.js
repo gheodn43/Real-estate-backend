@@ -22,14 +22,13 @@ export async function createPayment(amount, description) {
       orderCode,
       amount: Number(amount),
       description: description || "",
-      returnUrl: "https://example.com/payment-success",
-      cancelUrl: "https://example.com/payment-cancel",
+      returnUrl: "https://app.propintel.id.vn/",
+      cancelUrl: "https://app.propintel.id.vn/",
     };
     const signature = createSignature(payload);
 
     const fullPayload = { ...payload, signature };
 
-    console.log("Payload có signature:", fullPayload);
 
     const res = await axios.post(
       `${PAYOS_BASE_URL}/v2/payment-requests`,
@@ -43,7 +42,6 @@ export async function createPayment(amount, description) {
       }
     );
 
-    console.log("PayOS raw response:", res.data);
 
     if (res.data?.code !== "00") {
       throw new Error(res.data.desc || "Tạo payment thất bại");
@@ -56,7 +54,6 @@ export async function createPayment(amount, description) {
       orderCode: pager.orderCode,
     };
   } catch (err) {
-    console.error("Error creating payment:", err.response?.data || err.message);
     throw new Error("Failed to create payment");
   }
 }
