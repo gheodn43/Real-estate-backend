@@ -1,5 +1,5 @@
-import express from "express";
-import { createPayment } from "../services/payos.service.js";
+import express from 'express';
+import { createPayment, isValidSignature } from '../services/payos.service.js';
 
 const router = express.Router();
 
@@ -25,10 +25,11 @@ const router = express.Router();
  *       200:
  *         description: Link thanh toán và QR Code
  */
-router.post("/create-payment", async (req, res) => {
+
+router.post('/create-payment', async (req, res) => {
   const { amount, description } = req.body;
   if (!amount || !description) {
-    return res.status(400).json({ message: "Missing amount or description" });
+    return res.status(400).json({ message: 'Missing amount or description' });
   }
   try {
     const result = await createPayment(amount, description);
@@ -36,6 +37,17 @@ router.post("/create-payment", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+});
+
+router.post('/weebhook', async (req, res) => {
+  const { data, signature, code, success } = req.body;
+  if (!isValidSignature(data, signature)) {
+    return res.status(400).json({ message: 'Invalid signature' });
+  }
+  if (success && code === '00' && data.code === '00') {
+    console.log(`Order ${data.orderCode} đã thanh toán thành công`);
+  }
+  res.sendStatus(200);
 });
 
 export default router;
