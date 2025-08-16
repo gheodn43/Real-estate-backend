@@ -97,14 +97,34 @@ const updateCommission = async (data) => {
 };
 
 const createAgentCommissionFee = async (data) => {
-  return await prisma.agent_commission_fee.create({
-    data: {
-      commission_id: data.commission_id,
-      agent_id: data.agent_id,
-      commission_value: data.commission_value,
-      status: data.status,
-    },
+  // Tìm record đầu tiên với commission_id
+  const existing = await prisma.agent_commission_fee.findFirst({
+    where: { commission_id: data.commission_id },
+    orderBy: { id: 'asc' },
   });
+
+  if (existing) {
+    return await prisma.agent_commission_fee.update({
+      where: { id: existing.id },
+      data: {
+        agent_id: data.agent_id,
+        commission_value: data.commission_value,
+        status: data.status,
+        order: data.order,
+        updated_at: new Date(),
+      },
+    });
+  } else {
+    return await prisma.agent_commission_fee.create({
+      data: {
+        commission_id: data.commission_id,
+        agent_id: data.agent_id,
+        commission_value: data.commission_value,
+        status: data.status,
+        order: data.order,
+      },
+    });
+  }
 };
 
 const confirmCommissionFee = async (id) => {
@@ -112,6 +132,25 @@ const confirmCommissionFee = async (id) => {
     where: {
       id,
     },
+    data: {
+      status: AgentCommissionFeeStatus.CONFIRMED,
+    },
+  });
+};
+
+const confirmCommissionFeeByOrderCode = async (orderCode) => {
+  const existing = await prisma.agent_commission_fee.findFirst({
+    where: { order: orderCode },
+    orderBy: { id: 'asc' },
+  });
+
+  if (!existing) {
+    throw new Error(
+      `No agent_commission_fee found with orderCode: ${orderCode}`
+    );
+  }
+  return await prisma.agent_commission_fee.update({
+    where: { id: existing.id },
     data: {
       status: AgentCommissionFeeStatus.CONFIRMED,
     },
@@ -442,6 +481,7 @@ export default {
   updateCommission,
   createAgentCommissionFee,
   confirmCommissionFee,
+  confirmCommissionFeeByOrderCode,
   rejectCommissionFee,
   getAllCompleted,
   getProcessingOfAgent,
