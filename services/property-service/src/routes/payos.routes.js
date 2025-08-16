@@ -90,7 +90,7 @@ router.post('/weebhook', async (req, res) => {
     signature
   );
   const orderCode = data.orderCode;
-  if (isValidSignature) {
+  if (!isValidSignature) {
     await paymentService.handleCancelPayment(orderCode);
   }
   if (success && code === '00' && data.code === '00') {
