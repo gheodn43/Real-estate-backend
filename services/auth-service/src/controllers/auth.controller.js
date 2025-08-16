@@ -1272,7 +1272,17 @@ exports.getListUsers = async (req, res) => {
 // Lấy chi tiết người dùng theo ID
 exports.getDetailUser = async (req, res) => {
   try {
-    const { token } = req.headers;
+    const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      data: null,
+      message: '',
+      error: ['No token provided'],
+    });
+  }
+
+  const token = authHeader.split(' ')[1];
+
 
     const { page = 1, limit = 10, type, search, needsType } = req.query;
     const userId = Number(req.params.id);
@@ -1304,7 +1314,8 @@ exports.getDetailUser = async (req, res) => {
     }
 
     const listProp = await getListPropOfUser(userId, page, limit, type, search, needsType, token);
-
+    const properties = listProp.properties;
+    const pagination = listProp.pagination;
 
     res.json({
       data: {
@@ -1324,7 +1335,8 @@ exports.getDetailUser = async (req, res) => {
           created_at: user.created_at,
           updated_at: user.updated_at,
         },
-        listProp,
+        properties,
+        pagination,
 
       },
       message: 'User details fetched successfully.',

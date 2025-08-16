@@ -108,6 +108,31 @@ router.get(
  *         schema:
  *           type: integer
  *         description: User ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of properties per page
+ *       - in: query      
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: Type of property
+ *       - in: query
+ *         name: search   
+ *         schema:
+ *           type: string
+ *         description: Search term for property name or address
+ *       - in: query
+ *         name: needsType
+ *         schema:
+ *           type: string
+ *         description: Type of needs (e.g., rent, sell)
  *     responses:
  *       200:
  *         description: User details
@@ -120,7 +145,7 @@ router.get(
  *       500:
  *         description: Server error
  */
-router.get(
+router.get( 
   '/users/:id',
   authenticateToken,
   roleGuard([roleGuard.RoleName.Admin, roleGuard.RoleName.Agent]),
