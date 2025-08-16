@@ -2,6 +2,7 @@ import axios from 'axios';
 import crypto from 'crypto';
 import commissionService from '../services/commission.service.js';
 import AgentCommissionFeeStatus from '../enums/AgentCommissionFeeStatus.js';
+import CommissionStatus from '../enums/commissionStatus.enum.js';
 
 const PAYOS_CLIENT_ID = '8f05f54a-62da-4cef-951a-7e045c54ed91';
 const PAYOS_API_KEY = '2e26f07c-06b6-426f-80fe-4a5f237cc0f8';
@@ -114,6 +115,13 @@ const handleCancelPayment = async (orderCode) => {
 
 const handleSuccessPayment = async (orderCode) => {
   console.log('payment succed with orderCOde', orderCode);
+  const commissionFee = await commissionService.confirmCommissionFeeByOrderCode(
+    String(orderCode)
+  );
+  await commissionService.updateCommission({
+    id: commissionFee.commission_id,
+    status: CommissionStatus.COMPLETED,
+  });
 };
 
 export default {
