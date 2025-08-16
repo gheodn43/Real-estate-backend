@@ -58,12 +58,11 @@ const createPayment = async (property_id, commisionData) => {
       orderCode,
       amount: Number(commission_value),
       description: 'Thanh toán hoa hồng.',
-      returnUrl: `https://hub.propintel.id.vn/estates-deposit/${property_id}`,
-      cancelUrl: `https://hub.propintel.id.vn/estates-deposit/${property_id}`,
+      returnUrl: `http://hub.propintel.id.vn/errors`,
+      cancelUrl: `http://hub.propintel.id.vn/success`,
     };
     const signature = generateSignature(payload, PAYOS_CHECKSUM_KEY);
     const fullPayload = { ...payload, signature };
-
 
     const res = await axios.post(
       `${PAYOS_BASE_URL}/v2/payment-requests`,
@@ -76,7 +75,6 @@ const createPayment = async (property_id, commisionData) => {
         },
       }
     );
-
 
     if (res.data?.code !== '00') {
       throw new Error(res.data.desc || 'Tạo payment thất bại');
@@ -101,7 +99,7 @@ const createPayment = async (property_id, commisionData) => {
       orderCode: pager.orderCode,
     };
   } catch (err) {
-    throw new Error("Failed to create payment");
+    throw new Error('Failed to create payment');
   }
 };
 
