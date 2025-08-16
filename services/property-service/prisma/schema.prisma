@@ -170,6 +170,7 @@ model agent_commission_fee {
   agent_id       Int
   commission_value Decimal @db.Decimal(15, 2)
   reject_reason  String?
+  order          String?
   status         AgentCommissionFeeStatus @default(processing)
   created_at     DateTime   @default(now())
   updated_at     DateTime   @default(now())
