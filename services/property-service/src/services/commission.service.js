@@ -103,6 +103,7 @@ const createAgentCommissionFee = async (data) => {
       agent_id: data.agent_id,
       commission_value: data.commission_value,
       status: data.status,
+      order: data.order,
     },
   });
 };

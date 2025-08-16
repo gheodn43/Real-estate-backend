@@ -1,5 +1,7 @@
 import axios from 'axios';
 import crypto from 'crypto';
+import commissionService from '../services/commission.service.js';
+import AgentCommissionFeeStatus from '../enums/AgentCommissionFeeStatus.js';
 
 const PAYOS_CLIENT_ID = '8f05f54a-62da-4cef-951a-7e045c54ed91';
 const PAYOS_API_KEY = '2e26f07c-06b6-426f-80fe-4a5f237cc0f8';
@@ -44,18 +46,21 @@ function generateSignature(payload, secretKey) {
   return crypto.createHmac('sha256', secretKey).update(queryStr).digest('hex');
 }
 
-export async function createPayment(amount, description) {
+const createPayment = async (property_id, commisionData) => {
+  const { agent_id, commission_id, last_price, commission, contract_url } =
+    commisionData;
   try {
     const orderCode = generateOrderCode();
+    const commission_value = (last_price * commission) / 100;
+
     const payload = {
       orderCode,
-      amount: Number(amount),
-      description: description || '',
-      returnUrl: 'https://app.propintel.id.vn/payment-success',
-      cancelUrl: 'https://app.propintel.id.vn/payment-cancel',
+      amount: Number(commission_value),
+      description: 'Thanh toán hoa hồng.',
+      returnUrl: `https://hub.propintel.id.vn/estates-deposit/${property_id}`,
+      cancelUrl: `https://hub.propintel.id.vn/estates-deposit/${property_id}`,
     };
     const signature = generateSignature(payload, PAYOS_CHECKSUM_KEY);
-
     const fullPayload = { ...payload, signature };
 
     const res = await axios.post(
@@ -73,8 +78,20 @@ export async function createPayment(amount, description) {
     if (res.data?.code !== '00') {
       throw new Error(res.data.desc || 'Tạo payment thất bại');
     }
-
     const pager = res.data.data;
+    await commissionService.createAgentCommissionFee({
+      commission_id: Number(commission_id),
+      agent_id: Number(agent_id),
+      commission_value: commission_value,
+      order: String(orderCode),
+      status: AgentCommissionFeeStatus.PROCESSING,
+    });
+    await commissionService.updateCommission({
+      id: commission_id,
+      commission: commission,
+      latest_price: last_price,
+      contract_url: contract_url,
+    });
     return {
       checkoutUrl: pager.checkoutUrl,
       qrCode: pager.qrCode,
@@ -84,9 +101,24 @@ export async function createPayment(amount, description) {
     console.error('Error creating payment:', err.response?.data || err.message);
     throw new Error('Failed to create payment');
   }
-}
+};
 
-export async function isValidSignature(data, currentSignature) {
+const isValidSignature = async (data, currentSignature) => {
   const computedSignature = generateSignature(data, PAYOS_CHECKSUM_KEY);
   return computedSignature === currentSignature;
-}
+};
+
+const handleCancelPayment = async (orderCode) => {
+  console.log('payment failed with orderCOde', orderCode);
+};
+
+const handleSuccessPayment = async (orderCode) => {
+  console.log('payment succed with orderCOde', orderCode);
+};
+
+export default {
+  createPayment,
+  isValidSignature,
+  handleCancelPayment,
+  handleSuccessPayment,
+};
