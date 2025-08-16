@@ -448,4 +448,6 @@ router.post(
   authController.getPublicListProperty
 );
 
+
+
 module.exports = router;
