@@ -1,25 +1,32 @@
-import axios from 'axios';
-const getListPropOfUser = async (userId, roleId) => {
+const axios = require('axios');
+const getListPropOfUser = async (userId, page, limit, type, search, needsType, token) => {
+
 
     try {
         const res = await axios.get(
-            `http://property-service:4002/prop/get-list-property-of-user/${userId}?roleId=${roleId}`,
-
+            `http://property-service:4002/prop/get-list-property-of-user/${userId}`,
             {
                 headers: { Authorization: `Bearer ${token}` },
+                params: {
+                    page,
+                    limit,
+                    type,
+                    search,
+                    needsType,
+                },
             }
         );
-        if (res.status === 200) {
-            return res.data.data;
-        }
-        return [];
+        console.log(res.data.data);
+        return res.data.data;
     } catch (err) {
-        return [];
+        console.log(err.message);
+
+        
     }
-  
+
 }
 
-export {
+module.exports = {
     getListPropOfUser
 }
 
