@@ -419,7 +419,7 @@ const getRelateProperties = async (currentPropertyId, assetsId, count) => {
         orderBy: { created_at: 'desc' },
         take: 1,
         where: {
-          type: { in: [AgentHistoryType.REQUEST, AgentHistoryType.ASSIGNED] },
+          type: { in: [AgentHistoryType.ASSIGNED] },
         },
         select: { agent_id: true },
       },
@@ -880,7 +880,7 @@ const getPublicFilteredProperties = async (filters, pagination) => {
           orderBy: { created_at: 'desc' },
           take: 1,
           where: {
-            type: { in: [AgentHistoryType.REQUEST, AgentHistoryType.ASSIGNED] },
+            type: { in: [AgentHistoryType.ASSIGNED] },
           },
           select: { agent_id: true },
         },
@@ -1412,37 +1412,36 @@ const getListWithCustomerNeeds = async (list) => {
 };
 
 const getListWithCustomerNeedsAndAgentInfo = async (list) => {
-  const propertiesWithCustomerNeeds = await Promise.all(
-    list.map(async (property, index, array) => {
-      let customerNeeds = null;
+  const agentCache = {}; // id -> Promise<agentInfo>
+
+  return Promise.all(
+    list.map(async (property) => {
       let beforePrice = property.before_price_tag;
       let price = property.price;
       let afterPrice = property.after_price_tag;
-      let agentInfo = null;
 
+      // nhớ guard commissions[0]
       if (
         (property.requestpost_status === RequestPostStatus.EXPIRED ||
           property.requestpost_status === RequestPostStatus.SOLD) &&
-        property.commissions[0].status === CommissionStatus.COMPLETED
+        property?.commissions?.[0]?.status === CommissionStatus.COMPLETED
       ) {
         beforePrice = 'Giá liên hệ';
         price = 0;
         afterPrice = '';
       }
-      if (property?.commissions?.length) {
-        customerNeeds = property.commissions[0].type;
-      }
 
-      const currentAgentId = property?.agentHistory?.[0]?.agent_id;
-      if (currentAgentId) {
-        if (
-          index > 0 &&
-          currentAgentId === array[index - 1]?.agentHistory?.[0]?.agent_id
-        ) {
-          agentInfo = array[index - 1].agentInfo;
-        } else {
-          agentInfo = await getPublicAgentInfor(currentAgentId); // Sử dụng await
+      const customerNeeds = property?.commissions?.[0]?.type ?? null;
+
+      const agentId = property?.agentHistory?.[0]?.agent_id;
+      let agentInfo;
+
+      if (agentId) {
+        // dedupe theo agentId bằng Promise cache
+        if (!agentCache[agentId]) {
+          agentCache[agentId] = getPublicAgentInfor(agentId);
         }
+        agentInfo = await agentCache[agentId];
       } else {
         agentInfo = await getAdminInfor();
       }
@@ -1451,15 +1450,15 @@ const getListWithCustomerNeedsAndAgentInfo = async (list) => {
         ...property,
         customer_needs: customerNeeds,
         before_price_tag: beforePrice,
-        price: price,
+        price,
         after_price_tag: afterPrice,
+        // ẩn dữ liệu thô nếu muốn
         commissions: undefined,
         agentHistory: undefined,
         agent: agentInfo,
       };
     })
   );
-  return propertiesWithCustomerNeeds;
 };
 
 const initCustomerRequest = async (data) => {

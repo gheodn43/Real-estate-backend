@@ -64,6 +64,7 @@ const createPayment = async (property_id, commisionData) => {
     const signature = generateSignature(payload, PAYOS_CHECKSUM_KEY);
     const fullPayload = { ...payload, signature };
 
+
     const res = await axios.post(
       `${PAYOS_BASE_URL}/v2/payment-requests`,
       fullPayload,
@@ -75,6 +76,7 @@ const createPayment = async (property_id, commisionData) => {
         },
       }
     );
+
 
     if (res.data?.code !== '00') {
       throw new Error(res.data.desc || 'Tạo payment thất bại');
@@ -99,8 +101,7 @@ const createPayment = async (property_id, commisionData) => {
       orderCode: pager.orderCode,
     };
   } catch (err) {
-    console.error('Error creating payment:', err.response?.data || err.message);
-    throw new Error('Failed to create payment');
+    throw new Error("Failed to create payment");
   }
 };
 
