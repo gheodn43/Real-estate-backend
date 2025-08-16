@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const axios = require('axios');
 const roleGuard = require('../middleware/roleGuard');
+const { getListPropOfUser } = require('../helpers/propertyClient');
+
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -1244,14 +1246,6 @@ exports.getListUsers = async (req, res) => {
       ]);
     }
 
-    if (!users || users.length === 0) {
-      return res.status(404).json({
-        data: null,
-        message: 'No users found.',
-        errors: [],
-      });
-    }
-
     res.json({
       data: {
         total,
@@ -1278,6 +1272,19 @@ exports.getListUsers = async (req, res) => {
 // Lấy chi tiết người dùng theo ID
 exports.getDetailUser = async (req, res) => {
   try {
+    const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      data: null,
+      message: '',
+      error: ['No token provided'],
+    });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+
+    const { page = 1, limit = 10, type, search, needsType } = req.query;
     const userId = Number(req.params.id);
     if (!userId) {
       return res.status(400).json({
@@ -1306,6 +1313,10 @@ exports.getDetailUser = async (req, res) => {
       });
     }
 
+    const listProp = await getListPropOfUser(userId, page, limit, type, search, needsType, token);
+    const properties = listProp.properties;
+    const pagination = listProp.pagination;
+
     res.json({
       data: {
         user: {
@@ -1324,12 +1335,9 @@ exports.getDetailUser = async (req, res) => {
           created_at: user.created_at,
           updated_at: user.updated_at,
         },
-        pagination: {
-          total: 1,
-          page: 1,
-          limit: 1,
-          totalPages: 1,
-        },
+        properties,
+        pagination,
+
       },
       message: 'User details fetched successfully.',
       errors: [],

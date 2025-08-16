@@ -788,6 +788,121 @@ const getFilteredProperties = async (filters, pagination) => {
   return { properties: propertiesWithCustomerNeeds, total };
 };
 
+const getPropertiesOfSender = async (filters, pagination, senderId) => {
+  const { type, search, needsType } = filters;
+  const { page, limit } = pagination;
+  let where = {
+    OR: [
+      { requestpost_status: { notIn: [RequestPostStatus.DRAFT] } },
+      { requestpost_status: null },
+    ],
+    sender_id: Number(senderId),
+  };
+
+  if (type) {
+    switch (type) {
+      case 'rs_rejected':
+        where = {
+          requestpost_status: null,
+          request_status: RequestStatus.REJECTED,
+        };
+        break;
+      case 'not_assigned':
+        where = {
+          requestpost_status: null,
+          agentHistory: {
+            none: {
+              type: AgentHistoryType.ASSIGNED,
+            },
+          },
+        };
+        break;
+      case 'assigned':
+        where = {
+          requestpost_status: null,
+          agentHistory: {
+            some: {
+              type: AgentHistoryType.ASSIGNED,
+            },
+          },
+        };
+        break;
+      default:
+        where = {
+          ...where,
+          requestpost_status: type,
+        };
+        break;
+    }
+  }
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+    ];
+  }
+  if (needsType) {
+    where.commissions = {
+      some: {
+        type: needsType,
+      },
+    };
+  }
+  const [properties, total] = await Promise.all([
+    prisma.properties.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updated_at: 'desc' },
+      include: {
+        commissions: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: {
+            type: true,
+            status: true,
+          },
+        },
+        agentHistory: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          where: {
+            type: AgentHistoryType.ASSIGNED,
+          },
+          select: { agent_id: true },
+        },
+      },
+    }),
+    prisma.properties.count({ where }),
+  ]);
+  let propertiesWithAssign = properties.map((p) => {
+    let assign = null;
+    if (p.stage === Stage.REQUEST) {
+      assign = p.agentHistory.length > 0 ? 'assigned' : 'not_assigned';
+    }
+    // eslint-disable-next-line no-unused-vars
+    const { agentHistory, ...rest } = p;
+    return {
+      ...rest,
+      assign,
+    };
+  });
+  if (type === 'not_assigned') {
+    propertiesWithAssign = propertiesWithAssign.filter(
+      (p) => p.assign === 'not_assigned'
+    );
+  }
+  if (type === 'assigned') {
+    propertiesWithAssign = propertiesWithAssign.filter(
+      (p) => p.assign === 'assigned'
+    );
+  }
+  const propertiesWithCustomerNeeds =
+    await getListWithCustomerNeeds(propertiesWithAssign);
+
+  return { properties: propertiesWithCustomerNeeds, total };
+};
+
 const getPublicFilteredProperties = async (filters, pagination) => {
   const { latitude, longitude, radius, assetsId, needsId, search, needsType } =
     filters;
@@ -1696,4 +1811,5 @@ export default {
   getAllRequestAssignOfProperty,
   incrementViewCounter,
   getBySlugAndSender,
+  getPropertiesOfSender,
 };

@@ -925,6 +925,57 @@ router
     }
   });
 
+router
+  .route('/get-list-property-of-user/:senderId')
+  .get(
+    authMiddleware,
+    roleGuard([RoleName.Admin, RoleName.Agent]),
+    async (req, res) => {
+      try {
+        const { page = 1, limit = 10, type, search, needsType } = req.query;
+        const senderId = req.params.senderId;
+
+        const pagination = {
+          page: Number(page),
+          limit: Number(limit),
+        };
+
+        const filters = {
+          type,
+          search,
+          needsType,
+        };
+
+        const { properties, total } =
+          await propertyService.getPropertiesOfSender(
+            filters,
+            pagination,
+            senderId
+          );
+
+        return res.status(200).json({
+          data: {
+            properties,
+            pagination: {
+              total,
+              page: pagination.page,
+              limit: pagination.limit,
+              totalPages: Math.ceil(total / pagination.limit),
+            },
+          },
+          message: 'Properties found',
+          error: [],
+        });
+      } catch (error) {
+        return res.status(500).json({
+          data: null,
+          message: '',
+          error: [error.message],
+        });
+      }
+    }
+  );
+
 /**
  * @swagger
  * /prop/public-list:
