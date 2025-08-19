@@ -1194,6 +1194,8 @@ exports.getListUsers = async (req, res) => {
     if (roleId) {
       where.role_id = Number(roleId);
     }
+    // chỉ lấy Customer
+    where.role_id = roleGuard.RoleName.Customer;
 
     const select = {
       id: true,
