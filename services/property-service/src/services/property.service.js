@@ -1779,6 +1779,25 @@ const getRequestPostAssignedForAgentId = async (
   };
 };
 
+const initCustomerNeeds = async (email, name, number_phone, lat, lng) => {
+  return prisma.customer_needs.upsert({
+    where: { email },
+    update: {
+      name,
+      number_phone,
+      latitude: lat,
+      longitude: lng,
+    },
+    create: {
+      email,
+      name,
+      number_phone,
+      latitude: lat,
+      longitude: lng,
+    },
+  });
+};
+
 export default {
   createRequestProperty,
   createPostProperty,
@@ -1812,4 +1831,5 @@ export default {
   incrementViewCounter,
   getBySlugAndSender,
   getPropertiesOfSender,
+  initCustomerNeeds,
 };

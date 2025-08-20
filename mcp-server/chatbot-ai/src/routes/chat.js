@@ -3,75 +3,181 @@ import ChatMemory from '../models/ChatMemory.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import roleGuard, { RoleName } from '../middleware/roleGuard.js';
 import { getGrokResponse } from '../modules/brain.js';
-import { filterProperty } from '../helpers/propClient.js';
+import { filterProperty, initCustomerNeeds } from '../helpers/propClient.js';
 
 const router = express.Router();
 
+/* ----------------------------- Helpers ----------------------------- */
+const getIP = (req) =>
+  req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+/**
+ * Tìm hoặc tạo mới ChatMemory theo userEmail hoặc userIP
+ */
+const findOrCreateChat = async ({ userEmail, userIP }) => {
+  let chat = userEmail
+    ? await ChatMemory.findOne({ userEmail }) // Ưu tiên tìm theo userEmail trước
+    : null;
+
+  // Nếu có userEmail nhưng chưa có chat, thử tìm theo userIP
+  if (!chat && userEmail && userIP) {
+    chat = await ChatMemory.findOne({ userEmail: null, userIP });
+    if (chat) {
+      chat.userEmail = userEmail;
+    }
+  }
+
+  // Nếu không có thì tạo mới
+  if (!chat) {
+    chat = new ChatMemory({
+      userEmail: userEmail || null,
+      userIP,
+      context: 'Cuộc trò chuyện mới bắt đầu.',
+    });
+  }
+
+  return chat;
+};
+
+/**
+ * Cập nhật chat sau khi nhận phản hồi từ getGrokResponse
+ */
+const updateChat = async (chat, { message, reply, updatedContext }) => {
+  chat.memory.push({
+    human: message,
+    agent: reply,
+    status: 'completed',
+    timestamp: new Date(),
+  });
+
+  // Giữ tối đa 100 tin gần nhất
+  if (chat.memory.length > 100) {
+    chat.memory = chat.memory.slice(chat.memory.length - 100);
+  }
+
+  chat.context = updatedContext;
+  chat.lastInteraction = new Date();
+  await chat.save();
+
+  return chat;
+};
+
+/**
+ * Lấy lịch sử chat có phân trang
+ */
+const getChatHistory = (chat, page, limit) => {
+  const reversedMemory = [...chat.memory].reverse();
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  return {
+    chatHistory: reversedMemory.slice(startIndex, endIndex),
+    currentPage: Number(page),
+    totalPages: Math.ceil(chat.memory.length / limit),
+  };
+};
+
+/* ----------------------------- Routes ----------------------------- */
+
+// Test filter property
 router.post('/test/filter', async (req, res) => {
   const { lat, lng } = req.body;
   const properties = await filterProperty(lat, lng);
 
   res.json({
-    data: {
-      properties,
-    },
+    data: { properties },
     message: 'success',
     error: [],
   });
 });
-router.post('/test/:userId', async (req, res) => {
-  const { userId } = req.params;
+
+// Test chat với userEmail
+router.post('/test/:userEmail', async (req, res) => {
+  const { userEmail } = req.params;
   const { message, lat, lng } = req.body;
 
-  if (!userId || !message) {
-    return res.status(400).json({ error: 'Missing userId or message' });
+  if (!userEmail || !message) {
+    return res.status(400).json({ error: 'Missing userEmail or message' });
   }
-  try {
-    let chat = await ChatMemory.findOne({ userId });
 
-    if (!chat) {
-      chat = new ChatMemory({
-        userId,
-        context: 'Cuộc trò chuyện mới bắt đầu.',
-      });
-    }
+  try {
+    let chat = await findOrCreateChat({ userEmail });
     const currentContext = chat.context;
+
     const { reply, updatedContext } = await getGrokResponse(
       message,
       currentContext,
       { lat, lng }
     );
-    //update chat memory
-    chat.memory.push({
-      human: message,
-      agent: reply,
-      status: 'completed',
-      timestamp: new Date(),
-    });
-
-    chat.context = updatedContext;
-    if (chat.memory.length > 100) {
-      chat.memory = chat.memory.slice(chat.memory.length - 100);
-    }
-
-    chat.lastInteraction = new Date();
-    await chat.save();
+    chat = await updateChat(chat, { message, reply, updatedContext });
 
     res.json({
+      data: { reply, updatedContext, properties: [] },
+      message: 'success',
+      error: [],
+    });
+  } catch (err) {
+    res.status(500).json({ data: null, message: '', error: [err.message] });
+  }
+});
+
+/**
+ * @openapi
+ * /agent-chat/init-session:
+ *   post:
+ *     summary: Khởi tạo phiên chat mới
+ *     tags:
+ *       - Chatbot
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Email user
+ *               name:
+ *                 type: string
+ *                 description: Name user
+ *               number_phone:
+ *                 type: string
+ *                 description: number_phone user
+ *               lat:
+ *                 type: number
+ *                 format: double
+ *                 description: Latitude
+ *               lng:
+ *                 type: number
+ *                 format: double
+ *                 description: Longitude
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.post('/init-session', async (req, res) => {
+  const userIP = getIP(req);
+  const { email, name, number_phone, lat, lng } = req.body;
+  try {
+    await initCustomerNeeds(email, name, number_phone, lat, lng);
+    let chat = new ChatMemory({
+      userEmail: email || null,
+      userIP,
+      context: 'Cuộc trò chuyện mới bắt đầu.',
+      lastInteraction: new Date(),
+    });
+    await chat.save();
+    res.json({
       data: {
-        reply: reply,
-        updatedContext: updatedContext,
+        reply: 'Chào Anh/Chị, em có thể giúp gì cho Anh/Chị ạ!',
+        updatedContext: chat.context,
         properties: [],
       },
       message: 'success',
       error: [],
     });
   } catch (err) {
-    res.status(500).json({
-      data: null,
-      message: '',
-      error: [err.message],
-    });
+    res.status(500).json({ data: null, message: '', error: [err.message] });
   }
 });
 
@@ -95,70 +201,45 @@ router.post('/test/:userId', async (req, res) => {
  *               message:
  *                 type: string
  *                 description: User message
+ *               lat:
+ *                 type: number
+ *                 format: double
+ *                 description: Latitude
+ *               lng:
+ *                 type: number
+ *                 format: double
+ *                 description: Longitude
  *     responses:
  *       200:
  *         description: Success
  */
 router.post('/', authMiddleware, async (req, res) => {
-  const userId = req.user.userId;
+  const userEmail = req.user.userEmail;
   const userIP = getIP(req);
   const { message, lat, lng } = req.body;
 
-  if (!userId || !message) {
-    return res.status(400).json({ error: 'Missing userId or message' });
+  if (!userEmail || !message) {
+    return res.status(400).json({ error: 'Missing userEmail or message' });
   }
+
   try {
-    let chat = await ChatMemory.findOne({ userId });
-    if (!chat) {
-      chat = await ChatMemory.findOne({ userId: null, userIP });
-      if (chat) {
-        chat.userId = userId;
-      }
-    }
-    if (!chat) {
-      chat = new ChatMemory({
-        userId,
-        userIP,
-        context: 'Cuộc trò chuyện mới bắt đầu.',
-      });
-    }
+    let chat = await findOrCreateChat({ userEmail, userIP });
     const currentContext = chat.context;
+
     const { reply, updatedContext } = await getGrokResponse(
       message,
       currentContext,
       { lat, lng }
     );
-    //update chat memory
-    chat.memory.push({
-      human: message,
-      agent: reply,
-      status: 'completed',
-      timestamp: new Date(),
-    });
-
-    chat.context = updatedContext;
-    if (chat.memory.length > 100) {
-      chat.memory = chat.memory.slice(chat.memory.length - 100);
-    }
-
-    chat.lastInteraction = new Date();
-    await chat.save();
+    chat = await updateChat(chat, { message, reply, updatedContext });
 
     res.json({
-      data: {
-        reply: reply,
-        updatedContext: updatedContext,
-        properties: [],
-      },
+      data: { reply, updatedContext, properties: [] },
       message: 'success',
       error: [],
     });
   } catch (err) {
-    res.status(500).json({
-      data: null,
-      message: '',
-      error: [err.message],
-    });
+    res.status(500).json({ data: null, message: '', error: [err.message] });
   }
 });
 
@@ -193,51 +274,23 @@ router.post('/public', async (req, res) => {
   }
 
   try {
-    let chat = await ChatMemory.findOne({ userIP });
-    if (!chat) {
-      chat = new ChatMemory({
-        userIP,
-        context: 'Cuộc trò chuyện mới bắt đầu.',
-      });
-    }
-
+    let chat = await findOrCreateChat({ userIP });
     const currentContext = chat.context;
+
     const { reply, updatedContext } = await getGrokResponse(
       message,
       currentContext,
       { lat, lng }
     );
-
-    chat.memory.push({
-      human: message,
-      agent: reply,
-      status: 'completed',
-      timestamp: new Date(),
-    });
-
-    chat.context = updatedContext;
-    if (chat.memory.length > 100) {
-      chat.memory = chat.memory.slice(chat.memory.length - 100);
-    }
-
-    chat.lastInteraction = new Date();
-    await chat.save();
+    chat = await updateChat(chat, { message, reply, updatedContext });
 
     res.json({
-      data: {
-        reply,
-        updatedContext,
-        properties: [],
-      },
+      data: { reply, updatedContext, properties: [] },
       message: 'success',
       error: [],
     });
   } catch (err) {
-    res.status(500).json({
-      data: null,
-      message: '',
-      error: [err.message],
-    });
+    res.status(500).json({ data: null, message: '', error: [err.message] });
   }
 });
 
@@ -245,7 +298,7 @@ router.post('/public', async (req, res) => {
  * @openapi
  * /agent-chat/history:
  *   get:
- *     summary: Lấy lịch sử trọ chuyện của ngừoi dùng [customer]
+ *     summary: Lấy lịch sử trọ chuyện của ngừoi dùng
  *     description: Get chat history
  *     tags:
  *       - Chatbot
@@ -278,38 +331,24 @@ router.get(
     RoleName.Admin,
   ]),
   async (req, res) => {
-    const userId = req.user.userId;
+    const userEmail = req.user.userEmail;
     const { page = 1, limit = 10 } = req.query;
     const userIP = getIP(req);
-    try {
-      const chat = await ChatMemory.findOne({ userId, userIP });
-      if (!chat) {
-        return res.status(404).json({
-          data: null,
-          message: '',
-          error: ['Chat not found'],
-        });
-      }
-      const reversedMemory = [...chat.memory].reverse(); // đảo ngược để lấy tin mới nhất trước
-      const startIndex = (page - 1) * limit;
-      const endIndex = page * limit;
-      const chatHistory = reversedMemory.slice(startIndex, endIndex);
 
-      return res.status(200).json({
-        data: {
-          chatHistory,
-          currentPage: Number(page),
-          totalPages: Math.ceil(chat.memory.length / limit),
-        },
-        message: 'success',
-        error: [],
-      });
+    try {
+      let chat = await ChatMemory.findOne({ userEmail, userIP });
+      if (!chat) {
+        chat = await ChatMemory.findOne({ userIP });
+        if (!chat)
+          return res
+            .status(404)
+            .json({ data: null, message: '', error: ['Chat not found'] });
+      }
+
+      const history = getChatHistory(chat, page, limit);
+      res.status(200).json({ data: history, message: 'success', error: [] });
     } catch (err) {
-      return res.status(500).json({
-        data: null,
-        message: '',
-        error: [err.message],
-      });
+      res.status(500).json({ data: null, message: '', error: [err.message] });
     }
   }
 );
@@ -342,40 +381,20 @@ router.get(
 router.get('/history-public', async (req, res) => {
   const userIP = getIP(req);
   const { page = 1, limit = 10 } = req.query;
+
   try {
     const chat = await ChatMemory.findOne({ userIP });
     if (!chat) {
-      return res.status(404).json({
-        data: null,
-        message: '',
-        error: ['Chat not found'],
-      });
+      return res
+        .status(404)
+        .json({ data: null, message: '', error: ['Chat not found'] });
     }
-    const reversedMemory = [...chat.memory].reverse(); // đảo ngược để lấy tin mới nhất trước
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const chatHistory = reversedMemory.slice(startIndex, endIndex);
 
-    return res.status(200).json({
-      data: {
-        chatHistory,
-        currentPage: Number(page),
-        totalPages: Math.ceil(chat.memory.length / limit),
-      },
-      message: 'success',
-      error: [],
-    });
+    const history = getChatHistory(chat, page, limit);
+    res.status(200).json({ data: history, message: 'success', error: [] });
   } catch (err) {
-    return res.status(500).json({
-      data: null,
-      message: '',
-      error: [err.message],
-    });
+    res.status(500).json({ data: null, message: '', error: [err.message] });
   }
 });
-
-const getIP = (req) => {
-  return req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-};
 
 export default router;

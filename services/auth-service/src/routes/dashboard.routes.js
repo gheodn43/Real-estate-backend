@@ -70,11 +70,6 @@ router.get(
  *         schema:
  *           type: string
  *         description: Search term for name, email, or phone
- *       - in: query
- *         name: roleId
- *         schema:
- *           type: integer
- *         description: Filter by role ID
  *     responses:
  *       200:
  *         description: List of users
@@ -118,13 +113,13 @@ router.get(
  *         schema:
  *           type: integer
  *         description: Number of properties per page
- *       - in: query      
+ *       - in: query
  *         name: type
  *         schema:
  *           type: string
  *         description: Type of property
  *       - in: query
- *         name: search   
+ *         name: search
  *         schema:
  *           type: string
  *         description: Search term for property name or address
@@ -145,7 +140,7 @@ router.get(
  *       500:
  *         description: Server error
  */
-router.get( 
+router.get(
   '/users/:id',
   authenticateToken,
   roleGuard([roleGuard.RoleName.Admin, roleGuard.RoleName.Agent]),

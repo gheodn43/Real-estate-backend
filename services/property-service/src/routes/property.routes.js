@@ -25,6 +25,37 @@ import AgentHistoryType from '../enums/agentHistoryType.enum.js';
 
 import { getProfile, getCustomerProfile } from '../helpers/authClient.js';
 
+router.post('/init-customer-needs', async (req, res) => {
+  try {
+    const { email, name, number_phone, lat, lng } = req.body;
+    if (!email || !name || !number_phone) {
+      return res.status(400).json({
+        data: null,
+        message: 'Missing required fields',
+        error: [],
+      });
+    }
+    const result = await propertyService.initCustomerNeeds(
+      email,
+      name,
+      number_phone,
+      lat,
+      lng
+    );
+    return res.status(200).json({
+      data: result,
+      message: 'Init customer needs successfully',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: 'Failed to init customer needs',
+      error: [error.message],
+    });
+  }
+});
+
 // Lấy danh sách propertyIds từ agentId
 // hint: sử dụng getHistoryByAgentId
 router

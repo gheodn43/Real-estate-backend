@@ -13,17 +13,37 @@ const filterProperty = async (lat, lng) => {
   });
 
   const properties = res?.data?.data?.properties;
-  console.log('properties', properties);
   const textOutput = formatPropertiesResult(properties);
 
   return textOutput;
 };
 
+const initCustomerNeeds = async (email, name, number_phone, lat, lng) => {
+  try {
+    const res = await axios.post(
+      'http://property-service:4002/prop/init-customer-needs',
+      {
+        email,
+        name,
+        number_phone,
+        lat,
+        lng,
+      }
+    );
+    return res.data;
+  } catch (error) {
+    console.error('Error calling initCustomerNeeds:', error.message);
+    throw new Error(
+      error.response?.data?.message || 'Failed to init customer needs'
+    );
+  }
+};
+
 function formatPropertiesResult(properties) {
   if (!properties || !Array.isArray(properties))
-    return 'Không có bất động sản nào được tìm thấy.';
+    return 'Không có bất động sản nào được tìm thấy. \n';
 
-  let result = `Danh sách ${properties.length} bất động sản được đề xuất:\n`;
+  let result = `${properties.length} \n`;
 
   properties.forEach((p, idx) => {
     const mediaUrls = p.media?.map((m) => m.url).join(', ') || 'Không có ảnh';
@@ -51,4 +71,4 @@ function formatPropertiesResult(properties) {
   return result;
 }
 
-export { filterProperty };
+export { filterProperty, initCustomerNeeds };

@@ -58,8 +58,8 @@ const createPayment = async (property_id, commisionData) => {
       orderCode,
       amount: Number(commission_value),
       description: 'Thanh toán hoa hồng.',
-      returnUrl: `http://hub.propintel.id.vn/errors`,
-      cancelUrl: `http://hub.propintel.id.vn/success`,
+      returnUrl: `http://hub.propintel.id.vn/success`,
+      cancelUrl: `http://hub.propintel.id.vn/errors`,
     };
     const signature = generateSignature(payload, PAYOS_CHECKSUM_KEY);
     const fullPayload = { ...payload, signature };
@@ -113,7 +113,6 @@ const handleCancelPayment = async (orderCode) => {
 };
 
 const handleSuccessPayment = async (orderCode) => {
-  console.log('payment succed with orderCOde', orderCode);
   const commissionFee = await commissionService.confirmCommissionFeeByOrderCode(
     String(orderCode)
   );

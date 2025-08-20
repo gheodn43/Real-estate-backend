@@ -8,7 +8,7 @@ const MessageSchema = new mongoose.Schema({
 });
 
 const ConversationSchema = new mongoose.Schema({
-  userId: { type: String },
+  userEmail: { type: String },
   userIP: { type: String },
   sessionId: {
     type: String,
