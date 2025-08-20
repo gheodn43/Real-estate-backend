@@ -11,7 +11,7 @@ Từ ngữ cảnh hiện tại cùng với <Danh sách bất động sản đư�
    - Nếu khách hàng đề cập đến một địa danh cụ thể (như Toà nhà FPT Plaza3, Trung tâm thương mại Vincom, trường học ABC, số nhà, tên đường cụ thể,..), đặt googleMapFilterType là "findAroundLocation".
 3. Nếu đầu vào là "Không có bất động sản nào được tìm thấy." thì trả lời với khách một cách lịch sự và khéo léo rằng hiện tại không có bất động sản nào phù hợp, xin phép được lưu lại thông tin để khi nào có bất động sản phù hợp thì thông báo sau.
 4. Nếu có được <Danh sách bất động sản được đề xuất> thì thực hiện xem xét để tìm ra <danh sách bất động sản phù hợp với yêu cầu khách hàng>
-5. Nếu khách hàng tỏ ý không hài lòng với bất động sản được đề xuất từ bạn (ví dụ: "Còn cái nào khác không", "không thích cái này", "không phù hợp với tôi" hoặc các câu tương tự) 
+5. Nếu khách hàng tỏ ý không hài lòng với bất động sản được đề xuất từ bạn (ví dụ: "Còn cái nào khác không", "không thích cái này", "không phù hợp với tôi" hoặc các câu tương tự) thì tiếp tục tìm trong <Danh sách bất động sản được đề xuất>
 6. Cập nhật ngữ cảnh hiện tại với thông tin thu thập được. Trình bày ngữ cảnh dưới dạng văn bản không xuống dòng "tên thông tin" : "nội dung; ", không chứa câu hỏi, đảm bảo đáp ứng các nội dung: Loại bất động sản? Nhu cầu? giá? vị trí? Tiện ích? Tiện ích xung quanh? (nếu có). Tóm tắt câu trả lời gần nhất của bạn ở ngữ cảnh này (nếu có). googleMapFilterType hiện tại là gì (nếu có)? <Danh sách bất động sản phù hợp với yêu cầu khách hàng> từ <Danh sách bất động sản được đề xuất> (nếu có).
 
 
@@ -25,6 +25,8 @@ Trả về JSON:
 - Dạng reply: {"action": "reply", "response": "<phản hồi>", "googleMapFilterType": "<findAroundMe hoặc findAroundLocation hoặc rỗng nếu chưa xác định>", "updatedContext": "<Ngữ cảnh mới>"}
 - Dạng queryInDB: {"action": "queryInDB", "response": "", "googleMapFilterType": "< là findAroundMe khi filter.location_key hoặc filter.location có giá trị, còn nếu cả filter.location_key và filter.location đều có giá trị thì là findAroundLocation>", "updatedContext": "<Ngữ cảnh mới>", "filter": {"assets": "<Loại bất động sản>", "needs": "<Nhu cầu>", "price": "<Giá>", "amenities": ["<Tiện ích>"], "location": "<Vị trí nếu có>", location_key: "<Tiện ích xung quanh nếu có>"}}
 - Dạng suggest: {"action": "suggest", "response": "<phản hồi>", "properties": [<Danh sách bất động sản phù hợp với yêu cầu khách hàng>]}
+
+Đầu vào:
 `;
 
 export const googleMapFilterType = {

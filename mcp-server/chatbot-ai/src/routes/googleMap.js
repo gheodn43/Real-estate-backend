@@ -45,11 +45,7 @@ router.get('/test/address', async (req, res) => {
   }
   try {
     const result = await searchByAddress(address, keyword);
-    res.json({
-      data: { location: result },
-      message: 'success',
-      error: [],
-    });
+    res.json({ count: result.length, locations: result });
   } catch (e) {
     res.status(500).json({
       data: null,

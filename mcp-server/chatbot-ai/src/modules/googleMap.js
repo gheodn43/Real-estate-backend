@@ -1,6 +1,6 @@
 const API_KEY = 'AIzaSyBEKDomqoh74x6sz5zGYYS7GU2hY84dvFk';
 import axios from 'axios';
-const RADIUS = 2000; // metter
+const RADIUS = 20000; // metter
 
 export async function searchByKeywordInArea(
   { lat, lng },
@@ -9,7 +9,7 @@ export async function searchByKeywordInArea(
 ) {
   if (!keyword) return [];
 
-  const results = [];
+  let results = [];
   let pageToken = null;
   let tries = 0;
 
@@ -43,10 +43,11 @@ export async function searchByKeywordInArea(
     console.error(`[SimpleArea] Lỗi:`, e.message);
   }
 
-  return results
+  results = results
     .map((p) => p.geometry?.location)
     .filter((loc) => loc?.lat && loc?.lng)
     .map((loc) => ({ lat: loc.lat, lng: loc.lng }));
+  return filterNonOverlapping(results, 5);
 }
 
 export async function searchByAddress(address, keyword, radius = RADIUS) {
@@ -67,7 +68,7 @@ export async function searchByAddress(address, keyword, radius = RADIUS) {
     }
 
     // Nếu có keyword, tiếp tục gọi Nearby Search
-    const nearbyRes = await axios.get(
+    let nearbyRes = await axios.get(
       'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
       {
         params: {
@@ -84,7 +85,49 @@ export async function searchByAddress(address, keyword, radius = RADIUS) {
       .filter((loc) => loc?.lat && loc?.lng)
       .map((loc) => ({ lat: loc.lat, lng: loc.lng }));
   } catch (e) {
-    console.error(`[Address] Lỗi:`, e.message);
     return [];
   }
+}
+
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371; // bán kính Trái Đất (km)
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function filterNonOverlapping(locations, radiusKm = 5) {
+  const result = [];
+
+  for (let i = 0; i < locations.length; i++) {
+    let valid = true;
+
+    for (let j = 0; j < result.length; j++) {
+      const d = haversineDistance(
+        locations[i].lat,
+        locations[i].lng,
+        result[j].lat,
+        result[j].lng
+      );
+
+      // Nếu khoảng cách <= 2 * bán kính thì 2 vòng tròn overlap
+      if (d <= radiusKm * 2) {
+        valid = false;
+        break;
+      }
+    }
+
+    if (valid) {
+      result.push(locations[i]);
+    }
+  }
+
+  return result;
 }
