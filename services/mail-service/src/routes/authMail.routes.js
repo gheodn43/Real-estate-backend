@@ -483,6 +483,28 @@ router.post('/notifyNewAppointment', (req, res) => {
   });
 });
 
+router.post('/notifyAppointmentResponse', async (req, res) => {
+  const { appointment, customer, recipient_email } = req.body;
+  try {
+    await authMailService.notifyAppointmentResponse({
+      appointment,
+      customer,
+      recipient_email
+    });
+    res.status(200).json({
+      data: {},
+      message: 'Appointment response notification sent successfully',
+      error: [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      data: {},
+      message: 'Failed to send appointment response notification',
+      error: [error.message],
+    });
+  }
+});
+
 router.post('/sendBulkCommissionEmails', async (req, res) => {
   try {
     const { agentCommissions } = req.body;
@@ -509,5 +531,6 @@ router.post('/sendBulkCommissionEmails', async (req, res) => {
     });
   }
 });
+
 
 export default router;

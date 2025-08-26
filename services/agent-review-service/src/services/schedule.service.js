@@ -340,6 +340,45 @@ class AppointmentScheduleService {
         }
       });
 
+      // Gửi email thông báo cho khách hàng
+      if (appointment.email) {
+        try {
+          const emailPayload = {
+            appointment: {
+              property: {
+                id: appointment.property_id,
+                name: `Property ${appointment.property_id}`,
+              },
+              date: appointment.date,
+              time: appointment.time,
+              message: appointment.message,
+              response: response,
+              type: appointment.type,
+              status: 'responded',
+            },
+            customer: {
+              name: appointment.name,
+              email: appointment.email,
+              number_phone: appointment.number_phone || 'N/A',
+            },
+            recipient_email: appointment.email,
+          };
+
+          await new Promise((resolve) => {
+            axios.post(
+              'http://mail-service:4003/mail/auth/notifyAppointmentResponse',
+              emailPayload,
+              { timeout: 30000 }
+            )
+              .then(() => resolve())
+              .catch(() => resolve()); // Không để lỗi email ảnh hưởng đến quá trình phản hồi
+          });
+        } catch (emailErr) {
+          // Ghi log lỗi nhưng không ảnh hưởng đến quá trình phản hồi
+          console.error('Failed to send email notification:', emailErr.message);
+        }
+      }
+
       return updatedAppointment;
     } catch (err) {
       throw new Error('Failed to respond to appointment: ' + err.message);
