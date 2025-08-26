@@ -14,9 +14,7 @@ import saleRoutes from './routes/sale.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import payosRoutes from './routes/payos.routes.js';
 
-
 dotenv.config();
-
 const app = express();
 app.use(express.json());
 app.use(expressFileUpload());
@@ -36,7 +34,6 @@ app.use('/prop/commission', commissionRoutes);
 app.use('/prop/sale', saleRoutes);
 app.use('/prop/dashboard', dashboardRoutes);
 app.use('/prop/payos', payosRoutes);
-
 
 const PORT = process.env.PORT || 4002;
 app.listen(PORT);
