@@ -4,22 +4,20 @@ const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
 const GROK_API_KEY =
   'xai-vbgZWSiiVfp1ALBig76ky4OLhb0zuOBVx4bqDisXus4wAuifwEzOD9M21YCHfzvPKf9yYT6RE2p9qegb';
 import { classifyPrompt, classifyAction } from '../promts/classifyPrompt.js';
-import { filterProperty } from '../helpers/propClient.js';
-import { searchByKeywordInArea } from '../modules/googleMap.js';
 import {
   consultPrompt,
   consultAction,
   googleMapFilterType,
 } from '../promts/consultPrompt.js';
+// import { filterProperty } from '../helpers/propClient.js';
+// import { searchByKeywordInArea } from '../modules/googleMap.js';
 
-export async function getGrokResponse(message, context, { lat, lng }) {
+export async function getGrokResponse(message, context, lat, lng) {
   try {
     const response = {
       reply: '',
       updatedContext: context,
     };
-
-    // Phân loại câu hỏi
     const classifyResult = await classifyRequest(message);
 
     if (classifyResult.action === classifyAction.consult) {
@@ -32,21 +30,24 @@ export async function getGrokResponse(message, context, { lat, lng }) {
         if (
           consultResult.googleMapFilterType === googleMapFilterType.findAroundMe
         ) {
-          const coordinate = await searchByKeywordInArea(
-            { lat: parseFloat(lat), lng: parseFloat(lng) },
-            consultResult.location
-          );
-          const location = coordinate.locations[0];
-          const propertiesTruyVanFromDB = await filterProperty(
-            location.lat,
-            location.lng
-          );
-          const propertiesText = formatDanhBDSDeXuat(propertiesTruyVanFromDB);
-          const consultResultWithProperties = await consultRequest(
-            'Tìm bất động sản phù hợp với DS được đề xuất',
-            context + propertiesText
-          );
-          consultResultWithProperties.reply = consultResultWithProperties;
+          // const coordinate = await searchByKeywordInArea(
+          //   { lat: parseFloat(lat), lng: parseFloat(lng) },
+          //   consultResult.location
+          // );
+          // const location = coordinate.locations[0];
+          // const propertiesTruyVanFromDB = await filterProperty(
+          //   location.lat,
+          //   location.lng
+          // );
+          // const propertiesText = formatDanhBDSDeXuat(propertiesTruyVanFromDB);
+          // const consultResultWithProperties = await consultRequest(
+          //   'Tìm bất động sản phù hợp với DS được đề xuất',
+          //   context + propertiesText
+          // );
+          // consultResultWithProperties.reply = consultResultWithProperties.response;
+          console.log(lat, lng);
+          response.reply =
+            'filter google map và DB theo vị trí cụ thể được chỉ định';
         } else if (
           consultResult.googleMapFilterType ===
           googleMapFilterType.findAroundLocation
@@ -59,7 +60,6 @@ export async function getGrokResponse(message, context, { lat, lng }) {
     } else {
       response.reply = classifyResult.response;
     }
-
     return response;
   } catch (error) {
     throw new Error('Failed to get response from xAI API');
@@ -113,6 +113,6 @@ async function consultRequest(query, context) {
   return JSON.parse(response.data.choices[0].message.content);
 }
 
-async function formatDanhBDSDeXuat(danhSachBDS) {
-  return 'Danh sách bất động sản được đề xuất: ' + danhSachBDS;
-}
+// async function formatDanhBDSDeXuat(danhSachBDS) {
+//   return 'Danh sách bất động sản được đề xuất: ' + danhSachBDS;
+// }

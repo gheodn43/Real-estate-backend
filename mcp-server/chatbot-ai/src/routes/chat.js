@@ -11,17 +11,14 @@ const router = express.Router();
 const getIP = (req) =>
   req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-/**
- * Tìm hoặc tạo mới ChatMemory theo userEmail hoặc userIP
- */
 const findOrCreateChat = async ({ userEmail, userIP }) => {
   let chat = userEmail
     ? await ChatMemory.findOne({ userEmail }) // Ưu tiên tìm theo userEmail trước
     : null;
 
   // Nếu có userEmail nhưng chưa có chat, thử tìm theo userIP
-  if (!chat && userEmail && userIP) {
-    chat = await ChatMemory.findOne({ userEmail: null, userIP });
+  if (!chat && userIP) {
+    chat = await ChatMemory.findOne({ userIP });
     if (chat) {
       chat.userEmail = userEmail;
     }
@@ -39,9 +36,6 @@ const findOrCreateChat = async ({ userEmail, userIP }) => {
   return chat;
 };
 
-/**
- * Cập nhật chat sau khi nhận phản hồi từ getGrokResponse
- */
 const updateChat = async (chat, { message, reply, updatedContext }) => {
   chat.memory.push({
     human: message,
@@ -49,8 +43,6 @@ const updateChat = async (chat, { message, reply, updatedContext }) => {
     status: 'completed',
     timestamp: new Date(),
   });
-
-  // Giữ tối đa 100 tin gần nhất
   if (chat.memory.length > 100) {
     chat.memory = chat.memory.slice(chat.memory.length - 100);
   }
@@ -229,9 +221,10 @@ router.post('/', authMiddleware, async (req, res) => {
     const { reply, updatedContext } = await getGrokResponse(
       message,
       currentContext,
-      { lat, lng }
+      lat,
+      lng
     );
-    chat = await updateChat(chat, { message, reply, updatedContext });
+    // chat = await updateChat(chat, { message, reply, updatedContext });
 
     res.json({
       data: { reply, updatedContext, properties: [] },
@@ -261,6 +254,14 @@ router.post('/', authMiddleware, async (req, res) => {
  *               message:
  *                 type: string
  *                 description: User message
+ *               lat:
+ *                 type: number
+ *                 format: double
+ *                 description: Latitude
+ *               lng:
+ *                 type: number
+ *                 format: double
+ *                 description: Longitude
  *     responses:
  *       200:
  *         description: Success
@@ -280,7 +281,8 @@ router.post('/public', async (req, res) => {
     const { reply, updatedContext } = await getGrokResponse(
       message,
       currentContext,
-      { lat, lng }
+      lat,
+      lng
     );
     chat = await updateChat(chat, { message, reply, updatedContext });
 
@@ -290,7 +292,11 @@ router.post('/public', async (req, res) => {
       error: [],
     });
   } catch (err) {
-    res.status(500).json({ data: null, message: '', error: [err.message] });
+    res.status(500).json({
+      data: null,
+      message: '',
+      error: [err.message],
+    });
   }
 });
 
