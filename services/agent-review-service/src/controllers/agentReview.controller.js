@@ -1,6 +1,7 @@
 import agentReviewService from '../services/agentReview.service.js';
 import { RoleName } from '../middleware/roleGuard.js';
 import { kiemDuyetBinhLuan } from '../helpers/aiClient.js';
+import { getListPropOfAgent } from '../helpers/propertyClient.js';
 
 class AgentReviewController {
   constructor() {
@@ -254,7 +255,14 @@ class AgentReviewController {
 
   async getAgentReviews(req, res) {
     try {
-      const { agent_id, page = 1, limit = 10 } = req.query;
+      const {
+        agent_id,
+        page = 1,
+        limit = 10,
+        pageProperties = 1,
+        limitProperties = 10,
+        search,
+      } = req.query;
       if (!agent_id) throw new Error('agent_id is required');
       const { reviews, rating, agent, pagination } =
         await agentReviewService.getAgentReviewsAndSummary(
@@ -262,8 +270,22 @@ class AgentReviewController {
           Number(page),
           Number(limit)
         );
+      const { propertiesOfAgent, propertiesPagination } =
+        await getListPropOfAgent(
+          Number(agent_id),
+          Number(pageProperties),
+          Number(limitProperties),
+          search
+        );
       res.status(200).json({
-        data: { agent, reviews, rating, pagination },
+        data: {
+          agent,
+          reviews,
+          rating,
+          pagination,
+          propertiesOfAgent,
+          propertiesPagination,
+        },
         message: 'Lấy danh sách và tổng kết đánh giá thành công',
         errors: [],
       });

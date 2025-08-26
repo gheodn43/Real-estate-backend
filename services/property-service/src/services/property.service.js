@@ -440,6 +440,131 @@ const getRelateProperties = async (currentPropertyId, assetsId, count) => {
   return propertiesWithCustomerNeeds;
 };
 
+const getPropertiesOfAgent = async (agentId, pagination, filters) => {
+  const { page = 1, limit = 10 } = pagination;
+  const { search } = filters;
+
+  const latestAssigned = await prisma.property_agent_history.groupBy({
+    by: ['property_id'],
+    where: {
+      agent_id: agentId,
+      type: AgentHistoryType.ASSIGNED,
+    },
+    _max: {
+      created_at: true,
+    },
+  });
+
+  const propertyIds = latestAssigned.map((p) => p.property_id);
+
+  // Nếu không có property nào thì return sớm
+  if (propertyIds.length === 0) {
+    return {
+      data: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+      },
+    };
+  }
+
+  // Điều kiện search
+  const whereCondition = {
+    id: { in: propertyIds },
+    ...(search
+      ? {
+          OR: [
+            {
+              title: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+            {
+              description: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  // Lấy properties theo propertyIds, phân trang và search
+  const properties = await prisma.properties.findMany({
+    where: whereCondition,
+    orderBy: {
+      updated_at: 'desc',
+    },
+    skip: (page - 1) * limit,
+    take: limit,
+    include: {
+      media: {
+        where: {
+          type: 'image',
+        },
+        select: {
+          id: true,
+          type: true,
+          url: true,
+          order: true,
+        },
+      },
+      locations: true,
+      details: {
+        select: {
+          value: true,
+          category_detail: {
+            select: {
+              field_name: true,
+              icon: true,
+              is_showing: true,
+            },
+          },
+        },
+      },
+      agentHistory: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        where: {
+          type: { in: [AgentHistoryType.ASSIGNED] },
+          agent_id: Number(agentId),
+        },
+        select: { agent_id: true },
+      },
+      commissions: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        select: {
+          type: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  // Đếm tổng số property phù hợp để frontend render pagination
+  const total = await prisma.properties.count({
+    where: whereCondition,
+  });
+
+  const propertiesWithCustomerNeeds =
+    await getListWithCustomerNeedsAndAgentInfo(properties);
+
+  return {
+    propertiesOfAgent: propertiesWithCustomerNeeds,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
 const incrementViewCounter = async (propertyId) => {
   await prisma.properties.update({
     where: {
@@ -911,11 +1036,7 @@ const getPublicFilteredProperties = async (filters, pagination) => {
 
   const where = {
     requestpost_status: {
-      in: [
-        RequestPostStatus.PUBLISHED,
-        RequestPostStatus.SOLD,
-        RequestPostStatus.EXPIRED,
-      ],
+      in: [RequestPostStatus.PUBLISHED],
     },
   };
 
@@ -1016,6 +1137,7 @@ const getPublicFilteredProperties = async (filters, pagination) => {
     await getListWithCustomerNeedsAndAgentInfo(properties);
   return { properties: propertiesWithCustomerNeeds, total };
 };
+
 const getFilteredPropertiesForPrivate = async (filters, pagination) => {
   const { latitude, longitude, radius, assetsId, needsId, search } = filters;
 
@@ -1832,4 +1954,5 @@ export default {
   getBySlugAndSender,
   getPropertiesOfSender,
   initCustomerNeeds,
+  getPropertiesOfAgent,
 };
