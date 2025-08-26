@@ -1378,6 +1378,58 @@ const sendBulkCommissionEmails = async (agentCommissions) => {
   return results;
 };
 
+const notifyAppointmentResponse = async ({ appointment, customer, recipient_email }) => {
+  if (!appointment || !customer || !recipient_email) {
+    throw new Error('Appointment, customer, and recipient_email are required');
+  }
+
+  const htmlContent = getEmailTemplate({
+    title: 'Phản hồi lịch hẹn xem bất động sản',
+    greeting: customer?.name ? `Kính gửi ${customer.name},` : 'Kính gửi Quý khách,',
+    mainMessage: `Chúng tôi xin thông báo rằng lịch hẹn xem bất động sản của bạn đã được phản hồi. Dưới đây là thông tin chi tiết về lịch hẹn và phản hồi từ đại lý của chúng tôi:`,
+    infoSections: `
+      <div class="highlight-section">
+        <h3>Thông tin lịch hẹn</h3>
+        <ul>
+          <li>Mã bất động sản: ${appointment.property?.id || 'Không có thông tin'}</li>
+          <li>Ngày hẹn: ${new Date(appointment.date).toLocaleDateString('vi-VN')}</li>
+          <li>Thời gian: ${appointment.time}</li>
+          <li>Hình thức: ${appointment.type === 'directly' ? 'Trực tiếp' : 'Video call'}</li>
+          <li>Tin nhắn của bạn: ${appointment.message || 'Không có'}</li>
+        </ul>
+      </div>
+      <div class="highlight-section">
+        <h3>Phản hồi từ đại lý</h3>
+        <ul>
+          <li>Nội dung phản hồi: ${appointment.response || 'Không có phản hồi'}</li>
+          <li>Trạng thái: ${appointment.status === 'responded' ? 'Đã phản hồi' : appointment.status}</li>
+        </ul>
+      </div>
+      <div class="info-section">
+        <h3>Thông tin liên hệ</h3>
+        <ul>
+          <li>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua hotline: 0123 456 789</li>
+          <li>Hoặc gửi email đến: support@realestate.com</li>
+        </ul>
+      </div>
+    `,
+  });
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: recipient_email,
+    subject: 'Phản hồi lịch hẹn xem bất động sản',
+    html: htmlContent,
+    attachments: [
+      {
+        filename: 'homihub.png',
+        path: imagePath,
+        cid: 'companylogo',
+      },
+    ],
+  });
+};
+
 export default {
   sendRegisterOTP,
   sendPasswordEmail,
@@ -1403,6 +1455,7 @@ export default {
   notifyJournalistBlogRejected,
 
   notifyNewAppointment,
+  notifyAppointmentResponse,
 
   sendBulkCommissionEmails,
 };

@@ -43,7 +43,12 @@ const router = express.Router();
  *       403:
  *         description: 'Tạo đánh giá thất bại (ví dụ: review đã tồn tại)'
  */
-router.post('/', authenticateToken, roleGuard([RoleName.Customer, RoleName.Admin]), agentReviewController.createReview);
+router.post(
+  '/',
+  authenticateToken,
+  roleGuard([RoleName.Customer, RoleName.Admin]),
+  agentReviewController.createReview
+);
 
 /**
  * @swagger
@@ -85,7 +90,7 @@ router.put(
   '/:id',
   authenticateToken,
   roleGuard([RoleName.Customer, RoleName.Admin]),
-  agentReviewController.updateReview,
+  agentReviewController.updateReview
 );
 
 /**
@@ -184,6 +189,23 @@ router.delete('/:id', authenticateToken, agentReviewController.deleteReview);
  *           type: integer
  *           default: 10
  *         description: Số lượng đánh giá mỗi trang
+ *       - in: query
+ *         name: pageProperties
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
+ *       - in: query
+ *         name: limitProperties
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số lượng bđs giá mỗi trang
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: search bđs theo title và description
  *     responses:
  *       200:
  *         description: Lấy danh sách và tổng kết thành công
@@ -238,6 +260,5 @@ router.get(
   roleGuard([RoleName.Agent]),
   agentReviewController.getCommentsAgentNeedingReply
 );
-
 
 export default router;

@@ -133,6 +133,34 @@ router.get('/:id/relate', async (req, res) => {
   }
 });
 
+router.get('/of-agent/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 10, search } = req.query;
+    const paginationInput = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+    const filters = { search };
+    const { propertiesOfAgent, pagination } =
+      await propertyService.getPropertiesOfAgent(id, paginationInput, filters);
+    return res.status(200).json({
+      data: {
+        propertiesOfAgent,
+        propertiesPagination: pagination,
+      },
+      message: 'Relate properties found',
+      error: [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      data: null,
+      message: '',
+      error: [error.message],
+    });
+  }
+});
+
 /**
  * @openapi
  * /prop/request/all-for-admin:
