@@ -23,5 +23,5 @@ app.use('/review/feedback', feedbackRoutes);
 
 const PORT = process.env.PORT || 4004;
 app.listen(PORT, () => {
-  console.log(`Agent Review Service running on port ${PORT}`);
+  console.log(`Agent Service running on port ${PORT}`);
 });
