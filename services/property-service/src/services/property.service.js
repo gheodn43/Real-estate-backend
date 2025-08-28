@@ -473,6 +473,7 @@ const getPropertiesOfAgent = async (agentId, pagination, filters) => {
   // Điều kiện search
   const whereCondition = {
     id: { in: propertyIds },
+    requestpost_status: RequestPostStatus.EXPIRED,
     ...(search
       ? {
           OR: [
