@@ -1928,6 +1928,7 @@ router
           // }
 
           if (
+            requestPostStatus &&
             requestPostStatus !== RequestPostStatus.DRAFT &&
             requestPostStatus !== RequestPostStatus.PENDING_APPROVAL
           ) {

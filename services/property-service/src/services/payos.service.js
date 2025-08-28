@@ -1,8 +1,10 @@
 import axios from 'axios';
 import crypto from 'crypto';
 import commissionService from '../services/commission.service.js';
+import propertyService from '../services/property.service.js';
 import AgentCommissionFeeStatus from '../enums/AgentCommissionFeeStatus.js';
 import CommissionStatus from '../enums/commissionStatus.enum.js';
+import RequestPostStatus from '../enums/requestPostStatus.enum.js';
 
 const PAYOS_CLIENT_ID = '8f05f54a-62da-4cef-951a-7e045c54ed91';
 const PAYOS_API_KEY = '2e26f07c-06b6-426f-80fe-4a5f237cc0f8';
@@ -116,10 +118,19 @@ const handleSuccessPayment = async (orderCode) => {
   const commissionFee = await commissionService.confirmCommissionFeeByOrderCode(
     String(orderCode)
   );
-  await commissionService.updateCommission({
+  const commissionUpdated = await commissionService.updateCommission({
     id: commissionFee.commission_id,
     status: CommissionStatus.COMPLETED,
   });
+  const propertyId = commissionUpdated.property_id;
+  const requestStatus = propertyService.getRequestStatusFromRequestPostStatus(
+    RequestPostStatus.EXPIRED
+  );
+  await propertyService.completeTransaction(
+    propertyId,
+    RequestPostStatus.EXPIRED,
+    requestStatus
+  );
 };
 
 export default {
