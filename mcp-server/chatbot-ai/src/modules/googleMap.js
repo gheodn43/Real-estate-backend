@@ -64,6 +64,7 @@ export async function searchByAddress(address, keyword, radius = RADIUS) {
 
     // Nếu không có keyword, trả về đúng 1 điểm là địa chỉ
     if (!keyword) {
+      console.log('call it');
       return [{ lat: location.lat, lng: location.lng }];
     }
 
