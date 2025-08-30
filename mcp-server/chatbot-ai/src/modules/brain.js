@@ -25,7 +25,11 @@ export async function getGrokResponse(message, context, lat, lng) {
     const classifyResult = await classifyRequest(message);
 
     if (classifyResult.action === classifyAction.consult) {
-      const consultResult = await consultRequest(classifyResult.query, context);
+      const consultResult = await consultRequest(
+        classifyResult.query,
+        context,
+        ''
+      );
       switch (consultResult.action) {
         case consultAction.reply:
           response.reply = consultResult.response;
@@ -52,6 +56,7 @@ export async function getGrokResponse(message, context, lat, lng) {
               consultResult.updatedContext,
               propertiesText
             );
+            console.log('parse 1', propertiesText, consultResultWithProperties);
             response.reply = consultResultWithProperties.response;
             response.updatedContext =
               consultResultWithProperties.updatedContext;
@@ -63,7 +68,9 @@ export async function getGrokResponse(message, context, lat, lng) {
           ) {
             const coordinate = await searchByAddress(
               consultResult.filter.location,
-              consultResult.filter.location_key,
+              consultResult.filter.location_key?.trim() === ''
+                ? null
+                : consultResult.filter.location_key,
               8
             );
             const location = coordinate[coordinate.length - 1];
@@ -71,18 +78,23 @@ export async function getGrokResponse(message, context, lat, lng) {
               location.lat,
               location.lng
             );
-
             const propertiesText = formatDanhBDSDeXuat(propertiesTruyVanFromDB);
             const consultResultWithProperties = await consultRequest(
               'Tìm bất động sản phù hợp với danh sách được đề xuất',
               consultResult.updatedContext,
               propertiesText
             );
-            response.reply = consultResultWithProperties.response;
-            response.updatedContext =
-              consultResultWithProperties.updatedContext;
-            if (consultResultWithProperties.action === classifyAction.suggest)
+            console.log(
+              'parse 2',
+              consultAction.suggest,
+              consultResultWithProperties
+            );
+            if (consultResultWithProperties.action === consultAction.suggest) {
+              response.reply = consultResultWithProperties.response;
+              response.updatedContext =
+                consultResultWithProperties.updatedContext;
               response.properties = consultResultWithProperties.properties;
+            }
           }
           break;
         default:
@@ -119,14 +131,15 @@ async function classifyRequest(message) {
   return JSON.parse(response.data.choices[0].message.content);
 }
 
-async function consultRequest(query, context, propertiesText = '') {
+async function consultRequest(query, context, propertiesText) {
   const messages = [
     {
       role: 'system',
-      content: 'Ngữ cảnh hiện tại: ' + context + consultPrompt + propertiesText,
+      content: propertiesText + 'Ngữ cảnh trước đó: ' + context + consultPrompt,
     },
     { role: 'user', content: query },
   ];
+  console.log(propertiesText + 'Ngữ cảnh trước đó: ' + context + consultPrompt);
   const payload = {
     model: 'grok-3',
     messages,
@@ -144,6 +157,6 @@ async function consultRequest(query, context, propertiesText = '') {
   return JSON.parse(response.data.choices[0].message.content);
 }
 
-async function formatDanhBDSDeXuat(danhSachBDS) {
+function formatDanhBDSDeXuat(danhSachBDS) {
   return 'Danh sách bất động sản được đề xuất: ' + danhSachBDS;
 }
