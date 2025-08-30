@@ -218,7 +218,7 @@ router.post('/', authMiddleware, async (req, res) => {
     let chat = await findOrCreateChat({ userEmail, userIP });
     const currentContext = chat.context;
 
-    const { reply, updatedContext } = await getGrokResponse(
+    const { reply, updatedContext, properties } = await getGrokResponse(
       message,
       currentContext,
       lat,
@@ -227,7 +227,7 @@ router.post('/', authMiddleware, async (req, res) => {
     // chat = await updateChat(chat, { message, reply, updatedContext });
 
     res.json({
-      data: { reply, updatedContext, properties: [] },
+      data: { reply, updatedContext, properties },
       message: 'success',
       error: [],
     });
@@ -278,7 +278,7 @@ router.post('/public', async (req, res) => {
     let chat = await findOrCreateChat({ userIP });
     const currentContext = chat.context;
 
-    const { reply, updatedContext } = await getGrokResponse(
+    const { reply, updatedContext, properties } = await getGrokResponse(
       message,
       currentContext,
       lat,
@@ -287,7 +287,7 @@ router.post('/public', async (req, res) => {
     chat = await updateChat(chat, { message, reply, updatedContext });
 
     res.json({
-      data: { reply, updatedContext, properties: [] },
+      data: { reply, updatedContext, properties },
       message: 'success',
       error: [],
     });

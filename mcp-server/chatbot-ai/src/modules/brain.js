@@ -9,53 +9,84 @@ import {
   consultAction,
   googleMapFilterType,
 } from '../promts/consultPrompt.js';
-// import { filterProperty } from '../helpers/propClient.js';
-// import { searchByKeywordInArea } from '../modules/googleMap.js';
+import { filterProperty } from '../helpers/propClient.js';
+import {
+  searchByKeywordInArea,
+  searchByAddress,
+} from '../modules/googleMap.js';
 
 export async function getGrokResponse(message, context, lat, lng) {
   try {
     const response = {
       reply: '',
       updatedContext: context,
+      properties: [],
     };
     const classifyResult = await classifyRequest(message);
 
     if (classifyResult.action === classifyAction.consult) {
       const consultResult = await consultRequest(classifyResult.query, context);
+      switch (consultResult.action) {
+        case consultAction.reply:
+          response.reply = consultResult.response;
+          response.updatedContext = consultResult.updatedContext;
+          break;
+        case consultAction.queryInDB:
+          if (
+            consultResult.googleMapFilterType ===
+            googleMapFilterType.findAroundMe
+          ) {
+            const coordinate = await searchByKeywordInArea(
+              { lat: parseFloat(lat), lng: parseFloat(lng) },
+              consultResult.filter.location
+            );
+            const location = coordinate[coordinate.length - 1];
+            const propertiesTruyVanFromDB = await filterProperty(
+              location.lat,
+              location.lng
+            );
 
-      if (consultResult.action === consultAction.reply) {
-        response.reply = consultResult.response;
-        response.updatedContext = consultResult.updatedContext;
-      } else if (consultResult.action === consultAction.queryInDB) {
-        if (
-          consultResult.googleMapFilterType === googleMapFilterType.findAroundMe
-        ) {
-          // const coordinate = await searchByKeywordInArea(
-          //   { lat: parseFloat(lat), lng: parseFloat(lng) },
-          //   consultResult.location
-          // );
-          // const location = coordinate.locations[0];
-          // const propertiesTruyVanFromDB = await filterProperty(
-          //   location.lat,
-          //   location.lng
-          // );
-          // const propertiesText = formatDanhBDSDeXuat(propertiesTruyVanFromDB);
-          // const consultResultWithProperties = await consultRequest(
-          //   'Tìm bất động sản phù hợp với DS được đề xuất',
-          //   context + propertiesText
-          // );
-          // consultResultWithProperties.reply = consultResultWithProperties.response;
-          console.log(lat, lng);
-          response.reply =
-            'filter google map và DB theo vị trí cụ thể được chỉ định';
-        } else if (
-          consultResult.googleMapFilterType ===
-          googleMapFilterType.findAroundLocation
-        ) {
-          response.reply =
-            'filter google map và DB theo vị trí cụ thể được chỉ định';
-        }
-        response.updatedContext = consultResult.updatedContext;
+            const propertiesText = formatDanhBDSDeXuat(propertiesTruyVanFromDB);
+            const consultResultWithProperties = await consultRequest(
+              'Tìm bất động sản phù hợp với danh sách được đề xuất',
+              consultResult.updatedContext,
+              propertiesText
+            );
+            response.reply = consultResultWithProperties.response;
+            response.updatedContext =
+              consultResultWithProperties.updatedContext;
+            if (consultResultWithProperties.action === classifyAction.suggest)
+              response.properties = consultResultWithProperties.properties;
+          } else if (
+            consultResult.googleMapFilterType ===
+            googleMapFilterType.findAroundLocation
+          ) {
+            const coordinate = await searchByAddress(
+              consultResult.filter.location,
+              consultResult.filter.location_key,
+              8
+            );
+            const location = coordinate[coordinate.length - 1];
+            const propertiesTruyVanFromDB = await filterProperty(
+              location.lat,
+              location.lng
+            );
+
+            const propertiesText = formatDanhBDSDeXuat(propertiesTruyVanFromDB);
+            const consultResultWithProperties = await consultRequest(
+              'Tìm bất động sản phù hợp với danh sách được đề xuất',
+              consultResult.updatedContext,
+              propertiesText
+            );
+            response.reply = consultResultWithProperties.response;
+            response.updatedContext =
+              consultResultWithProperties.updatedContext;
+            if (consultResultWithProperties.action === classifyAction.suggest)
+              response.properties = consultResultWithProperties.properties;
+          }
+          break;
+        default:
+          break;
       }
     } else {
       response.reply = classifyResult.response;
@@ -88,11 +119,11 @@ async function classifyRequest(message) {
   return JSON.parse(response.data.choices[0].message.content);
 }
 
-async function consultRequest(query, context) {
+async function consultRequest(query, context, propertiesText = '') {
   const messages = [
     {
       role: 'system',
-      content: 'Ngữ cảnh hiện tại: ' + context + consultPrompt,
+      content: 'Ngữ cảnh hiện tại: ' + context + consultPrompt + propertiesText,
     },
     { role: 'user', content: query },
   ];
@@ -113,6 +144,6 @@ async function consultRequest(query, context) {
   return JSON.parse(response.data.choices[0].message.content);
 }
 
-// async function formatDanhBDSDeXuat(danhSachBDS) {
-//   return 'Danh sách bất động sản được đề xuất: ' + danhSachBDS;
-// }
+async function formatDanhBDSDeXuat(danhSachBDS) {
+  return 'Danh sách bất động sản được đề xuất: ' + danhSachBDS;
+}

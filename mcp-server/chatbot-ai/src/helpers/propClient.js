@@ -64,8 +64,8 @@ function formatPropertiesResult(properties) {
       (p.amenities || [])
         .map((a) => a.amenity?.name)
         .filter(Boolean)
-        .join(', ') || 'Không có tiện ích';
-    result += `${idx + 1}. id: ${p.id}; slug: ${p.slug}; title: ${p.title}; description: ${p.description}; assets: ${p.assets.name} - id=${p.assets.id}; needs: ${p.needs.name} - id=${p.needs.id}; giá: ${p.before_price_tag} ${p.price} ${p.after_price_tag}; requestpost_status: ${p.requestpost_status}; media: [${mediaUrls}]; address: ${address}; latitude: ${p.locations?.latitude}; longitude: ${p.locations?.longitude}; details: [${detailsText}]; amenities: [${amenityNames}]\n`;
+        .join(', ') || 'chưa có tiện ích';
+    result += `${idx + 1}. id: ${p.id}; title: ${p.title}; description: ${p.description}; slug: ${p.slug}; assets: ${p.assets.name} - id=${p.assets.id}; needs: ${p.needs.name} - id=${p.needs.id}; giá: ${p.before_price_tag} ${p.price} ${p.after_price_tag}; requestpost_status: ${p.requestpost_status}; media: [${mediaUrls}]; address: ${address}; latitude: ${p.locations?.latitude}; longitude: ${p.locations?.longitude}; details: [${detailsText}]; amenities: [${amenityNames}]\n`;
   });
 
   return result;
