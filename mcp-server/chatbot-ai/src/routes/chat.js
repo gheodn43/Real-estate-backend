@@ -36,10 +36,14 @@ const findOrCreateChat = async ({ userEmail, userIP }) => {
   return chat;
 };
 
-const updateChat = async (chat, { message, reply, updatedContext }) => {
+const updateChat = async (
+  chat,
+  { message, reply, properties, updatedContext }
+) => {
   chat.memory.push({
     human: message,
     agent: reply,
+    properties: properties,
     status: 'completed',
     timestamp: new Date(),
   });
@@ -224,7 +228,12 @@ router.post('/', authMiddleware, async (req, res) => {
       lat,
       lng
     );
-    // chat = await updateChat(chat, { message, reply, updatedContext });
+    chat = await updateChat(chat, {
+      message,
+      reply,
+      properties,
+      updatedContext,
+    });
 
     res.json({
       data: { reply, updatedContext, properties },
@@ -284,7 +293,12 @@ router.post('/public', async (req, res) => {
       lat,
       lng
     );
-    chat = await updateChat(chat, { message, reply, updatedContext });
+    chat = await updateChat(chat, {
+      message,
+      reply,
+      properties,
+      updatedContext,
+    });
 
     res.json({
       data: { reply, updatedContext, properties },
@@ -342,14 +356,18 @@ router.get(
     const userIP = getIP(req);
 
     try {
-      let chat = await ChatMemory.findOne({ userEmail, userIP });
-      if (!chat) {
+      let chat = userEmail
+        ? await ChatMemory.findOne({ userEmail }) // Ưu tiên tìm theo userEmail trước
+        : null;
+
+      // Nếu có userEmail nhưng chưa có chat, thử tìm theo userIP
+      if (!chat && userIP) {
         chat = await ChatMemory.findOne({ userIP });
-        if (!chat)
-          return res
-            .status(404)
-            .json({ data: null, message: '', error: ['Chat not found'] });
       }
+      if (!chat)
+        return res
+          .status(404)
+          .json({ data: null, message: '', error: ['Chat not found'] });
 
       const history = getChatHistory(chat, page, limit);
       res.status(200).json({ data: history, message: 'success', error: [] });

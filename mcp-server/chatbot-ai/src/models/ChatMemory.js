@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const MessageSchema = new mongoose.Schema({
   human: { type: String, required: true },
   agent: { type: String },
+  properties: { type: Array, default: [] },
   status: { type: String, enum: ['pending', 'completed'], default: 'pending' },
   timestamp: { type: Date, default: Date.now },
 });
