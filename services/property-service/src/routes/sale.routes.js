@@ -62,7 +62,28 @@ router
     const bonusMonth = await getCustomCurrentMonth(mooc_date);
     const { start_date, end_date } =
       getStartDateAndEndDateByMonthString(bonusMonth);
-
+    const validation = validateDateInRange(mooc_date);
+    if (!validation.isValid) {
+      return res.status(200).json({
+        data: {
+          bonus_time: {
+            month: bonusMonth,
+            from: start_date,
+            to: end_date,
+          },
+          agents: [],
+          sent_mail_for_all: false,
+          pagination: {
+            total: 0,
+            page: 0,
+            limit: 0,
+            totalPages: 0,
+          },
+        },
+        message: validation.message + ' cho tháng ' + bonusMonth,
+        error: [],
+      });
+    }
     try {
       const pagination = {
         page: Number(page),
@@ -729,7 +750,7 @@ const getCustomCurrentMonth = async (dateString) => {
   let month = dateObj.getMonth() + 1; // JS month 0-based
   let year = dateObj.getFullYear();
 
-  if (day >= 4 && day <= 12) {
+  if (day <= 12) {
     // Lùi về tháng trước
     month -= 1;
     if (month === 0) {
@@ -738,6 +759,31 @@ const getCustomCurrentMonth = async (dateString) => {
     }
   }
   return `${String(month).padStart(2, '0')}/${year}`;
+};
+const validateDateInRange = (dateString) => {
+  let dateObj;
+
+  if (!dateString) {
+    dateObj = new Date();
+  } else {
+    const [day, month, year] = dateString.split('/').map(Number);
+    dateObj = new Date(year, month - 1, day);
+  }
+
+  const day = dateObj.getDate();
+
+  // Kiểm tra ngày có nằm trong khoảng 4 -> 12 không
+  if (day < 4 || day > 12) {
+    return {
+      isValid: false,
+      message: 'Hiện tại chưa có kết quả thống kê lương thưởng',
+    };
+  }
+
+  return {
+    isValid: true,
+    message: 'Ngày hợp lệ, tiếp tục xử lý',
+  };
 };
 
 export default router;
