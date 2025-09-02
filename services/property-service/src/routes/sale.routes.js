@@ -760,7 +760,6 @@ const getCustomCurrentMonth = async (dateString) => {
   }
   return `${String(month).padStart(2, '0')}/${year}`;
 };
-
 const validateDateInRange = (dateString) => {
   let dateObj;
 
@@ -771,18 +770,9 @@ const validateDateInRange = (dateString) => {
     dateObj = new Date(year, month - 1, day);
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (dateObj > today) {
-    return {
-      isValid: false,
-      message: 'Vượt quá ngày hiện tại -',
-    };
-  }
-
   const day = dateObj.getDate();
 
+  // Kiểm tra ngày có nằm trong khoảng 4 -> 12 không
   if (day < 4 || day > 12) {
     return {
       isValid: false,
@@ -790,7 +780,6 @@ const validateDateInRange = (dateString) => {
     };
   }
 
-  // ✅ Ngày hợp lệ
   return {
     isValid: true,
     message: 'Ngày hợp lệ, tiếp tục xử lý',
