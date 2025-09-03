@@ -75,7 +75,7 @@ const getEmailTemplate = ({ title, greeting, mainMessage, infoSections }) => `
           <p class="services">BEST SERVICES FOR YOUR BUSINESS: SERVER - CDN - CLOUD - VPS - HOSTING - WEBSITE - DOMAIN - EMAIL</p>
           <p class="address"> FPT urban area, Hoa Hai ward,Ngu Hanh Son District, Da Nang City</p>
           <div class="contact">
-            <p>Hotline: <a href="tel:0123456789">0123 456 789</a> | Email: <a href="mailto:support@realestate.com">support@realestate.com</a></p>
+            <p>Hotline: <a href="tel:0334807725">0334807725</a> | Email: <a href="mailto:support@realestate.com">support@realestate.com</a></p>
             <p>Follow us: <a href="https://facebook.com/realestate">Facebook</a> | <a href="https://linkedin.com/company/realestate">LinkedIn</a></p>
             <p><a href="https://yourdomain.com">Visit our website</a></p>
           </div>
@@ -221,7 +221,7 @@ const sendConsignmentRequestToCustomer = async ({
         <ul>
           <li>Đội ngũ của chúng tôi sẽ thẩm định thông tin bất động sản trong vòng 24 giờ.</li>
           <li>Một đại lý chuyên trách sẽ liên hệ để tư vấn và xác nhận chi tiết.</li>
-          <li>Bạn có thể liên hệ hotline 0123 456 789 để được hỗ trợ bất kỳ lúc nào.</li>
+          <li>Bạn có thể liên hệ hotline 0334807725 để được hỗ trợ bất kỳ lúc nào.</li>
         </ul>
       </div>
     `,
@@ -277,7 +277,7 @@ const sendConsignmentRequestToAdmin = async ({
           <li>Xác nhận thông tin yêu cầu trong vòng 12 giờ.</li>
           <li>Phân công đại lý phù hợp để liên hệ khách hàng.</li>
           <li>Cập nhật trạng thái yêu cầu trên hệ thống quản lý.</li>
-          <li>Liên hệ hotline nội bộ 0123 456 789 nếu cần hỗ trợ.</li>
+          <li>Liên hệ hotline nội bộ 0334807725 nếu cần hỗ trợ.</li>
         </ul>
       </div>
     `,
@@ -341,7 +341,7 @@ const notifyAgentAssignedToProject = async ({
                 <li>Liên hệ khách hàng trong vòng 24 giờ để tư vấn chi tiết.</li>
                 <li>Thu thập thêm thông tin về bất động sản (nếu cần) và báo cáo cho quản trị viên.</li>
                 <li>Cập nhật tiến độ xử lý trên hệ thống để theo dõi.</li>
-                <li>Liên hệ hotline nội bộ 0123 456 789 nếu cần hỗ trợ.</li>
+                <li>Liên hệ hotline nội bộ 0334807725 nếu cần hỗ trợ.</li>
               </ul>
             </div>
           `,
@@ -631,7 +631,7 @@ const notifyJournalistNewBlog = async ({
       <ul>
         <li>Bài viết của bạn đã được đăng công khai.</li>
         <li>Bạn có thể kiểm tra và chỉnh sửa bài viết trên hệ thống.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -696,7 +696,7 @@ const notifyJournalistDraftBlog = async ({
       <ul>
         <li>Bài viết của bạn đã được lưu dưới dạng nháp.</li>
         <li>Bạn có thể chỉnh sửa hoặc gửi bài viết để duyệt trên hệ thống.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -770,7 +770,7 @@ const notifyAdminBlogSubmitted = async ({
       <ul>
         <li>Xem xét và duyệt bài viết trong vòng 24 giờ.</li>
         <li>Cập nhật trạng thái bài viết trên hệ thống.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -842,7 +842,7 @@ const notifyJournalistNewReview = async ({
       <ul>
         <li>Kiểm tra bình luận trên hệ thống.</li>
         <li>Phản hồi bình luận nếu cần.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -912,7 +912,7 @@ const notifyJournalistNewReact = async ({
       <h3>Hành động tiếp theo</h3>
       <ul>
         <li>Kiểm tra lượt thích trên hệ thống.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -976,7 +976,7 @@ const shareBlog = async ({ recipientEmail, blog, user }) => {
       <h3>Hành động tiếp theo</h3>
       <ul>
         <li>Click vào link ngắn để xem bài viết chi tiết.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -1035,7 +1035,7 @@ const notifyJournalistBlogApproved = async ({
       <ul>
         <li>Bài viết của bạn đã được duyệt và đăng công khai.</li>
         <li>Kiểm tra bài viết trên hệ thống hoặc qua link công khai.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -1095,7 +1095,7 @@ const notifyJournalistBlogRejected = async ({
       <ul>
         <li>Bài viết của bạn đã bị từ chối. Vui lòng xem xét chỉnh sửa theo góp ý (nếu có).</li>
         <li>Gửi lại bài viết sau khi chỉnh sửa.</li>
-        <li>Liên hệ hotline 0123 456 789 nếu cần hỗ trợ.</li>
+        <li>Liên hệ hotline 0334807725 nếu cần hỗ trợ.</li>
       </ul>
     </div>
   `;
@@ -1332,7 +1332,7 @@ const sendBulkCommissionEmails = async (agentCommissions) => {
             <h3>Hành động tiếp theo</h3>
             <ul>
               <li>Kiểm tra chi tiết báo cáo trên hệ thống HomiHub.</li>
-              <li>Liên hệ hotline 0123 456 789 nếu có thắc mắc.</li>
+              <li>Liên hệ hotline 0334807725 nếu có thắc mắc.</li>
             </ul>
           </div>
         `;
@@ -1408,7 +1408,7 @@ const notifyAppointmentResponse = async ({ appointment, customer, recipient_emai
       <div class="info-section">
         <h3>Thông tin liên hệ</h3>
         <ul>
-          <li>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua hotline: 0123 456 789</li>
+          <li>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua hotline: 0334807725</li>
           <li>Hoặc gửi email đến: support@realestate.com</li>
         </ul>
       </div>
